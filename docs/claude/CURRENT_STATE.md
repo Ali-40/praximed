@@ -179,7 +179,7 @@
    - Full backend tests: 595/595 passed
 
 24. Module 26 — Patient API routes
-   - Commit: (pending)
+   - Commit: b902dba
    - `backend/app/schemas/patients.py`
    - `backend/app/api/routes/patients.py`
    - `backend/app/api/router.py` (updated)
