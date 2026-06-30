@@ -1,4 +1,4 @@
-# Sprint 1 / Module 15 — PraxisMed Appointment Request Schema Contract
+# Sprint 1 / Module 16 — Appointment Request Repository
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -15,90 +15,123 @@
 9. Modules 9–10: availability schemas and API routes
 10. Modules 11–12: Vapi prompt builder and tool routes
 11. Modules 13–14: Vapi call logs and call event webhook
+12. Module 15: appointment request schema contract
 
 All are committed. Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Your task is strictly limited to adding the appointment request schema contract.
+Create the database repository layer for appointment_requests.
 
-Create or update only:
+Create only:
+1. `backend/app/db/repositories/appointment_request_repo.py`
+2. `backend/tests/test_appointment_request_repo.py`
 
-1. `backend/app/db/schema.sql`
-2. `backend/tests/test_schema_contract.py`
-
-## Purpose
-Add a new PostgreSQL table for appointment requests captured by phone AI, WhatsApp, web forms, or clinic staff.
-
-Do not create repository code yet.
-Do not create FastAPI routes yet.
+Do not create API routes yet.
 Do not modify Vapi modules yet.
 Do not build WhatsApp.
 Do not build frontend.
-No real database connection during tests.
+Do not use a real database in tests.
 
-## Schema requirement
+## Repository requirements
 
-Add table:
+### Custom exceptions
+- `AppointmentRequestRepoError`
+- `InvalidAppointmentRequestError`
 
-`appointment_requests`
+### Public async functions
 
-Required columns:
-- `id UUID PRIMARY KEY`
-- `clinic_id UUID NOT NULL REFERENCES clinics(id) ON DELETE CASCADE`
-- `source TEXT NOT NULL`
-- `source_ref TEXT`
-- `patient_name TEXT NOT NULL`
-- `patient_phone TEXT`
-- `patient_email TEXT`
-- `date_of_birth DATE`
-- `reason TEXT`
-- `preferred_starts_at TIMESTAMPTZ`
-- `preferred_ends_at TIMESTAMPTZ`
-- `status TEXT NOT NULL DEFAULT 'new'`
-- `urgency_level TEXT NOT NULL DEFAULT 'normal'`
-- `action_required BOOLEAN NOT NULL DEFAULT true`
-- `assigned_user_id UUID REFERENCES clinic_users(id) ON DELETE SET NULL`
-- `raw_payload JSONB`
-- `created_at TIMESTAMPTZ NOT NULL DEFAULT now()`
-- `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`
+#### 1. `create_appointment_request`
+```
+create_appointment_request(
+    pool,
+    clinic_id,
+    source,
+    patient_name,
+    source_ref=None,
+    patient_phone=None,
+    patient_email=None,
+    date_of_birth=None,
+    reason=None,
+    preferred_starts_at=None,
+    preferred_ends_at=None,
+    status="new",
+    urgency_level="normal",
+    action_required=True,
+    assigned_user_id=None,
+    raw_payload=None,
+)
+```
 
-## Constraints
-- `CHECK (preferred_ends_at IS NULL OR preferred_starts_at IS NULL OR preferred_ends_at > preferred_starts_at)`
-- `CHECK (status IN ('new', 'confirmed', 'rejected', 'callback_needed', 'cancelled', 'archived'))`
-- `CHECK (urgency_level IN ('low', 'normal', 'urgent', 'emergency'))`
-- `CHECK (source IN ('vapi', 'whatsapp', 'web', 'staff', 'system'))`
+Behavior:
+- Validate clinic_id, source, and patient_name are not empty.
+- Validate preferred_ends_at > preferred_starts_at if both are provided.
+- Validate source is one of: vapi, whatsapp, web, staff, system.
+- Validate status is one of: new, confirmed, rejected, callback_needed, cancelled, archived.
+- Validate urgency_level is one of: low, normal, urgent, emergency.
+- Use parameterized SQL only.
+- Insert into appointment_requests.
+- Return created row.
 
-## Indexes
-- `appointment_requests(clinic_id, created_at)`
-- `appointment_requests(clinic_id, status)`
-- `appointment_requests(clinic_id, action_required)`
-- `appointment_requests(clinic_id, urgency_level)`
-- `appointment_requests(clinic_id, preferred_starts_at)`
-- `appointment_requests(clinic_id, source)`
+#### 2. `get_appointment_request_by_id(pool, clinic_id, request_id)`
+- Return matching row or None.
+- Must filter by clinic_id.
 
-## Update `test_schema_contract.py` to verify
-1. `appointment_requests` table exists.
-2. All critical columns exist.
-3. Foreign key references `clinics(id)`.
-4. `assigned_user_id` references `clinic_users(id)`.
-5. Status check constraint exists.
-6. Urgency check constraint exists.
-7. Source check constraint exists.
-8. Preferred time range check exists.
-9. All required indexes exist.
-10. Existing schema contract tests still pass.
+#### 3. `list_appointment_requests(pool, clinic_id, status=None, action_required=None, limit=50)`
+- Return recent appointment requests.
+- Limit must be between 1 and 100.
+- Optional filters for status and action_required.
+- Must filter by clinic_id.
+
+#### 4. `update_appointment_request_status(pool, clinic_id, request_id, status, action_required=None)`
+- Validate status.
+- Update status and optionally action_required.
+- Return updated row.
+
+#### 5. `assign_appointment_request(pool, clinic_id, request_id, assigned_user_id)`
+- Assign request to a clinic user.
+- Return updated row.
+
+#### 6. `mark_callback_needed(pool, clinic_id, request_id)`
+- Set status to callback_needed and action_required to true.
+- Return updated row.
+
+#### 7. `archive_appointment_request(pool, clinic_id, request_id)`
+- Set status to archived and action_required to false.
+- Return updated row.
+
+## Tests required
+1. create_appointment_request calls fetchrow.
+2. create_appointment_request raises InvalidAppointmentRequestError for empty clinic_id.
+3. create_appointment_request raises InvalidAppointmentRequestError for empty patient_name.
+4. create_appointment_request validates invalid source.
+5. create_appointment_request validates invalid status.
+6. create_appointment_request validates invalid urgency_level.
+7. create_appointment_request validates invalid preferred time range.
+8. get_appointment_request_by_id calls fetchrow and filters by clinic_id.
+9. list_appointment_requests calls fetch.
+10. list_appointment_requests validates limit.
+11. list_appointment_requests supports status filter.
+12. list_appointment_requests supports action_required filter.
+13. update_appointment_request_status calls fetchrow.
+14. update_appointment_request_status validates status.
+15. assign_appointment_request calls fetchrow.
+16. mark_callback_needed calls fetchrow.
+17. archive_appointment_request calls fetchrow.
+18. SQL uses parameterized placeholders, not string formatting.
 
 ## Run
-`pytest -v backend/tests/test_schema_contract.py`
+`pytest -v backend/tests/test_appointment_request_repo.py`
 
 Then run all tests:
 `pytest -v backend/tests`
 
 ## Acceptance criteria
-- All Module 15 tests pass.
+- All Module 16 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only the schema contract is changed.
-- No repository code yet.
-- No API route yet.
-- No Vapi integration yet.
+- Only appointment_request_repo.py and its tests are created.
+- CURRENT_STATE.md and NEXT_MODULE.md are updated.
+- Commit all changes only if tests pass.
+
+## Commit message
+`Sprint 1 / Module 16 — Appointment request repository`

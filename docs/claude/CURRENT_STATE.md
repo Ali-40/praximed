@@ -52,8 +52,17 @@
    - `docs/claude/CURRENT_STATE.md`
    - `docs/claude/NEXT_MODULE.md`
 
+13. Module 15 — Appointment request schema contract
+   - Commit: 2a71deb
+   - `backend/app/db/schema.sql` — added `appointment_requests` table
+   - `backend/tests/test_schema_contract.py` — extended to 158 tests
+   - Schema tests: 158/158 passed
+   - Full backend tests: 349/349 passed
+
 ## Latest git log expected
 
+- Sprint 1 / Module 15 — Appointment request schema contract
+- Populate Claude orchestration docs for Module 15
 - Add Claude orchestration docs
 - Sprint 1 / Modules 13–14 — Vapi call logs and call event webhook
 - Sprint 1 / Modules 11–12 — Vapi prompt builder and tool routes
@@ -68,4 +77,4 @@
 - Sprint 1 Module 1: secure clinic config loader
 
 ## Next module
-Sprint 1 / Module 15 — Appointment Request Schema Contract.
+Sprint 1 / Module 16 — Appointment Request Repository.
