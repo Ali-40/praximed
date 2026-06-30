@@ -237,11 +237,19 @@
    - Full backend tests: 832/832 passed
 
 31. Module 33 — Doctor review workflow
-   - Commit: 6cd62c2
+   - Commit: 6cd62c2 / docs: cc165f0
    - `backend/app/modules/clinical_summary/review_workflow.py`
    - `backend/tests/test_review_workflow.py`
    - Module 33 tests: 33/33 passed
    - Full backend tests: 865/865 passed
 
+32. Module 34 — Patient timeline report service
+   - Commit: 827c2da
+   - `backend/app/modules/patient_timeline/__init__.py`
+   - `backend/app/modules/patient_timeline/timeline_report.py`
+   - `backend/tests/test_patient_timeline_report.py`
+   - Module 34 tests: 43/43 passed
+   - Full backend tests: 908/908 passed
+
 ## Next module
-Sprint 2 / Module 34 — Patient timeline report.
+Sprint 2 / Module 35 — TBD.
