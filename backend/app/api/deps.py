@@ -13,6 +13,25 @@ from typing import Any
 from fastapi import HTTPException, Request
 
 
+def get_config_loader(request: Request) -> Any:
+    """
+    Return the ClinicConfigLoader stored on ``app.state.config_loader``.
+
+    Raises 503 when the loader is absent so callers get a clear signal rather
+    than an AttributeError traceback.
+    """
+    try:
+        return request.app.state.config_loader
+    except AttributeError:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Config loader is not initialised. "
+                "The service may still be starting up."
+            ),
+        )
+
+
 def get_db_pool(request: Request) -> Any:
     """
     Return the asyncpg pool stored on ``app.state.db_pool``.
