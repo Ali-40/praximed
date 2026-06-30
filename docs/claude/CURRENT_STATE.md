@@ -172,7 +172,7 @@
    - Full backend tests: 574/574 passed
 
 23. Module 25 — Patient repository
-   - Commit: (pending)
+   - Commit: 0f84ad3
    - `backend/app/db/repositories/patient_repo.py`
    - `backend/tests/test_patient_repo.py`
    - Module 25 tests: 21/21 passed
