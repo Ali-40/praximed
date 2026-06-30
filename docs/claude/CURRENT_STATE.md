@@ -213,7 +213,7 @@
    - Full backend tests: 741/741 passed
 
 28. Module 30 — Audio upload placeholder service
-   - Commit: (pending)
+   - Commit: 1ccc797
    - `backend/app/modules/audio/__init__.py`
    - `backend/app/modules/audio/audio_storage.py`
    - `backend/tests/test_audio_storage.py`
