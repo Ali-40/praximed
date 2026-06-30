@@ -244,12 +244,20 @@
    - Full backend tests: 865/865 passed
 
 32. Module 34 — Patient timeline report service
-   - Commit: 827c2da
+   - Commit: 827c2da / docs: cf8c097
    - `backend/app/modules/patient_timeline/__init__.py`
    - `backend/app/modules/patient_timeline/timeline_report.py`
    - `backend/tests/test_patient_timeline_report.py`
    - Module 34 tests: 43/43 passed
    - Full backend tests: 908/908 passed
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 02 created: `docs/claude/ARCHITECTURE_CHECKPOINT_02.md`
+- Commit: TBD
+- Full backend tests: 908/908 passed
+- Sprint 2 complete (Modules 24–34)
+- Sprint 3 started: Clinical Workflow API Routes (Module 35+)
+
 ## Next module
-Sprint 2 / Module 35 — TBD.
+Sprint 3 / Module 35 — Clinical Workflow API Routes.
