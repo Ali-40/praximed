@@ -199,4 +199,61 @@ CREATE INDEX IF NOT EXISTS idx_clinic_call_logs_clinic_action
 CREATE INDEX IF NOT EXISTS idx_clinic_call_logs_clinic_urgency
     ON clinic_call_logs (clinic_id, urgency_level);
 
+-- ---------------------------------------------------------------------------
+-- G) appointment_requests  (Module 15)
+--    Appointment requests captured by phone AI, WhatsApp, web forms, or
+--    clinic staff.  Reviewed by clinic staff before confirmation.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS appointment_requests (
+    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id           UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    source              TEXT        NOT NULL,
+    source_ref          TEXT,
+    patient_name        TEXT        NOT NULL,
+    patient_phone       TEXT,
+    patient_email       TEXT,
+    date_of_birth       DATE,
+    reason              TEXT,
+    preferred_starts_at TIMESTAMPTZ,
+    preferred_ends_at   TIMESTAMPTZ,
+    status              TEXT        NOT NULL DEFAULT 'new',
+    urgency_level       TEXT        NOT NULL DEFAULT 'normal',
+    action_required     BOOLEAN     NOT NULL DEFAULT true,
+    assigned_user_id    UUID        REFERENCES clinic_users(id) ON DELETE SET NULL,
+    raw_payload         JSONB,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT appointment_requests_time_range_check CHECK (
+        preferred_ends_at IS NULL OR preferred_starts_at IS NULL OR preferred_ends_at > preferred_starts_at
+    ),
+    CONSTRAINT appointment_requests_status_check CHECK (
+        status IN ('new', 'confirmed', 'rejected', 'callback_needed', 'cancelled', 'archived')
+    ),
+    CONSTRAINT appointment_requests_urgency_check CHECK (
+        urgency_level IN ('low', 'normal', 'urgent', 'emergency')
+    ),
+    CONSTRAINT appointment_requests_source_check CHECK (
+        source IN ('vapi', 'whatsapp', 'web', 'staff', 'system')
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_created
+    ON appointment_requests (clinic_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_status
+    ON appointment_requests (clinic_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_action
+    ON appointment_requests (clinic_id, action_required);
+
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_urgency
+    ON appointment_requests (clinic_id, urgency_level);
+
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_preferred_starts
+    ON appointment_requests (clinic_id, preferred_starts_at);
+
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_source
+    ON appointment_requests (clinic_id, source);
+
 COMMIT;

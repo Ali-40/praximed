@@ -70,6 +70,7 @@ REQUIRED_TABLES = [
     "clinic_calendar_sync_events",
     "audit_log",
     "clinic_call_logs",
+    "appointment_requests",
 ]
 
 
@@ -119,6 +120,14 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "transcript_text", "summary", "action_required",
         "urgency_level", "raw_payload", "created_at", "updated_at",
     ],
+    "appointment_requests": [
+        "id", "clinic_id", "source", "source_ref",
+        "patient_name", "patient_phone", "patient_email",
+        "date_of_birth", "reason",
+        "preferred_starts_at", "preferred_ends_at",
+        "status", "urgency_level", "action_required",
+        "assigned_user_id", "raw_payload", "created_at", "updated_at",
+    ],
 }
 
 
@@ -152,6 +161,12 @@ REQUIRED_INDEXES = [
     ("idx_clinic_call_logs_clinic_status",        "clinic_call_logs",             "call_status"),
     ("idx_clinic_call_logs_clinic_action",        "clinic_call_logs",             "action_required"),
     ("idx_clinic_call_logs_clinic_urgency",       "clinic_call_logs",             "urgency_level"),
+    ("idx_appointment_requests_clinic_created",        "appointment_requests", "created_at"),
+    ("idx_appointment_requests_clinic_status",         "appointment_requests", "status"),
+    ("idx_appointment_requests_clinic_action",         "appointment_requests", "action_required"),
+    ("idx_appointment_requests_clinic_urgency",        "appointment_requests", "urgency_level"),
+    ("idx_appointment_requests_clinic_preferred_starts", "appointment_requests", "preferred_starts_at"),
+    ("idx_appointment_requests_clinic_source",         "appointment_requests", "source"),
 ]
 
 
@@ -213,6 +228,7 @@ FK_TABLES = [
     "clinic_calendar_sync_events",
     "audit_log",
     "clinic_call_logs",
+    "appointment_requests",
 ]
 
 
@@ -293,6 +309,7 @@ ON_DELETE_CASCADE_TABLES = [
     ("clinic_calendar_blocks",       "on delete cascade"),
     ("clinic_calendar_sync_events",  "on delete cascade"),
     ("clinic_call_logs",             "on delete cascade"),
+    ("appointment_requests",         "on delete cascade"),
 ]
 
 
@@ -317,3 +334,60 @@ def test_call_logs_unique_triple(sql_lower: str):
         r"unique\s*\(\s*clinic_id\s*,\s*provider\s*,\s*external_call_id\s*\)",
         block,
     ), "clinic_call_logs must have UNIQUE(clinic_id, provider, external_call_id)"
+
+
+# ---------------------------------------------------------------------------
+# Module 15 — appointment_requests specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_appointment_requests_assigned_user_fk(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(
+        r"assigned_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\)",
+        block,
+        re.DOTALL,
+    ), "appointment_requests.assigned_user_id must REFERENCES clinic_users(id)"
+
+
+def test_appointment_requests_assigned_user_on_delete_set_null(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(
+        r"assigned_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\).*on\s+delete\s+set\s+null",
+        block,
+        re.DOTALL,
+    ), "appointment_requests.assigned_user_id FK must be ON DELETE SET NULL"
+
+
+def test_appointment_requests_status_check(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(r"check\s*\(.*\bstatus\b.*\bin\b", block, re.DOTALL), (
+        "appointment_requests must have a CHECK constraint on status with IN"
+    )
+    for val in ("'new'", "'confirmed'", "'rejected'", "'callback_needed'", "'cancelled'", "'archived'"):
+        assert val in block, f"appointment_requests status CHECK must include value {val}"
+
+
+def test_appointment_requests_urgency_check(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(r"check\s*\(.*\burgency_level\b.*\bin\b", block, re.DOTALL), (
+        "appointment_requests must have a CHECK constraint on urgency_level with IN"
+    )
+    for val in ("'low'", "'normal'", "'urgent'", "'emergency'"):
+        assert val in block, f"appointment_requests urgency_level CHECK must include value {val}"
+
+
+def test_appointment_requests_source_check(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(r"check\s*\(.*\bsource\b.*\bin\b", block, re.DOTALL), (
+        "appointment_requests must have a CHECK constraint on source with IN"
+    )
+    for val in ("'vapi'", "'whatsapp'", "'web'", "'staff'", "'system'"):
+        assert val in block, f"appointment_requests source CHECK must include value {val}"
+
+
+def test_appointment_requests_time_range_check(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(r"preferred_ends_at.*>.*preferred_starts_at", block, re.DOTALL), (
+        "appointment_requests must have CHECK (preferred_ends_at > preferred_starts_at)"
+    )
