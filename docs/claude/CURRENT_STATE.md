@@ -66,8 +66,20 @@
    - Module 16 tests: 20/20 passed
    - Full backend tests: 369/369 passed
 
+15. Module 17 — Appointment request API schemas and routes
+   - Commit: be1a346
+   - `backend/app/schemas/appointment_requests.py`
+   - `backend/app/api/routes/appointment_requests.py`
+   - `backend/app/api/router.py` (updated)
+   - `backend/tests/test_appointment_request_schemas.py`
+   - `backend/tests/test_appointment_request_routes.py`
+   - Module 17 tests: 27/27 passed
+   - Full backend tests: 396/396 passed
+
 ## Latest git log expected
 
+- Sprint 1 / Module 17 — Appointment request API routes
+- Populate Claude orchestration docs for Module 17
 - Sprint 1 / Module 16 — Appointment request repository
 - Populate Claude orchestration docs for Module 16
 - Sprint 1 / Module 15 — Appointment request schema contract
@@ -86,4 +98,4 @@
 - Sprint 1 Module 1: secure clinic config loader
 
 ## Next module
-Sprint 1 / Module 17 — Appointment Request API Schemas and Routes.
+Sprint 1 / Module 18 — Vapi Appointment Capture Integration.
