@@ -229,12 +229,19 @@
    - Full backend tests: 791/791 passed
 
 30. Module 32 — Clinical summary draft generator
-   - Commit: a1a6498
+   - Commit: a1a6498 / docs: c879f4b
    - `backend/app/modules/clinical_summary/__init__.py`
    - `backend/app/modules/clinical_summary/summary_builder.py`
    - `backend/tests/test_clinical_summary_builder.py`
    - Module 32 tests: 41/41 passed
    - Full backend tests: 832/832 passed
 
+31. Module 33 — Doctor review workflow
+   - Commit: 6cd62c2
+   - `backend/app/modules/clinical_summary/review_workflow.py`
+   - `backend/tests/test_review_workflow.py`
+   - Module 33 tests: 33/33 passed
+   - Full backend tests: 865/865 passed
+
 ## Next module
-Sprint 2 / Module 33 — Doctor review and approval workflow.
+Sprint 2 / Module 34 — Patient timeline report.
