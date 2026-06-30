@@ -189,11 +189,18 @@
    - Full backend tests: 629/629 passed
 
 25. Module 27 — Consultation session schema contract
-   - Commit: 8cfe4a9
+   - Commit: 8cfe4a9 / docs: 4bbd514
    - `backend/app/db/schema.sql` — added `consultation_sessions` table
    - `backend/tests/test_schema_contract.py` — extended to 264 tests
    - Schema tests: 264/264 passed
    - Full backend tests: 670/670 passed
 
+26. Module 28 — Consultation session repository
+   - Commit: (pending)
+   - `backend/app/db/repositories/consultation_repo.py`
+   - `backend/tests/test_consultation_repo.py`
+   - Module 28 tests: 32/32 passed
+   - Full backend tests: 702/702 passed
+
 ## Next module
-Sprint 2 / Module 28 — Consultation session repository.
+Sprint 2 / Module 29 — Consultation session API routes.
