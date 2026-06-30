@@ -19,6 +19,7 @@ from backend.app.api.routes import appointment_requests
 from backend.app.api.routes import notifications
 from backend.app.api.routes import patients
 from backend.app.api.routes import consultations
+from backend.app.api.routes import clinical_workflows
 
 api_router = APIRouter()
 
@@ -31,3 +32,4 @@ api_router.include_router(appointment_requests.router)
 api_router.include_router(notifications.router)
 api_router.include_router(patients.router)
 api_router.include_router(consultations.router)
+api_router.include_router(clinical_workflows.router)
