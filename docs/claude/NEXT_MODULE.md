@@ -1,4 +1,4 @@
-# Sprint 2 / Module 25 — Patient Repository
+# Sprint 2 / Module 26 — Patient API Routes
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -6,98 +6,138 @@
 ## Completed modules
 - Sprint 1, Modules 1–23: all committed.
 - Sprint 2, Module 24: patient schema contract committed.
+- Sprint 2, Module 25: patient repository committed.
 
 Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Create the database repository layer for patients.
+Create API schemas and FastAPI routes for managing clinic patients.
 
 ## Purpose
-PraxisMed needs a clean patient repository before building patient API routes, consultation sessions, audio transcription, AI summaries, doctor approval, and patient timelines.
+PraxisMed needs patient API routes before building consultation sessions, audio transcription, AI summaries, doctor approval, and patient timelines.
 
 ## Create or update only
 
-1. `backend/app/db/repositories/patient_repo.py`
-2. `backend/tests/test_patient_repo.py`
-3. `docs/claude/CURRENT_STATE.md`
-4. `docs/claude/NEXT_MODULE.md`
+1. `backend/app/schemas/patients.py`
+2. `backend/app/api/routes/patients.py`
+3. `backend/app/api/router.py`
+4. `backend/tests/test_patient_schemas.py`
+5. `backend/tests/test_patient_routes.py`
+6. `docs/claude/CURRENT_STATE.md`
+7. `docs/claude/NEXT_MODULE.md`
 
-Do not create API routes yet.
 Do not create consultation tables yet.
+Do not create consultation API routes yet.
 Do not create transcription code.
 Do not create AI summary code.
 Do not build frontend.
 Do not build authentication.
+Do not modify patient_repo.py unless absolutely required by tests.
 Do not use a real database in tests.
 
-## Allowed status values
+## Schema requirements
 
-`active`, `inactive`, `archived`
+### 1. `PatientCreate`
+- `clinic_id`: str — must not be empty
+- `full_name`: str — must not be empty
+- `external_patient_id`: str | None = None
+- `date_of_birth`: date | None = None
+- `phone`: str | None = None
+- `email`: str | None = None
+- `preferred_language`: str = "de-AT" — must not be empty
+- `status`: str = "active" — must be one of: active, inactive, archived
+- `notes`: str | None = None
+- `raw_payload`: dict | None = None
 
-## Public async functions
+### 2. `PatientUpsertByExternalId`
+- `clinic_id`: str — must not be empty
+- `external_patient_id`: str — must not be empty
+- `full_name`: str — must not be empty
+- `date_of_birth`: date | None = None
+- `phone`: str | None = None
+- `email`: str | None = None
+- `preferred_language`: str = "de-AT" — must not be empty
+- `status`: str = "active" — must be one of: active, inactive, archived
+- `notes`: str | None = None
+- `raw_payload`: dict | None = None
 
-### 1. `create_patient(pool, clinic_id, full_name, external_patient_id=None, date_of_birth=None, phone=None, email=None, preferred_language="de-AT", status="active", notes=None, raw_payload=None)`
+### 3. `PatientUpdate`
+- All fields optional
+- At least one field must be provided
+- `full_name`, if provided, must not be empty
+- `preferred_language`, if provided, must not be empty
+- `status`, if provided, must be one of: active, inactive, archived
 
-- Validate `clinic_id` not empty.
-- Validate `full_name` not empty.
-- Validate `preferred_language` not empty.
-- Validate `status` is one of allowed values.
-- Parameterised SQL, INSERT, RETURNING *.
+### 4. `PatientResponse`
+- `ok`: bool
+- `patient`: dict | None = None
+- `message`: str | None = None
 
-### 2. `upsert_patient_by_external_id(pool, clinic_id, external_patient_id, full_name, date_of_birth=None, phone=None, email=None, preferred_language="de-AT", status="active", notes=None, raw_payload=None)`
+### 5. `PatientListResponse`
+- `ok`: bool
+- `patients`: list[dict]
+- `message`: str | None = None
 
-- Validate `clinic_id`, `external_patient_id`, `full_name` not empty.
-- Validate `preferred_language` and `status`.
-- ON CONFLICT (clinic_id, external_patient_id) DO UPDATE.
-- Return created/updated row.
+## Routes requirements
 
-### 3. `get_patient_by_id(pool, clinic_id, patient_id)`
-- Return matching patient or None. Filter by `clinic_id`.
+### Endpoints
 
-### 4. `get_patient_by_external_id(pool, clinic_id, external_patient_id)`
-- Return matching patient or None. Filter by `clinic_id`.
+1. `POST /patients` — create_patient → PatientResponse
+2. `POST /patients/upsert-by-external-id` — upsert_patient_by_external_id → PatientResponse
+3. `GET /patients` — list_patients (query: clinic_id, status, search, limit=50) → PatientListResponse
+4. `GET /patients/by-external-id/{external_patient_id}` — get_patient_by_external_id (query: clinic_id) → PatientResponse | 404
+5. `GET /patients/{patient_id}` — get_patient_by_id (query: clinic_id) → PatientResponse | 404
+6. `PATCH /patients/{patient_id}` — update_patient (query: clinic_id, body: PatientUpdate) → PatientResponse | 404
+7. `POST /patients/{patient_id}/archive` — archive_patient (query: clinic_id) → PatientResponse | 404
 
-### 5. `list_patients(pool, clinic_id, status=None, search=None, limit=50)`
-- Filter by `clinic_id`. Limit 1–100. Optional `status` and `search` filters.
-- Search uses ILIKE across `full_name`, `phone`, `email`, `external_patient_id`.
-- Validate `status` if provided.
-
-### 6. `update_patient(pool, clinic_id, patient_id, full_name=None, date_of_birth=None, phone=None, email=None, preferred_language=None, status=None, notes=None, raw_payload=None)`
-- Validate at least one update field provided.
-- Validate `full_name` not empty if provided.
-- Validate `preferred_language` not empty if provided.
-- Validate `status` if provided. Filter by `clinic_id`.
-
-### 7. `archive_patient(pool, clinic_id, patient_id)`
-- Set `status='archived'`. Return updated row.
+### Error handling
+- Missing db_pool → HTTP 503
+- InvalidPatientError → HTTP 400
+- Not found → HTTP 404
+- Unexpected error → HTTP 500
 
 ## Tests required
 
-1. `create_patient` calls `fetchrow`.
-2. `create_patient` raises `InvalidPatientError` for empty `clinic_id`.
-3. `create_patient` raises `InvalidPatientError` for empty `full_name`.
-4. `create_patient` raises `InvalidPatientError` for empty `preferred_language`.
-5. `create_patient` validates invalid `status`.
-6. `upsert_patient_by_external_id` calls `fetchrow`.
-7. `upsert_patient_by_external_id` requires `external_patient_id`.
-8. Upsert SQL uses `ON CONFLICT`.
-9. `get_patient_by_id` calls `fetchrow` and filters by `clinic_id`.
-10. `get_patient_by_external_id` calls `fetchrow` and filters by `clinic_id`.
-11. `list_patients` calls `fetch`.
-12. `list_patients` validates `limit`.
-13. `list_patients` validates `status` filter.
-14. `list_patients` supports `search` filter.
-15. `update_patient` calls `fetchrow`.
-16. `update_patient` validates at least one update field.
-17. `update_patient` validates invalid `status`.
-18. `update_patient` validates empty `full_name` if provided.
-19. `archive_patient` calls `fetchrow`.
-20. SQL uses parameterised placeholders, not string formatting.
+### test_patient_schemas.py (12 tests)
+1. Valid PatientCreate passes.
+2. Empty clinic_id fails.
+3. Empty full_name fails.
+4. Empty preferred_language fails.
+5. Invalid status fails.
+6. Valid PatientUpsertByExternalId passes.
+7. Empty external_patient_id fails.
+8. Valid PatientUpdate passes.
+9. Empty PatientUpdate fails.
+10. PatientUpdate invalid status fails.
+11. PatientResponse accepts patient dict.
+12. PatientListResponse accepts list of dicts.
+
+### test_patient_routes.py (19 tests)
+1. POST /patients returns 200.
+2. POST route calls create_patient.
+3. POST /patients/upsert-by-external-id returns 200.
+4. Upsert route calls upsert_patient_by_external_id.
+5. GET /patients returns 200 list.
+6. GET list passes status/search/limit filters.
+7. GET /patients/{patient_id} returns 200 when found.
+8. GET /patients/{patient_id} returns 404 when repo returns None.
+9. GET /patients/by-external-id/{external_patient_id} returns 200 when found.
+10. GET /patients/by-external-id/{external_patient_id} returns 404 when not found.
+11. PATCH /patients/{patient_id} returns 200.
+12. PATCH /patients/{patient_id} returns 404 when repo returns None.
+13. POST /patients/{patient_id}/archive returns 200.
+14. POST /patients/{patient_id}/archive returns 404 when repo returns None.
+15. Missing db_pool returns HTTP 503.
+16. Invalid request body returns HTTP 422.
+17. Repository validation error maps to HTTP 400.
+18. Unexpected repository error maps to HTTP 500.
+19. Existing health, Vapi, availability, appointment request, and notification routes still work.
 
 ## Run
 
 ```
-pytest -v backend/tests/test_patient_repo.py
+pytest -v backend/tests/test_patient_schemas.py
+pytest -v backend/tests/test_patient_routes.py
 ```
 
 Then run all tests:
@@ -108,14 +148,13 @@ pytest -v backend/tests
 
 ## Acceptance criteria
 
-- All Module 25 tests pass.
+- All Module 26 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only `patient_repo.py`, its tests, and orchestration docs are changed.
-- No API route yet.
+- Patient API routes are mounted.
 - No consultation/session code yet.
 - Commit all changes only if tests pass.
 
 ## Commit message
 
-`Sprint 2 / Module 25 — Patient repository`
+`Sprint 2 / Module 26 — Patient API routes`

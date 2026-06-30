@@ -172,11 +172,21 @@
    - Full backend tests: 574/574 passed
 
 23. Module 25 — Patient repository
-   - Commit: 0f84ad3
+   - Commit: 0f84ad3 / docs: fe1d438
    - `backend/app/db/repositories/patient_repo.py`
    - `backend/tests/test_patient_repo.py`
    - Module 25 tests: 21/21 passed
    - Full backend tests: 595/595 passed
 
+24. Module 26 — Patient API routes
+   - Commit: (pending)
+   - `backend/app/schemas/patients.py`
+   - `backend/app/api/routes/patients.py`
+   - `backend/app/api/router.py` (updated)
+   - `backend/tests/test_patient_schemas.py`
+   - `backend/tests/test_patient_routes.py`
+   - Module 26 tests: 34/34 passed
+   - Full backend tests: 629/629 passed
+
 ## Next module
-Sprint 2 / Module 26 — Patient API routes.
+Sprint 2 / Module 27 — Consultation session schema contract.
