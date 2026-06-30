@@ -78,6 +78,7 @@
 
 ## Latest git log expected
 
+- Sprint 1 / Module 22 — Vapi notification integration
 - Sprint 1 / Module 21 — Notification router service
 - Sprint 1 / Module 20 — Notification repository
 - Sprint 1 / Module 19 — Notification schema contract
@@ -134,5 +135,14 @@
    - Module 21 tests: 21/21 passed
    - Full backend tests: 502/502 passed
 
+20. Module 22 — Vapi notification integration
+   - Commit: 2e6d53f
+   - `backend/app/modules/vapi/vapi_event_handler.py` (updated)
+   - `backend/app/modules/vapi/vapi_appointment_capture.py` (updated)
+   - `backend/tests/test_vapi_event_handler.py` (updated)
+   - `backend/tests/test_vapi_appointment_capture.py` (updated)
+   - Module 22 tests: 42/42 passed
+   - Full backend tests: 519/519 passed
+
 ## Next module
-Sprint 1 / Module 22 — Vapi Notification Integration.
+Sprint 1 / Module 23 — Notification API Routes.

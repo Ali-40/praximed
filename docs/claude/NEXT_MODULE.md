@@ -1,138 +1,83 @@
-# Sprint 1 / Module 22 — Vapi Notification Integration
+# Sprint 1 / Module 23 — Notification API Routes
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
 
 ## Completed modules
-1. Module 1: config loader
-2. Module 2: asyncpg pool
-3. Module 3: PostgreSQL schema contract
-4. Module 4: calendar repository
-5. Module 5: availability engine
-6. Module 6: calendar sync service
-7. Module 7: FastAPI skeleton and health routes
-8. Module 8: n8n calendar sync webhook route
-9. Modules 9–10: availability schemas and API routes
-10. Modules 11–12: Vapi prompt builder and tool routes
-11. Modules 13–14: Vapi call logs and call event webhook
-12. Module 15: appointment request schema contract
-13. Module 16: appointment request repository
-14. Module 17: appointment request API schemas and routes
-15. Module 18: Vapi appointment capture integration
-16. Module 19: notification schema contract
-17. Module 20: notification repository
-18. Module 21: notification router service
-
-All are committed. Do not modify completed modules unless absolutely required.
+1–22 all committed. Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Integrate the notification router into existing Vapi flows so important Vapi events create internal notification records.
+Create API schemas and FastAPI routes for internal clinic notifications.
 
 ## Purpose
-PraxisMed should automatically create internal clinic notifications when:
-1. Vapi call event requires human handoff or urgent attention.
-2. Vapi appointment capture creates a new appointment request.
+PraxisMed needs API routes so the future receptionist/doctor dashboard can:
+- list notifications
+- view a specific notification
+- mark notification as read
+- cancel a pending notification
+- manually create an internal notification if needed
 
-This module must not send SMS, push, email, or external webhooks yet.
-It only creates internal notification records through the existing `notification_router` service.
+This module does not send SMS, push, email, or external webhooks.
 
 ## Create or update only
 
-1. `backend/app/modules/vapi/vapi_event_handler.py`
-2. `backend/app/modules/vapi/vapi_appointment_capture.py`
-3. `backend/tests/test_vapi_event_handler.py`
-4. `backend/tests/test_vapi_appointment_capture.py`
-5. `docs/claude/CURRENT_STATE.md`
-6. `docs/claude/NEXT_MODULE.md`
+1. `backend/app/schemas/notifications.py`
+2. `backend/app/api/routes/notifications.py`
+3. `backend/app/api/router.py`
+4. `backend/tests/test_notification_schemas.py`
+5. `backend/tests/test_notification_routes.py`
+6. `docs/claude/CURRENT_STATE.md`
+7. `docs/claude/NEXT_MODULE.md`
 
-Do not create notification API routes yet.
-Do not build SMS, push, email, or frontend.
-Do not modify `notification_repo.py` or `notification_router.py` unless absolutely required.
-Do not use a real database in tests.
+## Schema requirements
 
-## Integration requirements
+### `NotificationCreate`
+- `clinic_id: str` — must not be empty
+- `channel: str = "internal"` — one of: `internal`, `sms`, `push`, `email`, `webhook`
+- `notification_type: str` — one of: `urgent_call`, `human_handoff`, `callback_needed`, `appointment_request`, `cancellation`, `calendar_sync_failure`, `summary_ready`, `system`
+- `title: str` — must not be empty
+- `message: str` — must not be empty
+- `priority: str = "normal"` — one of: `low`, `normal`, `high`, `urgent`, `emergency`
+- `recipient_user_id: str | None = None`
+- `related_resource_type: str | None = None`
+- `related_resource_id: str | None = None`
+- `scheduled_for: datetime | None = None`
+- `raw_payload: dict | None = None`
 
-### A) Update `vapi_event_handler.py`
+### `NotificationResponse`
+- `ok: bool`
+- `notification: dict | None = None`
+- `message: str | None = None`
 
-In `process_vapi_call_event`:
+### `NotificationListResponse`
+- `ok: bool`
+- `notifications: list[dict]`
+- `message: str | None = None`
 
-**Existing behavior must remain** (normalize payload, upsert call log, return ok response).
+## Routes requirements
 
-**Add notification integration:**
+### `POST /notifications`
+Accept `NotificationCreate`, call `notification_repo.create_notification`, return `NotificationResponse`.
 
-- When `event_type == "human_handoff.required"`: call `notification_router.create_urgent_call_notification`
-- When `event_type == "call.ended"` AND (`urgency_level in ["urgent", "emergency"]` OR `action_required` is true): call `create_urgent_call_notification`
-- If notification creation fails, do not fail the call event processing — set `notification_created=False`
-- Return dict includes `notification_created: bool`
+### `GET /notifications`
+Query params: `clinic_id`, `status?`, `priority?`, `notification_type?`, `recipient_user_id?`, `limit=50`.
+Call `notification_repo.list_notifications`, return `NotificationListResponse`.
 
-### B) Update `vapi_appointment_capture.py`
+### `GET /notifications/{notification_id}`
+Query param: `clinic_id`. Call `notification_repo.get_notification_by_id`. 404 if None.
 
-In `capture_vapi_appointment_request`:
+### `POST /notifications/{notification_id}/read`
+Query param: `clinic_id`. Call `notification_repo.mark_notification_read`. 404 if None.
 
-**Existing behavior must remain** (validate, load config, create appointment request, return ok + staff confirmation message).
+### `POST /notifications/{notification_id}/cancel`
+Query param: `clinic_id`. Call `notification_repo.cancel_notification`. 404 if None.
 
-**Add notification integration:**
-
-- After `appointment_request_repo.create_appointment_request` succeeds, call `notification_router.create_appointment_request_notification`
-- If notification fails: `notification_created=False`, but still return `ok=True`
-- If notification succeeds: `notification_created=True`
-- Do not create notification before appointment request creation succeeds
-- Do not confirm or book the appointment
-
-## Testing requirements
-
-### Update `test_vapi_event_handler.py` — add 7 tests
-
-1. `human_handoff.required` creates urgent call notification.
-2. Urgent `call.ended` creates urgent call notification.
-3. `action_required` `call.ended` creates urgent call notification.
-4. Normal `call.ended` does not create notification.
-5. Notification failure does not break successful call event processing.
-6. Process result includes `notification_created=True` when created.
-7. Process result includes `notification_created=False` when skipped or failed.
-
-Existing tests must still pass.
-
-### Update `test_vapi_appointment_capture.py` — add 10 tests
-
-1. Creates appointment request notification after repository success.
-2. Passes `request_id` to notification helper when available.
-3. Passes `patient_name` to notification helper.
-4. Passes `urgency_level` to notification helper.
-5. Does not create notification if appointment request creation fails.
-6. Notification failure does not break successful appointment request capture.
-7. Response includes `notification_created=True` when created.
-8. Response includes `notification_created=False` when notification fails.
-9. Response message still says staff confirmation is required.
-10. Response message does not say appointment is confirmed.
-
-Mock `notification_router` functions in tests. No real database.
-
-## Run
-
-```
-pytest -v backend/tests/test_vapi_event_handler.py
-pytest -v backend/tests/test_vapi_appointment_capture.py
-```
-
-Then run all tests:
-
-```
-pytest -v backend/tests
-```
-
-## Acceptance criteria
-
-- All Module 22 tests pass.
-- All previous tests still pass.
-- No real database connection is used.
-- Human handoff / urgent Vapi events create notification records.
-- Vapi appointment capture creates a notification record.
-- Notification failures do not break the primary flow.
-- No actual SMS/push/email sent.
-- No notification API routes created.
-- Commit all changes only if tests pass.
+### Error handling
+- Missing `db_pool` → HTTP 503
+- Invalid repo input → HTTP 400
+- Not found → HTTP 404
+- Unexpected error → HTTP 500
 
 ## Commit message
 
-`Sprint 1 / Module 22 — Vapi notification integration`
+`Sprint 1 / Module 23 — Notification API routes`
