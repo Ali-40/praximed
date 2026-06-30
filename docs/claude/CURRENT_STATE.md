@@ -221,12 +221,20 @@
    - Full backend tests: 764/764 passed
 
 29. Module 31 — Transcription adapter interface
-   - Commit: 9aa2cb7
+   - Commit: 9aa2cb7 / docs: 13d2fdf
    - `backend/app/modules/transcription/__init__.py`
    - `backend/app/modules/transcription/transcription_service.py`
    - `backend/tests/test_transcription_service.py`
    - Module 31 tests: 27/27 passed
    - Full backend tests: 791/791 passed
 
+30. Module 32 — Clinical summary draft generator
+   - Commit: a1a6498
+   - `backend/app/modules/clinical_summary/__init__.py`
+   - `backend/app/modules/clinical_summary/summary_builder.py`
+   - `backend/tests/test_clinical_summary_builder.py`
+   - Module 32 tests: 41/41 passed
+   - Full backend tests: 832/832 passed
+
 ## Next module
-Sprint 2 / Module 32 — Clinical summary draft generator.
+Sprint 2 / Module 33 — Doctor review and approval workflow.
