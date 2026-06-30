@@ -203,7 +203,7 @@
    - Full backend tests: 702/702 passed
 
 27. Module 29 — Consultation session API routes
-   - Commit: e832a91
+   - Commit: e832a91 / docs: 82895fa
    - `backend/app/schemas/consultations.py`
    - `backend/app/api/routes/consultations.py`
    - `backend/app/api/router.py` (updated)
@@ -212,5 +212,13 @@
    - Module 29 tests: 39/39 passed
    - Full backend tests: 741/741 passed
 
+28. Module 30 — Audio upload placeholder service
+   - Commit: (pending)
+   - `backend/app/modules/audio/__init__.py`
+   - `backend/app/modules/audio/audio_storage.py`
+   - `backend/tests/test_audio_storage.py`
+   - Module 30 tests: 23/23 passed
+   - Full backend tests: 764/764 passed
+
 ## Next module
-Sprint 2 / Module 30 — Architecture Checkpoint 02 (Sprint 2 review before timeline and reporting).
+Sprint 2 / Module 31 — Transcription adapter interface.
