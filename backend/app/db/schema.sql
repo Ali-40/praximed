@@ -370,4 +370,68 @@ CREATE INDEX IF NOT EXISTS idx_patients_clinic_status
 CREATE INDEX IF NOT EXISTS idx_patients_clinic_external_id
     ON patients (clinic_id, external_patient_id);
 
+-- ---------------------------------------------------------------------------
+-- J) consultation_sessions  (Module 27)
+--    One row per patient consultation session.  Tracks the full lifecycle
+--    from recording through transcription, AI summary draft, doctor review,
+--    and final approval.  AI output stays in draft_summary until a doctor
+--    promotes it to approved_summary.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS consultation_sessions (
+    id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id            UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id           UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    doctor_user_id       UUID        REFERENCES clinic_users(id) ON DELETE SET NULL,
+    source               TEXT        NOT NULL DEFAULT 'manual',
+    status               TEXT        NOT NULL DEFAULT 'created',
+    title                TEXT,
+    reason_for_visit     TEXT,
+    audio_file_path      TEXT,
+    transcript_text      TEXT,
+    draft_summary        JSONB,
+    approved_summary     JSONB,
+    approval_status      TEXT        NOT NULL DEFAULT 'not_ready',
+    approved_by_user_id  UUID        REFERENCES clinic_users(id) ON DELETE SET NULL,
+    approved_at          TIMESTAMPTZ,
+    rejected_reason      TEXT,
+    raw_payload          JSONB,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT consultation_sessions_source_check CHECK (
+        source IN ('manual', 'vapi', 'web', 'doctor_mobile', 'system')
+    ),
+    CONSTRAINT consultation_sessions_status_check CHECK (
+        status IN ('created', 'recording', 'audio_uploaded', 'transcribing', 'transcribed', 'draft_ready', 'approved', 'rejected', 'archived')
+    ),
+    CONSTRAINT consultation_sessions_approval_status_check CHECK (
+        approval_status IN ('not_ready', 'pending_review', 'approved', 'rejected')
+    ),
+    CONSTRAINT consultation_sessions_approved_at_check CHECK (
+        (approval_status = 'approved' AND approved_at IS NOT NULL)
+        OR approval_status <> 'approved'
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_created
+    ON consultation_sessions (clinic_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_patient
+    ON consultation_sessions (clinic_id, patient_id);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_doctor
+    ON consultation_sessions (clinic_id, doctor_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_status
+    ON consultation_sessions (clinic_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_approval
+    ON consultation_sessions (clinic_id, approval_status);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_approved_at
+    ON consultation_sessions (clinic_id, approved_at);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_source
+    ON consultation_sessions (clinic_id, source);
+
 COMMIT;

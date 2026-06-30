@@ -179,7 +179,7 @@
    - Full backend tests: 595/595 passed
 
 24. Module 26 — Patient API routes
-   - Commit: b902dba
+   - Commit: b902dba / docs: b8c1515
    - `backend/app/schemas/patients.py`
    - `backend/app/api/routes/patients.py`
    - `backend/app/api/router.py` (updated)
@@ -188,5 +188,12 @@
    - Module 26 tests: 34/34 passed
    - Full backend tests: 629/629 passed
 
+25. Module 27 — Consultation session schema contract
+   - Commit: (pending)
+   - `backend/app/db/schema.sql` — added `consultation_sessions` table
+   - `backend/tests/test_schema_contract.py` — extended to 264 tests
+   - Schema tests: 264/264 passed
+   - Full backend tests: 670/670 passed
+
 ## Next module
-Sprint 2 / Module 27 — Consultation session schema contract.
+Sprint 2 / Module 28 — Consultation session repository.

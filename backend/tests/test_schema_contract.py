@@ -73,6 +73,7 @@ REQUIRED_TABLES = [
     "appointment_requests",
     "clinic_notifications",
     "patients",
+    "consultation_sessions",
 ]
 
 
@@ -144,6 +145,15 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "preferred_language", "status", "notes",
         "raw_payload", "created_at", "updated_at",
     ],
+    "consultation_sessions": [
+        "id", "clinic_id", "patient_id", "doctor_user_id",
+        "source", "status", "title", "reason_for_visit",
+        "audio_file_path", "transcript_text",
+        "draft_summary", "approved_summary",
+        "approval_status", "approved_by_user_id",
+        "approved_at", "rejected_reason",
+        "raw_payload", "created_at", "updated_at",
+    ],
 }
 
 
@@ -197,6 +207,13 @@ REQUIRED_INDEXES = [
     ("idx_patients_clinic_email",       "patients", "email"),
     ("idx_patients_clinic_status",      "patients", "status"),
     ("idx_patients_clinic_external_id", "patients", "external_patient_id"),
+    ("idx_consultation_sessions_clinic_created",    "consultation_sessions", "created_at"),
+    ("idx_consultation_sessions_clinic_patient",    "consultation_sessions", "patient_id"),
+    ("idx_consultation_sessions_clinic_doctor",     "consultation_sessions", "doctor_user_id"),
+    ("idx_consultation_sessions_clinic_status",     "consultation_sessions", "status"),
+    ("idx_consultation_sessions_clinic_approval",   "consultation_sessions", "approval_status"),
+    ("idx_consultation_sessions_clinic_approved_at","consultation_sessions", "approved_at"),
+    ("idx_consultation_sessions_clinic_source",     "consultation_sessions", "source"),
 ]
 
 
@@ -261,6 +278,7 @@ FK_TABLES = [
     "appointment_requests",
     "clinic_notifications",
     "patients",
+    "consultation_sessions",
 ]
 
 
@@ -344,6 +362,7 @@ ON_DELETE_CASCADE_TABLES = [
     ("appointment_requests",         "on delete cascade"),
     ("clinic_notifications",         "on delete cascade"),
     ("patients",                     "on delete cascade"),
+    ("consultation_sessions",        "on delete cascade"),
 ]
 
 
@@ -524,3 +543,101 @@ def test_patients_full_name_nonempty_check(sql_lower: str):
     assert re.search(r"full_name\s*<>\s*''", block), (
         "patients must have CHECK (full_name <> '')"
     )
+
+
+# ---------------------------------------------------------------------------
+# Module 27 — consultation_sessions specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_consultation_sessions_patient_id_fk(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"patient_id\s+uuid.*references\s+patients\s*\(\s*id\s*\)",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions.patient_id must REFERENCES patients(id)"
+
+
+def test_consultation_sessions_patient_id_on_delete_cascade(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"patient_id\s+uuid.*references\s+patients\s*\(\s*id\s*\).*on\s+delete\s+cascade",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions.patient_id FK must be ON DELETE CASCADE"
+
+
+def test_consultation_sessions_doctor_user_id_fk(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"doctor_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\)",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions.doctor_user_id must REFERENCES clinic_users(id)"
+
+
+def test_consultation_sessions_doctor_user_id_on_delete_set_null(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"doctor_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\).*on\s+delete\s+set\s+null",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions.doctor_user_id FK must be ON DELETE SET NULL"
+
+
+def test_consultation_sessions_approved_by_user_id_fk(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"approved_by_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\)",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions.approved_by_user_id must REFERENCES clinic_users(id)"
+
+
+def test_consultation_sessions_approved_by_user_id_on_delete_set_null(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"approved_by_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\).*on\s+delete\s+set\s+null",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions.approved_by_user_id FK must be ON DELETE SET NULL"
+
+
+def test_consultation_sessions_source_check(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(r"check\s*\(.*\bsource\b.*\bin\b", block, re.DOTALL), (
+        "consultation_sessions must have a CHECK constraint on source with IN"
+    )
+    for val in ("'manual'", "'vapi'", "'web'", "'doctor_mobile'", "'system'"):
+        assert val in block, f"consultation_sessions source CHECK must include value {val}"
+
+
+def test_consultation_sessions_status_check(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(r"check\s*\(.*\bstatus\b.*\bin\b", block, re.DOTALL), (
+        "consultation_sessions must have a CHECK constraint on status with IN"
+    )
+    for val in (
+        "'created'", "'recording'", "'audio_uploaded'", "'transcribing'",
+        "'transcribed'", "'draft_ready'", "'approved'", "'rejected'", "'archived'",
+    ):
+        assert val in block, f"consultation_sessions status CHECK must include value {val}"
+
+
+def test_consultation_sessions_approval_status_check(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(r"check\s*\(.*\bapproval_status\b.*\bin\b", block, re.DOTALL), (
+        "consultation_sessions must have a CHECK constraint on approval_status with IN"
+    )
+    for val in ("'not_ready'", "'pending_review'", "'approved'", "'rejected'"):
+        assert val in block, f"consultation_sessions approval_status CHECK must include value {val}"
+
+
+def test_consultation_sessions_approved_at_check(sql_lower: str):
+    block = _table_block(sql_lower, "consultation_sessions")
+    assert re.search(
+        r"approval_status\s*=\s*'approved'.*approved_at\s+is\s+not\s+null",
+        block,
+        re.DOTALL,
+    ), "consultation_sessions must have CHECK (approval_status = 'approved' AND approved_at IS NOT NULL)"
