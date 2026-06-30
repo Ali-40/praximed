@@ -196,11 +196,21 @@
    - Full backend tests: 670/670 passed
 
 26. Module 28 — Consultation session repository
-   - Commit: 45988e0
+   - Commit: 45988e0 / docs: 364cc1a
    - `backend/app/db/repositories/consultation_repo.py`
    - `backend/tests/test_consultation_repo.py`
    - Module 28 tests: 32/32 passed
    - Full backend tests: 702/702 passed
 
+27. Module 29 — Consultation session API routes
+   - Commit: (pending)
+   - `backend/app/schemas/consultations.py`
+   - `backend/app/api/routes/consultations.py`
+   - `backend/app/api/router.py` (updated)
+   - `backend/tests/test_consultation_schemas.py`
+   - `backend/tests/test_consultation_routes.py`
+   - Module 29 tests: 39/39 passed
+   - Full backend tests: 741/741 passed
+
 ## Next module
-Sprint 2 / Module 29 — Consultation session API routes.
+Sprint 2 / Module 30 — Architecture Checkpoint 02 (Sprint 2 review before timeline and reporting).

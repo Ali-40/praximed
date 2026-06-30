@@ -1,4 +1,4 @@
-# Sprint 2 / Module 28 — Consultation Session Repository
+# Sprint 2 / Module 29 — Consultation Session API Routes
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -9,88 +9,116 @@
 - Sprint 2, Module 25: patient repository committed.
 - Sprint 2, Module 26: patient API routes committed.
 - Sprint 2, Module 27: consultation session schema contract committed.
+- Sprint 2, Module 28: consultation session repository committed.
 
 Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Create the database repository layer for consultation_sessions.
+Create API schemas and FastAPI routes for managing consultation sessions.
 
 ## Purpose
-PraxisMed needs a clean repository for consultation sessions before building consultation APIs, audio upload, transcription, AI draft summaries, doctor approval, and patient timelines.
+PraxisMed needs consultation session API routes before building audio upload, transcription, AI draft summaries, doctor approval, and patient timelines.
 
 ## Create or update only
 
-1. `backend/app/db/repositories/consultation_repo.py`
-2. `backend/tests/test_consultation_repo.py`
-3. `docs/claude/CURRENT_STATE.md`
-4. `docs/claude/NEXT_MODULE.md`
+1. `backend/app/schemas/consultations.py`
+2. `backend/app/api/routes/consultations.py`
+3. `backend/app/api/router.py`
+4. `backend/tests/test_consultation_schemas.py`
+5. `backend/tests/test_consultation_routes.py`
+6. `docs/claude/CURRENT_STATE.md`
+7. `docs/claude/NEXT_MODULE.md`
 
-Do not create API routes yet.
-Do not create audio upload code yet.
-Do not create transcription code.
-Do not create AI summary code yet.
+Do not create audio upload service yet.
+Do not create transcription code yet.
+Do not create AI summary generator yet.
 Do not create patient timeline code yet.
 Do not build frontend.
 Do not build authentication.
+Do not modify consultation_repo.py unless absolutely required by tests.
 Do not use a real database in tests.
 
-## Public async functions
+## Schemas
 
-### 1. `create_consultation_session(pool, clinic_id, patient_id, doctor_user_id=None, source="manual", status="created", title=None, reason_for_visit=None, raw_payload=None)`
-- Validate `clinic_id` and `patient_id` not empty.
-- Validate `source` and `status`.
-- INSERT, RETURNING *.
+### ConsultationSessionCreate
+- `clinic_id`: str (not empty)
+- `patient_id`: str (not empty)
+- `doctor_user_id`: str | None = None
+- `source`: str = "manual" (manual, vapi, web, doctor_mobile, system)
+- `status`: str = "created" (valid lifecycle status)
+- `title`: str | None = None
+- `reason_for_visit`: str | None = None
+- `raw_payload`: dict | None = None
 
-### 2. `get_consultation_session_by_id(pool, clinic_id, session_id)`
-- Return matching session or None. Filter by `clinic_id`.
+### ConsultationStatusUpdate
+- `status`: str (valid)
+- `approval_status`: str | None = None (not_ready, pending_review, approved, rejected)
 
-### 3. `list_consultation_sessions(pool, clinic_id, patient_id=None, doctor_user_id=None, status=None, approval_status=None, source=None, limit=50)`
-- Limit 1–100. Validate `status`, `approval_status`, `source` if provided.
-- Optional filters: `patient_id`, `doctor_user_id`.
+### ConsultationAudioAttach
+- `audio_file_path`: str (not empty)
 
-### 4. `update_consultation_status(pool, clinic_id, session_id, status, approval_status=None)`
-- Validate `status` and `approval_status` if provided.
+### ConsultationTranscriptSave
+- `transcript_text`: str (not empty)
 
-### 5. `attach_audio_to_session(pool, clinic_id, session_id, audio_file_path)`
-- Validate `audio_file_path` not empty. Set `status='audio_uploaded'`.
+### ConsultationDraftSummarySave
+- `draft_summary`: dict (non-empty)
 
-### 6. `save_transcript(pool, clinic_id, session_id, transcript_text)`
-- Validate `transcript_text` not empty. Set `status='transcribed'`.
+### ConsultationApprove
+- `approved_summary`: dict (non-empty)
+- `approved_by_user_id`: str (not empty)
 
-### 7. `save_draft_summary(pool, clinic_id, session_id, draft_summary)`
-- Validate `draft_summary` is non-empty dict. Set `status='draft_ready'`, `approval_status='pending_review'`.
+### ConsultationReject
+- `rejected_reason`: str (not empty)
+- `rejected_by_user_id`: str | None = None
 
-### 8. `approve_consultation_summary(pool, clinic_id, session_id, approved_summary, approved_by_user_id)`
-- Validate `approved_summary` non-empty dict and `approved_by_user_id` not empty.
-- Set `approved_at=now()`, `status='approved'`, `approval_status='approved'`.
+### ConsultationResponse / ConsultationListResponse
 
-### 9. `reject_consultation_summary(pool, clinic_id, session_id, rejected_reason, rejected_by_user_id=None)`
-- Validate `rejected_reason` not empty.
-- Set `status='rejected'`, `approval_status='rejected'`.
+## Routes
 
-### 10. `archive_consultation_session(pool, clinic_id, session_id)`
-- Set `status='archived'`. Return updated row.
+1. `POST /consultations` → create_consultation_session → ConsultationResponse
+2. `GET /consultations` → list_consultation_sessions (query: clinic_id, patient_id, doctor_user_id, status, approval_status, source, limit=50) → ConsultationListResponse
+3. `GET /consultations/{session_id}` → get_consultation_session_by_id (query: clinic_id) → ConsultationResponse | 404
+4. `PATCH /consultations/{session_id}/status` → update_consultation_status (query: clinic_id) → ConsultationResponse | 404
+5. `POST /consultations/{session_id}/audio` → attach_audio_to_session → ConsultationResponse | 404
+6. `POST /consultations/{session_id}/transcript` → save_transcript → ConsultationResponse | 404
+7. `POST /consultations/{session_id}/draft-summary` → save_draft_summary → ConsultationResponse | 404
+8. `POST /consultations/{session_id}/approve` → approve_consultation_summary → ConsultationResponse | 404
+9. `POST /consultations/{session_id}/reject` → reject_consultation_summary → ConsultationResponse | 404
+10. `POST /consultations/{session_id}/archive` → archive_consultation_session → ConsultationResponse | 404
 
-## Tests required (31 tests)
+### Error handling
+- Missing db_pool → HTTP 503
+- InvalidConsultationSessionError → HTTP 400
+- Not found → HTTP 404
+- Unexpected error → HTTP 500
 
-1–5. create_consultation_session: calls fetchrow, validates clinic_id, patient_id, source, status.
-6. get_consultation_session_by_id calls fetchrow and filters by clinic_id.
-7–13. list_consultation_sessions: calls fetch, validates limit, status, approval_status, source, patient_id filter, doctor_user_id filter.
-14–16. update_consultation_status: calls fetchrow, validates status, validates approval_status.
-17–18. attach_audio_to_session: calls fetchrow, validates empty path.
-19–20. save_transcript: calls fetchrow, validates empty text.
-21–22. save_draft_summary: calls fetchrow, validates empty summary.
-23–25. approve_consultation_summary: calls fetchrow, validates empty summary, validates empty approver.
-26–27. reject_consultation_summary: calls fetchrow, validates empty reason.
-28. archive_consultation_session calls fetchrow.
-29. SQL uses parameterized placeholders.
-30. approve SQL sets approved_at=now().
-31. save_draft_summary SQL sets approval_status='pending_review'.
+## Tests
+
+### test_consultation_schemas.py (16 tests)
+1–5. ConsultationSessionCreate: valid, empty clinic_id, empty patient_id, invalid source, invalid status.
+6–8. ConsultationStatusUpdate: valid, invalid status, invalid approval_status.
+9–14. Field validation: audio_file_path, transcript_text, draft_summary, approved_summary, approved_by_user_id, rejected_reason.
+15–16. ConsultationResponse, ConsultationListResponse.
+
+### test_consultation_routes.py (19+ tests)
+1–2. POST create: 200, calls repo.
+3–4. GET list: 200, passes all filters.
+5–6. GET by id: 200, 404.
+7–8. PATCH status: 200, 404.
+9. POST audio: 200.
+10. POST transcript: 200.
+11. POST draft-summary: 200.
+12. POST approve: 200.
+13. POST reject: 200.
+14. POST archive: 200.
+15–18. Error handling: 503, 422, 400, 500.
+19. Existing routes still work.
 
 ## Run
 
 ```
-pytest -v backend/tests/test_consultation_repo.py
+pytest -v backend/tests/test_consultation_schemas.py
+pytest -v backend/tests/test_consultation_routes.py
 ```
 
 Then run all tests:
@@ -101,14 +129,15 @@ pytest -v backend/tests
 
 ## Acceptance criteria
 
-- All Module 28 tests pass.
+- All Module 29 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only consultation_repo.py, its tests, and orchestration docs are changed.
-- No API route yet.
-- No audio/transcription/summary code yet.
+- Consultation API routes are mounted.
+- No real audio upload yet.
+- No transcription code yet.
+- No AI summary generation yet.
 - Commit all changes only if tests pass.
 
 ## Commit message
 
-`Sprint 2 / Module 28 — Consultation session repository`
+`Sprint 2 / Module 29 — Consultation session API routes`
