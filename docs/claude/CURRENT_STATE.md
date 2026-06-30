@@ -196,7 +196,7 @@
    - Full backend tests: 670/670 passed
 
 26. Module 28 — Consultation session repository
-   - Commit: (pending)
+   - Commit: 45988e0
    - `backend/app/db/repositories/consultation_repo.py`
    - `backend/tests/test_consultation_repo.py`
    - Module 28 tests: 32/32 passed
