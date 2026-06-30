@@ -213,12 +213,20 @@
    - Full backend tests: 741/741 passed
 
 28. Module 30 — Audio upload placeholder service
-   - Commit: 1ccc797
+   - Commit: 1ccc797 / docs: 2b31c13
    - `backend/app/modules/audio/__init__.py`
    - `backend/app/modules/audio/audio_storage.py`
    - `backend/tests/test_audio_storage.py`
    - Module 30 tests: 23/23 passed
    - Full backend tests: 764/764 passed
 
+29. Module 31 — Transcription adapter interface
+   - Commit: (pending)
+   - `backend/app/modules/transcription/__init__.py`
+   - `backend/app/modules/transcription/transcription_service.py`
+   - `backend/tests/test_transcription_service.py`
+   - Module 31 tests: 27/27 passed
+   - Full backend tests: 791/791 passed
+
 ## Next module
-Sprint 2 / Module 31 — Transcription adapter interface.
+Sprint 2 / Module 32 — Clinical summary draft generator.
