@@ -72,6 +72,7 @@ REQUIRED_TABLES = [
     "clinic_call_logs",
     "appointment_requests",
     "clinic_notifications",
+    "patients",
 ]
 
 
@@ -137,6 +138,12 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "scheduled_for", "sent_at", "read_at",
         "error_message", "raw_payload", "created_at", "updated_at",
     ],
+    "patients": [
+        "id", "clinic_id", "external_patient_id",
+        "full_name", "date_of_birth", "phone", "email",
+        "preferred_language", "status", "notes",
+        "raw_payload", "created_at", "updated_at",
+    ],
 }
 
 
@@ -183,6 +190,13 @@ REQUIRED_INDEXES = [
     ("idx_clinic_notifications_clinic_recipient",  "clinic_notifications", "recipient_user_id"),
     ("idx_clinic_notifications_clinic_scheduled",  "clinic_notifications", "scheduled_for"),
     ("idx_clinic_notifications_clinic_resource",   "clinic_notifications", "related_resource_type"),
+    ("idx_patients_clinic_created",     "patients", "created_at"),
+    ("idx_patients_clinic_full_name",   "patients", "full_name"),
+    ("idx_patients_clinic_dob",         "patients", "date_of_birth"),
+    ("idx_patients_clinic_phone",       "patients", "phone"),
+    ("idx_patients_clinic_email",       "patients", "email"),
+    ("idx_patients_clinic_status",      "patients", "status"),
+    ("idx_patients_clinic_external_id", "patients", "external_patient_id"),
 ]
 
 
@@ -246,6 +260,7 @@ FK_TABLES = [
     "clinic_call_logs",
     "appointment_requests",
     "clinic_notifications",
+    "patients",
 ]
 
 
@@ -328,6 +343,7 @@ ON_DELETE_CASCADE_TABLES = [
     ("clinic_call_logs",             "on delete cascade"),
     ("appointment_requests",         "on delete cascade"),
     ("clinic_notifications",         "on delete cascade"),
+    ("patients",                     "on delete cascade"),
 ]
 
 
@@ -472,3 +488,39 @@ def test_clinic_notifications_status_check(sql_lower: str):
     )
     for val in ("'pending'", "'sent'", "'failed'", "'read'", "'cancelled'"):
         assert val in block, f"clinic_notifications status CHECK must include value {val}"
+
+
+# ---------------------------------------------------------------------------
+# Module 24 — patients specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_patients_unique_clinic_external_id(sql_lower: str):
+    block = _table_block(sql_lower, "patients")
+    assert re.search(
+        r"unique\s*\(\s*clinic_id\s*,\s*external_patient_id\s*\)",
+        block,
+    ), "patients must have UNIQUE(clinic_id, external_patient_id)"
+
+
+def test_patients_status_check(sql_lower: str):
+    block = _table_block(sql_lower, "patients")
+    assert re.search(r"check\s*\(.*\bstatus\b.*\bin\b", block, re.DOTALL), (
+        "patients must have a CHECK constraint on status with IN"
+    )
+    for val in ("'active'", "'inactive'", "'archived'"):
+        assert val in block, f"patients status CHECK must include value {val}"
+
+
+def test_patients_preferred_language_nonempty_check(sql_lower: str):
+    block = _table_block(sql_lower, "patients")
+    assert re.search(r"preferred_language\s*<>\s*''", block), (
+        "patients must have CHECK (preferred_language <> '')"
+    )
+
+
+def test_patients_full_name_nonempty_check(sql_lower: str):
+    block = _table_block(sql_lower, "patients")
+    assert re.search(r"full_name\s*<>\s*''", block), (
+        "patients must have CHECK (full_name <> '')"
+    )

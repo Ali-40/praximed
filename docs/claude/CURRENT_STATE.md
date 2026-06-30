@@ -158,8 +158,10 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 01 created: `docs/claude/ARCHITECTURE_CHECKPOINT_01.md`
+- Commit: 9e66dbd
+- Full backend tests: 545/545 passed
 - Sprint 1 complete (Modules 1–23)
-- Sprint 2 scope defined: Clinical Documentation Engine (Modules 24–34)
+- Sprint 2 started: Clinical Documentation Engine (Modules 24–34)
 
 ## Next module
 Sprint 2 / Module 24 — Patient Schema Contract.

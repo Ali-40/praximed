@@ -316,4 +316,58 @@ CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_scheduled
 CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_resource
     ON clinic_notifications (clinic_id, related_resource_type, related_resource_id);
 
+-- ---------------------------------------------------------------------------
+-- I) patients  (Module 24)
+--    Multi-tenant patient identity and contact data.
+--    Stores only admin/identity/contact information — no clinical notes,
+--    diagnosis, or consultation data (those belong in future tables).
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS patients (
+    id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id            UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    external_patient_id  TEXT,
+    full_name            TEXT        NOT NULL,
+    date_of_birth        DATE,
+    phone                TEXT,
+    email                TEXT,
+    preferred_language   TEXT        NOT NULL DEFAULT 'de-AT',
+    status               TEXT        NOT NULL DEFAULT 'active',
+    notes                TEXT,
+    raw_payload          JSONB,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (clinic_id, external_patient_id),
+    CONSTRAINT patients_status_check CHECK (
+        status IN ('active', 'inactive', 'archived')
+    ),
+    CONSTRAINT patients_preferred_language_check CHECK (
+        preferred_language <> ''
+    ),
+    CONSTRAINT patients_full_name_check CHECK (
+        full_name <> ''
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_created
+    ON patients (clinic_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_full_name
+    ON patients (clinic_id, full_name);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_dob
+    ON patients (clinic_id, date_of_birth);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_phone
+    ON patients (clinic_id, phone);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_email
+    ON patients (clinic_id, email);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_status
+    ON patients (clinic_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_patients_clinic_external_id
+    ON patients (clinic_id, external_patient_id);
+
 COMMIT;
