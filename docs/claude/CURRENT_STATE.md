@@ -291,13 +291,13 @@
    - Full backend tests: 1006/1006 passed
 
 36. Module 38 — Apply tenant guards to appointment and notification routes
-   - Commit: TBD
+   - Commit: 251e82d
    - `backend/app/api/routes/appointment_requests.py` (updated)
    - `backend/app/api/routes/notifications.py` (updated)
    - `backend/tests/test_appointment_request_routes.py` (updated)
    - `backend/tests/test_notification_routes.py` (updated)
-   - Module 38 tests: TBD
-   - Full backend tests: TBD
+   - Module 38 tests: 12/12 new passed (6 appointment_requests + 6 notifications)
+   - Full backend tests: 1018/1018 passed
 
 ## Next module
-Sprint 3 / Module 38 — Apply tenant guards to appointment and notification routes (in progress).
+Sprint 3 — next module TBD.
