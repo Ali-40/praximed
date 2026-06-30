@@ -69,6 +69,7 @@ REQUIRED_TABLES = [
     "clinic_calendar_blocks",
     "clinic_calendar_sync_events",
     "audit_log",
+    "clinic_call_logs",
 ]
 
 
@@ -111,6 +112,13 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "id", "clinic_id", "actor_type", "actor_id", "action",
         "resource_type", "resource_id", "metadata", "created_at",
     ],
+    "clinic_call_logs": [
+        "id", "clinic_id", "provider", "external_call_id",
+        "caller_phone", "direction", "call_status",
+        "started_at", "ended_at", "duration_seconds",
+        "transcript_text", "summary", "action_required",
+        "urgency_level", "raw_payload", "created_at", "updated_at",
+    ],
 }
 
 
@@ -140,6 +148,10 @@ REQUIRED_INDEXES = [
     ("idx_clinic_calendar_blocks_clinic_type",    "clinic_calendar_blocks",       "block_type"),
     ("idx_clinic_calendar_sync_events_clinic_created", "clinic_calendar_sync_events", "created_at"),
     ("idx_audit_log_clinic_created",              "audit_log",                    "created_at"),
+    ("idx_clinic_call_logs_clinic_created",       "clinic_call_logs",             "created_at"),
+    ("idx_clinic_call_logs_clinic_status",        "clinic_call_logs",             "call_status"),
+    ("idx_clinic_call_logs_clinic_action",        "clinic_call_logs",             "action_required"),
+    ("idx_clinic_call_logs_clinic_urgency",       "clinic_call_logs",             "urgency_level"),
 ]
 
 
@@ -200,6 +212,7 @@ FK_TABLES = [
     "clinic_calendar_blocks",
     "clinic_calendar_sync_events",
     "audit_log",
+    "clinic_call_logs",
 ]
 
 
@@ -279,6 +292,7 @@ ON_DELETE_CASCADE_TABLES = [
     ("clinic_calendar_connections",  "on delete cascade"),
     ("clinic_calendar_blocks",       "on delete cascade"),
     ("clinic_calendar_sync_events",  "on delete cascade"),
+    ("clinic_call_logs",             "on delete cascade"),
 ]
 
 
@@ -295,3 +309,11 @@ def test_audit_log_fk_on_delete_set_null(sql_lower: str):
     assert "on delete set null" in block, (
         "audit_log FK to clinics must be ON DELETE SET NULL"
     )
+
+
+def test_call_logs_unique_triple(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_call_logs")
+    assert re.search(
+        r"unique\s*\(\s*clinic_id\s*,\s*provider\s*,\s*external_call_id\s*\)",
+        block,
+    ), "clinic_call_logs must have UNIQUE(clinic_id, provider, external_call_id)"

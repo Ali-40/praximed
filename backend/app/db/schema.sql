@@ -161,4 +161,42 @@ CREATE INDEX IF NOT EXISTS idx_clinic_calendar_sync_events_clinic_created
 CREATE INDEX IF NOT EXISTS idx_audit_log_clinic_created
     ON audit_log (clinic_id, created_at);
 
+-- ---------------------------------------------------------------------------
+-- clinic_call_logs  (Module 13)
+-- One row per inbound/outbound phone call handled by the Vapi voice agent.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS clinic_call_logs (
+    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id           UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    provider            TEXT        NOT NULL DEFAULT 'vapi',
+    external_call_id    TEXT        NOT NULL,
+    caller_phone        TEXT,
+    direction           TEXT        NOT NULL DEFAULT 'inbound',
+    call_status         TEXT        NOT NULL,
+    started_at          TIMESTAMPTZ,
+    ended_at            TIMESTAMPTZ,
+    duration_seconds    INTEGER,
+    transcript_text     TEXT,
+    summary             TEXT,
+    action_required     BOOLEAN     NOT NULL DEFAULT false,
+    urgency_level       TEXT        NOT NULL DEFAULT 'normal',
+    raw_payload         JSONB,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (clinic_id, provider, external_call_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_call_logs_clinic_created
+    ON clinic_call_logs (clinic_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_call_logs_clinic_status
+    ON clinic_call_logs (clinic_id, call_status);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_call_logs_clinic_action
+    ON clinic_call_logs (clinic_id, action_required);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_call_logs_clinic_urgency
+    ON clinic_call_logs (clinic_id, urgency_level);
+
 COMMIT;
