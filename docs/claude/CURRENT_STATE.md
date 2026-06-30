@@ -290,5 +290,14 @@
    - Module 37 tests: 17/17 new passed (5 patient + 6 consultation + 6 clinical_workflows)
    - Full backend tests: 1006/1006 passed
 
+36. Module 38 — Apply tenant guards to appointment and notification routes
+   - Commit: TBD
+   - `backend/app/api/routes/appointment_requests.py` (updated)
+   - `backend/app/api/routes/notifications.py` (updated)
+   - `backend/tests/test_appointment_request_routes.py` (updated)
+   - `backend/tests/test_notification_routes.py` (updated)
+   - Module 38 tests: TBD
+   - Full backend tests: TBD
+
 ## Next module
-Sprint 3 — next module TBD.
+Sprint 3 / Module 38 — Apply tenant guards to appointment and notification routes (in progress).

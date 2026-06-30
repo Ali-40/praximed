@@ -1,8 +1,11 @@
 """
 Appointment Request API routes — PraxisMed Sprint 1 / Module 17
+Updated: Sprint 3 / Module 38 — tenant guards applied (staff-level access)
 
 Exposes seven endpoints under /appointment-requests for creating, listing,
 fetching, updating, assigning, and archiving appointment requests.
+
+Access policy: owner, admin, doctor, staff — clinic_id must match caller.
 """
 
 from __future__ import annotations
@@ -12,7 +15,9 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.app.api.dependencies.auth import get_auth_context, require_staff_clinic_access
 from backend.app.api.deps import get_db_pool
+from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import appointment_request_repo
 from backend.app.db.repositories.appointment_request_repo import InvalidAppointmentRequestError
 from backend.app.schemas.appointment_requests import (
@@ -32,7 +37,9 @@ router = APIRouter(prefix="/appointment-requests", tags=["appointment-requests"]
 async def create_appointment_request(
     body: AppointmentRequestCreate,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestResponse:
+    require_staff_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         row = await appointment_request_repo.create_appointment_request(
             pool=pool,
@@ -65,7 +72,9 @@ async def list_appointment_requests(
     action_required: Optional[bool] = Query(None),
     limit: int = Query(50),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestListResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         rows = await appointment_request_repo.list_appointment_requests(
             pool=pool,
@@ -88,7 +97,9 @@ async def get_appointment_request(
     request_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await appointment_request_repo.get_appointment_request_by_id(
             pool=pool,
@@ -113,7 +124,9 @@ async def update_appointment_request_status(
     body: AppointmentRequestUpdateStatus,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await appointment_request_repo.update_appointment_request_status(
             pool=pool,
@@ -140,7 +153,9 @@ async def assign_appointment_request(
     body: AppointmentRequestAssign,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await appointment_request_repo.assign_appointment_request(
             pool=pool,
@@ -165,7 +180,9 @@ async def mark_callback_needed(
     request_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await appointment_request_repo.mark_callback_needed(
             pool=pool,
@@ -189,7 +206,9 @@ async def archive_appointment_request(
     request_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> AppointmentRequestResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await appointment_request_repo.archive_appointment_request(
             pool=pool,
