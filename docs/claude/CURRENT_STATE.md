@@ -300,13 +300,13 @@
    - Full backend tests: 1018/1018 passed
 
 37. Module 39 — Machine access foundation
-   - Commit: TBD
+   - Commit: fb9d31d
    - `backend/app/core/machine_auth.py` (new)
    - `backend/app/api/dependencies/machine_auth.py` (new)
    - `backend/tests/test_machine_auth.py` (new)
    - `backend/tests/test_machine_auth_dependencies.py` (new)
-   - Module 39 tests: TBD
-   - Full backend tests: TBD
+   - Module 39 tests: 45/45 passed (30 core + 15 dependencies)
+   - Full backend tests: 1063/1063 passed
 
 ## Next module
-Sprint 3 / Module 39 — Machine access foundation (in progress).
+Sprint 3 — next module TBD.
