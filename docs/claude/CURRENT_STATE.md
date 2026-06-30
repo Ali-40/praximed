@@ -260,7 +260,7 @@
 - Sprint 3 started: Clinical Workflow API Routes (Module 35+)
 
 33. Module 35 — Clinical workflow API routes
-   - Commit: 9c36593
+   - Commit: 9c36593 / docs: aa05911
    - `backend/app/schemas/clinical_workflows.py`
    - `backend/app/api/routes/clinical_workflows.py`
    - `backend/app/api/router.py` (updated)
@@ -269,5 +269,15 @@
    - Module 35 tests: 47/47 passed (18 schema + 29 routes)
    - Full backend tests: 955/955 passed
 
+34. Module 36 — Auth and tenant access foundation
+   - Commit: 711ddfb
+   - `backend/app/core/auth_context.py`
+   - `backend/app/api/dependencies/__init__.py`
+   - `backend/app/api/dependencies/auth.py`
+   - `backend/tests/test_auth_context.py`
+   - `backend/tests/test_auth_dependencies.py`
+   - Module 36 tests: 34/34 passed (23 context + 11 dependencies)
+   - Full backend tests: 989/989 passed
+
 ## Next module
-Sprint 3 / Module 36 — TBD.
+Sprint 3 / Module 37 — TBD.
