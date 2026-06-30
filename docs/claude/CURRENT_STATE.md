@@ -189,7 +189,7 @@
    - Full backend tests: 629/629 passed
 
 25. Module 27 — Consultation session schema contract
-   - Commit: (pending)
+   - Commit: 8cfe4a9
    - `backend/app/db/schema.sql` — added `consultation_sessions` table
    - `backend/tests/test_schema_contract.py` — extended to 264 tests
    - Schema tests: 264/264 passed
