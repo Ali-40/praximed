@@ -254,7 +254,7 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 02 created: `docs/claude/ARCHITECTURE_CHECKPOINT_02.md`
-- Commit: TBD
+- Commit: 7e478c5
 - Full backend tests: 908/908 passed
 - Sprint 2 complete (Modules 24–34)
 - Sprint 3 started: Clinical Workflow API Routes (Module 35+)
