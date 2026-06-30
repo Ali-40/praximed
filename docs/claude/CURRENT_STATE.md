@@ -59,8 +59,17 @@
    - Schema tests: 158/158 passed
    - Full backend tests: 349/349 passed
 
+14. Module 16 — Appointment request repository
+   - Commit: d7707c2
+   - `backend/app/db/repositories/appointment_request_repo.py`
+   - `backend/tests/test_appointment_request_repo.py`
+   - Module 16 tests: 20/20 passed
+   - Full backend tests: 369/369 passed
+
 ## Latest git log expected
 
+- Sprint 1 / Module 16 — Appointment request repository
+- Populate Claude orchestration docs for Module 16
 - Sprint 1 / Module 15 — Appointment request schema contract
 - Populate Claude orchestration docs for Module 15
 - Add Claude orchestration docs
@@ -77,4 +86,4 @@
 - Sprint 1 Module 1: secure clinic config loader
 
 ## Next module
-Sprint 1 / Module 16 — Appointment Request Repository.
+Sprint 1 / Module 17 — Appointment Request API Schemas and Routes.

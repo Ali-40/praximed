@@ -1,4 +1,4 @@
-# Sprint 1 / Module 16 — Appointment Request Repository
+# Sprint 1 / Module 17 — Appointment Request API Schemas and Routes
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -16,122 +16,195 @@
 10. Modules 11–12: Vapi prompt builder and tool routes
 11. Modules 13–14: Vapi call logs and call event webhook
 12. Module 15: appointment request schema contract
+13. Module 16: appointment request repository
 
 All are committed. Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Create the database repository layer for appointment_requests.
+Create API schemas and FastAPI routes for managing appointment requests.
 
-Create only:
-1. `backend/app/db/repositories/appointment_request_repo.py`
-2. `backend/tests/test_appointment_request_repo.py`
+Create or update only:
+1. `backend/app/schemas/appointment_requests.py`
+2. `backend/app/api/routes/appointment_requests.py`
+3. `backend/app/api/router.py`
+4. `backend/tests/test_appointment_request_schemas.py`
+5. `backend/tests/test_appointment_request_routes.py`
 
-Do not create API routes yet.
 Do not modify Vapi modules yet.
 Do not build WhatsApp.
 Do not build frontend.
+Do not create authentication.
 Do not use a real database in tests.
 
-## Repository requirements
+## Schemas required
 
-### Custom exceptions
-- `AppointmentRequestRepoError`
-- `InvalidAppointmentRequestError`
+### 1. `AppointmentRequestCreate`
+Fields:
+- `clinic_id: str`
+- `source: str`
+- `patient_name: str`
+- `source_ref: str | None = None`
+- `patient_phone: str | None = None`
+- `patient_email: str | None = None`
+- `date_of_birth: date | None = None`
+- `reason: str | None = None`
+- `preferred_starts_at: datetime | None = None`
+- `preferred_ends_at: datetime | None = None`
+- `urgency_level: str = "normal"`
+- `raw_payload: dict | None = None`
 
-### Public async functions
+Validation:
+- `clinic_id` not empty
+- `patient_name` not empty
+- `source` in: `vapi`, `whatsapp`, `web`, `staff`, `system`
+- `urgency_level` in: `low`, `normal`, `urgent`, `emergency`
+- If both `preferred_starts_at` and `preferred_ends_at` are provided, `preferred_ends_at` must be after `preferred_starts_at`
 
-#### 1. `create_appointment_request`
-```
-create_appointment_request(
-    pool,
-    clinic_id,
-    source,
-    patient_name,
-    source_ref=None,
-    patient_phone=None,
-    patient_email=None,
-    date_of_birth=None,
-    reason=None,
-    preferred_starts_at=None,
-    preferred_ends_at=None,
-    status="new",
-    urgency_level="normal",
-    action_required=True,
-    assigned_user_id=None,
-    raw_payload=None,
-)
-```
+### 2. `AppointmentRequestUpdateStatus`
+Fields:
+- `status: str`
+- `action_required: bool | None = None`
 
-Behavior:
-- Validate clinic_id, source, and patient_name are not empty.
-- Validate preferred_ends_at > preferred_starts_at if both are provided.
-- Validate source is one of: vapi, whatsapp, web, staff, system.
-- Validate status is one of: new, confirmed, rejected, callback_needed, cancelled, archived.
-- Validate urgency_level is one of: low, normal, urgent, emergency.
-- Use parameterized SQL only.
-- Insert into appointment_requests.
-- Return created row.
+Validation:
+- `status` in: `new`, `confirmed`, `rejected`, `callback_needed`, `cancelled`, `archived`
 
-#### 2. `get_appointment_request_by_id(pool, clinic_id, request_id)`
-- Return matching row or None.
-- Must filter by clinic_id.
+### 3. `AppointmentRequestAssign`
+Fields:
+- `assigned_user_id: str`
 
-#### 3. `list_appointment_requests(pool, clinic_id, status=None, action_required=None, limit=50)`
-- Return recent appointment requests.
-- Limit must be between 1 and 100.
-- Optional filters for status and action_required.
-- Must filter by clinic_id.
+Validation:
+- `assigned_user_id` not empty
 
-#### 4. `update_appointment_request_status(pool, clinic_id, request_id, status, action_required=None)`
-- Validate status.
-- Update status and optionally action_required.
-- Return updated row.
+### 4. `AppointmentRequestResponse`
+Fields:
+- `ok: bool`
+- `request: dict | None = None`
+- `message: str | None = None`
 
-#### 5. `assign_appointment_request(pool, clinic_id, request_id, assigned_user_id)`
-- Assign request to a clinic user.
-- Return updated row.
+### 5. `AppointmentRequestListResponse`
+Fields:
+- `ok: bool`
+- `requests: list[dict]`
+- `message: str | None = None`
 
-#### 6. `mark_callback_needed(pool, clinic_id, request_id)`
-- Set status to callback_needed and action_required to true.
-- Return updated row.
+## Routes required
 
-#### 7. `archive_appointment_request(pool, clinic_id, request_id)`
-- Set status to archived and action_required to false.
-- Return updated row.
+### 1. `POST /appointment-requests`
+- Accept `AppointmentRequestCreate`
+- Use existing `get_db_pool` dependency
+- Call `appointment_request_repo.create_appointment_request`
+- Return `AppointmentRequestResponse`
 
-## Tests required
-1. create_appointment_request calls fetchrow.
-2. create_appointment_request raises InvalidAppointmentRequestError for empty clinic_id.
-3. create_appointment_request raises InvalidAppointmentRequestError for empty patient_name.
-4. create_appointment_request validates invalid source.
-5. create_appointment_request validates invalid status.
-6. create_appointment_request validates invalid urgency_level.
-7. create_appointment_request validates invalid preferred time range.
-8. get_appointment_request_by_id calls fetchrow and filters by clinic_id.
-9. list_appointment_requests calls fetch.
-10. list_appointment_requests validates limit.
-11. list_appointment_requests supports status filter.
-12. list_appointment_requests supports action_required filter.
-13. update_appointment_request_status calls fetchrow.
-14. update_appointment_request_status validates status.
-15. assign_appointment_request calls fetchrow.
-16. mark_callback_needed calls fetchrow.
-17. archive_appointment_request calls fetchrow.
-18. SQL uses parameterized placeholders, not string formatting.
+### 2. `GET /appointment-requests`
+Query params:
+- `clinic_id: str`
+- `status: str | None = None`
+- `action_required: bool | None = None`
+- `limit: int = 50`
+
+- Call `appointment_request_repo.list_appointment_requests`
+- Return `AppointmentRequestListResponse`
+
+### 3. `GET /appointment-requests/{request_id}`
+Query params:
+- `clinic_id: str`
+
+- Call `appointment_request_repo.get_appointment_request_by_id`
+- If `None`, return 404
+- Return `AppointmentRequestResponse`
+
+### 4. `PATCH /appointment-requests/{request_id}/status`
+Query params:
+- `clinic_id: str`
+
+Body:
+- `AppointmentRequestUpdateStatus`
+
+- Call `appointment_request_repo.update_appointment_request_status`
+- Return `AppointmentRequestResponse`
+
+### 5. `PATCH /appointment-requests/{request_id}/assign`
+Query params:
+- `clinic_id: str`
+
+Body:
+- `AppointmentRequestAssign`
+
+- Call `appointment_request_repo.assign_appointment_request`
+- Return `AppointmentRequestResponse`
+
+### 6. `POST /appointment-requests/{request_id}/callback-needed`
+Query params:
+- `clinic_id: str`
+
+- Call `appointment_request_repo.mark_callback_needed`
+- Return `AppointmentRequestResponse`
+
+### 7. `POST /appointment-requests/{request_id}/archive`
+Query params:
+- `clinic_id: str`
+
+- Call `appointment_request_repo.archive_appointment_request`
+- Return `AppointmentRequestResponse`
+
+## Error handling
+- Missing `db_pool` → HTTP 503 via existing dependency
+- Invalid repository input (`InvalidAppointmentRequestError`) → HTTP 400
+- Not found → HTTP 404
+- Unexpected repository error → HTTP 500
+
+## Tests for schemas
+1. Valid create schema passes.
+2. Empty `clinic_id` fails.
+3. Empty `patient_name` fails.
+4. Invalid `source` fails.
+5. Invalid `urgency_level` fails.
+6. Invalid preferred time range fails.
+7. Valid status update passes.
+8. Invalid status update fails.
+9. Empty `assigned_user_id` fails.
+
+## Tests for routes
+Use FastAPI `TestClient`.
+No real database.
+Attach fake `db_pool` to `app.state`.
+Use `monkeypatch` to mock `appointment_request_repo` functions.
+
+Test cases:
+1. `POST /appointment-requests` returns 200.
+2. POST route calls `create_appointment_request`.
+3. `GET /appointment-requests` returns 200 list.
+4. GET list passes `status`/`action_required`/`limit` filters.
+5. `GET /appointment-requests/{id}` returns 200 when found.
+6. `GET /appointment-requests/{id}` returns 404 when repo returns `None`.
+7. `PATCH` status route returns 200.
+8. `PATCH` assign route returns 200.
+9. `POST` callback-needed route returns 200.
+10. `POST` archive route returns 200.
+11. Missing `db_pool` returns 503.
+12. Invalid request body returns 422.
+13. Repository validation error maps to 400.
+14. Unexpected repository error maps to 500.
+15. Existing health, Vapi, and availability routes still work.
 
 ## Run
-`pytest -v backend/tests/test_appointment_request_repo.py`
+```
+pytest -v backend/tests/test_appointment_request_schemas.py
+pytest -v backend/tests/test_appointment_request_routes.py
+```
 
 Then run all tests:
-`pytest -v backend/tests`
+```
+pytest -v backend/tests
+```
 
 ## Acceptance criteria
-- All Module 16 tests pass.
+- All Module 17 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only appointment_request_repo.py and its tests are created.
-- CURRENT_STATE.md and NEXT_MODULE.md are updated.
+- Appointment request routes are mounted.
+- Do not build Vapi appointment capture yet.
 - Commit all changes only if tests pass.
 
 ## Commit message
-`Sprint 1 / Module 16 — Appointment request repository`
+`Sprint 1 / Module 17 — Appointment request API routes`
