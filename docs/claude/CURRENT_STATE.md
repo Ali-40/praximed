@@ -280,15 +280,15 @@
    - Full backend tests: 989/989 passed
 
 35. Module 37 — Apply tenant guards to clinical PHI routes
-   - Commit: TBD
+   - Commit: 5211f7c
    - `backend/app/api/routes/patients.py` (updated)
    - `backend/app/api/routes/consultations.py` (updated)
    - `backend/app/api/routes/clinical_workflows.py` (updated)
    - `backend/tests/test_patient_routes.py` (updated)
    - `backend/tests/test_consultation_routes.py` (updated)
    - `backend/tests/test_clinical_workflow_routes.py` (updated)
-   - Module 37 tests: TBD
-   - Full backend tests: TBD
+   - Module 37 tests: 17/17 new passed (5 patient + 6 consultation + 6 clinical_workflows)
+   - Full backend tests: 1006/1006 passed
 
 ## Next module
-Sprint 3 / Module 37 — Apply tenant guards to clinical PHI routes (in progress).
+Sprint 3 — next module TBD.
