@@ -1,9 +1,12 @@
 """
 Consultation session API routes — PraxisMed Sprint 2 / Module 29
+Updated: Sprint 3 / Module 37 — tenant guards applied (clinical-level access)
 
 Ten endpoints under /consultations covering the full session lifecycle:
 create, list, fetch, status update, audio attach, transcript, draft summary,
 approve, reject, and archive.
+
+Access policy: owner, admin, doctor — clinic_id must match caller.
 """
 
 from __future__ import annotations
@@ -13,7 +16,9 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.app.api.dependencies.auth import get_auth_context, require_clinical_clinic_access
 from backend.app.api.deps import get_db_pool
+from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import consultation_repo
 from backend.app.db.repositories.consultation_repo import InvalidConsultationSessionError
 from backend.app.schemas.consultations import (
@@ -37,7 +42,9 @@ router = APIRouter(prefix="/consultations", tags=["consultations"])
 async def create_consultation_session(
     body: ConsultationSessionCreate,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.create_consultation_session(
             pool=pool,
@@ -69,7 +76,9 @@ async def list_consultation_sessions(
     source: Optional[str] = Query(None),
     limit: int = Query(50),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationListResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         rows = await consultation_repo.list_consultation_sessions(
             pool=pool,
@@ -95,7 +104,9 @@ async def get_consultation_session(
     session_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.get_consultation_session_by_id(
             pool=pool,
@@ -120,7 +131,9 @@ async def update_consultation_status(
     body: ConsultationStatusUpdate,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.update_consultation_status(
             pool=pool,
@@ -147,7 +160,9 @@ async def attach_audio(
     body: ConsultationAudioAttach,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.attach_audio_to_session(
             pool=pool,
@@ -173,7 +188,9 @@ async def save_transcript(
     body: ConsultationTranscriptSave,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.save_transcript(
             pool=pool,
@@ -199,7 +216,9 @@ async def save_draft_summary(
     body: ConsultationDraftSummarySave,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.save_draft_summary(
             pool=pool,
@@ -225,7 +244,9 @@ async def approve_consultation(
     body: ConsultationApprove,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.approve_consultation_summary(
             pool=pool,
@@ -252,7 +273,9 @@ async def reject_consultation(
     body: ConsultationReject,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.reject_consultation_summary(
             pool=pool,
@@ -278,7 +301,9 @@ async def archive_consultation(
     session_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> ConsultationResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await consultation_repo.archive_consultation_session(
             pool=pool,

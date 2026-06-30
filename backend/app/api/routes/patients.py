@@ -1,8 +1,11 @@
 """
 Patient API routes — PraxisMed Sprint 2 / Module 26
+Updated: Sprint 3 / Module 37 — tenant guards applied (staff-level access)
 
 Seven endpoints under /patients for creating, upserting, listing, fetching,
 updating, and archiving clinic patient records.
+
+Access policy: owner, admin, doctor, staff — clinic_id must match caller.
 """
 
 from __future__ import annotations
@@ -12,7 +15,9 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.app.api.dependencies.auth import get_auth_context, require_staff_clinic_access
 from backend.app.api.deps import get_db_pool
+from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import patient_repo
 from backend.app.db.repositories.patient_repo import InvalidPatientError
 from backend.app.schemas.patients import (
@@ -32,7 +37,9 @@ router = APIRouter(prefix="/patients", tags=["patients"])
 async def create_patient(
     body: PatientCreate,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientResponse:
+    require_staff_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         row = await patient_repo.create_patient(
             pool=pool,
@@ -60,7 +67,9 @@ async def create_patient(
 async def upsert_patient_by_external_id(
     body: PatientUpsertByExternalId,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientResponse:
+    require_staff_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         row = await patient_repo.upsert_patient_by_external_id(
             pool=pool,
@@ -91,7 +100,9 @@ async def list_patients(
     search: Optional[str] = Query(None),
     limit: int = Query(50),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientListResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         rows = await patient_repo.list_patients(
             pool=pool,
@@ -115,7 +126,9 @@ async def get_patient_by_external_id(
     external_patient_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await patient_repo.get_patient_by_external_id(
             pool=pool,
@@ -139,7 +152,9 @@ async def get_patient_by_id(
     patient_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await patient_repo.get_patient_by_id(
             pool=pool,
@@ -164,7 +179,9 @@ async def update_patient(
     body: PatientUpdate,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await patient_repo.update_patient(
             pool=pool,
@@ -196,7 +213,9 @@ async def archive_patient(
     patient_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> PatientResponse:
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         row = await patient_repo.archive_patient(
             pool=pool,

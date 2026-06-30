@@ -270,7 +270,7 @@
    - Full backend tests: 955/955 passed
 
 34. Module 36 — Auth and tenant access foundation
-   - Commit: 711ddfb
+   - Commit: 711ddfb / docs: 6ecd5ed
    - `backend/app/core/auth_context.py`
    - `backend/app/api/dependencies/__init__.py`
    - `backend/app/api/dependencies/auth.py`
@@ -279,5 +279,16 @@
    - Module 36 tests: 34/34 passed (23 context + 11 dependencies)
    - Full backend tests: 989/989 passed
 
+35. Module 37 — Apply tenant guards to clinical PHI routes
+   - Commit: TBD
+   - `backend/app/api/routes/patients.py` (updated)
+   - `backend/app/api/routes/consultations.py` (updated)
+   - `backend/app/api/routes/clinical_workflows.py` (updated)
+   - `backend/tests/test_patient_routes.py` (updated)
+   - `backend/tests/test_consultation_routes.py` (updated)
+   - `backend/tests/test_clinical_workflow_routes.py` (updated)
+   - Module 37 tests: TBD
+   - Full backend tests: TBD
+
 ## Next module
-Sprint 3 / Module 37 — TBD.
+Sprint 3 / Module 37 — Apply tenant guards to clinical PHI routes (in progress).

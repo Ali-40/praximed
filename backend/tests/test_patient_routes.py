@@ -1,9 +1,10 @@
 """
 Integration tests for patient routes — PraxisMed Sprint 2 / Module 26
+Updated: Sprint 3 / Module 37 — auth fixture overrides and tenant guard tests added.
 
 Strategy:
 - Use FastAPI TestClient; no real event loop or database.
-- Override get_db_pool via app.dependency_overrides.
+- Override get_db_pool and get_auth_context via app.dependency_overrides.
 - Patch patient_repo functions at their usage site in the route module.
 """
 
@@ -14,16 +15,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.api.dependencies.auth import get_auth_context
 from backend.app.api.deps import get_db_pool
+from backend.app.core.auth_context import AuthContext
 from backend.app.main import app
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-CLINIC_ID  = "11111111-1111-4111-8111-111111111111"
-PATIENT_ID = "22222222-2222-4222-8222-222222222222"
-EXT_ID     = "EXT-001"
+CLINIC_ID       = "11111111-1111-4111-8111-111111111111"
+OTHER_CLINIC_ID = "99999999-9999-4999-8999-999999999999"
+PATIENT_ID      = "22222222-2222-4222-8222-222222222222"
+EXT_ID          = "EXT-001"
 
 BASE_URL      = "/patients"
 UPSERT_URL    = "/patients/upsert-by-external-id"
@@ -69,17 +73,33 @@ FAKE_POOL = MagicMock()
 # ---------------------------------------------------------------------------
 
 
+def _staff_auth() -> AuthContext:
+    return AuthContext(user_id="user-1", clinic_id=CLINIC_ID, role="staff")
+
+
 @pytest.fixture()
 def client():
     app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_auth_context] = _staff_auth
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_auth_context, None)
 
 
 @pytest.fixture()
 def client_no_pool():
     app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides[get_auth_context] = _staff_auth
     yield TestClient(app)
+    app.dependency_overrides.pop(get_auth_context, None)
+
+
+@pytest.fixture()
+def client_no_auth():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides.pop(get_auth_context, None)
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool, None)
 
 
 # ---------------------------------------------------------------------------
@@ -345,3 +365,67 @@ def test_appointment_requests_route_still_registered(client):
 def test_vapi_tools_route_still_registered(client):
     resp = client.post("/vapi/tools/check-availability", json={})
     assert resp.status_code != 404
+
+
+# ---------------------------------------------------------------------------
+# Auth enforcement tests (Module 37)
+# ---------------------------------------------------------------------------
+
+
+def test_missing_user_id_header_returns_401(client_no_auth):
+    resp = client_no_auth.get(
+        BASE_URL,
+        params={"clinic_id": CLINIC_ID},
+        headers={"X-Clinic-Id": CLINIC_ID, "X-User-Role": "staff"},
+    )
+    assert resp.status_code == 401
+
+
+def test_missing_clinic_id_header_returns_401(client_no_auth):
+    resp = client_no_auth.get(
+        BASE_URL,
+        params={"clinic_id": CLINIC_ID},
+        headers={"X-User-Id": "user-1", "X-User-Role": "staff"},
+    )
+    assert resp.status_code == 401
+
+
+def test_wrong_clinic_returns_403(client_no_auth):
+    with patch(f"{REPO}.list_patients", new=AsyncMock(return_value=[])):
+        resp = client_no_auth.get(
+            BASE_URL,
+            params={"clinic_id": CLINIC_ID},
+            headers={
+                "X-User-Id": "user-1",
+                "X-Clinic-Id": OTHER_CLINIC_ID,
+                "X-User-Role": "staff",
+            },
+        )
+    assert resp.status_code == 403
+
+
+def test_viewer_role_denied_returns_403(client_no_auth):
+    resp = client_no_auth.get(
+        BASE_URL,
+        params={"clinic_id": CLINIC_ID},
+        headers={
+            "X-User-Id": "user-1",
+            "X-Clinic-Id": CLINIC_ID,
+            "X-User-Role": "viewer",
+        },
+    )
+    assert resp.status_code == 403
+
+
+def test_doctor_role_allowed_for_patient_routes(client_no_auth):
+    with patch(f"{REPO}.list_patients", new=AsyncMock(return_value=[])):
+        resp = client_no_auth.get(
+            BASE_URL,
+            params={"clinic_id": CLINIC_ID},
+            headers={
+                "X-User-Id": "doc-1",
+                "X-Clinic-Id": CLINIC_ID,
+                "X-User-Role": "doctor",
+            },
+        )
+    assert resp.status_code == 200

@@ -1,5 +1,6 @@
 """
 Clinical workflow API routes — PraxisMed Sprint 3 / Module 35
+Updated: Sprint 3 / Module 37 — tenant guards applied (clinical-level access)
 
 Seven endpoints that expose the clinical workflow service layer:
   - audio reference attachment
@@ -12,6 +13,8 @@ Seven endpoints that expose the clinical workflow service layer:
 
 Routes call service modules, not repositories directly.
 No LLM calls. No external transcription provider. No binary file upload.
+
+Access policy: owner, admin, doctor — clinic_id must match caller.
 """
 
 from __future__ import annotations
@@ -21,7 +24,9 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.app.api.dependencies.auth import get_auth_context, require_clinical_clinic_access
 from backend.app.api.deps import get_db_pool
+from backend.app.core.auth_context import AuthContext
 from backend.app.modules.audio.audio_storage import (
     AudioStorageError,
     InvalidAudioUploadError,
@@ -103,7 +108,9 @@ async def attach_audio_reference(
     session_id: str,
     body: AudioReferenceAttachRequest,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> WorkflowResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         result = await attach_audio_reference_to_consultation(
             pool=pool,
@@ -140,7 +147,9 @@ async def save_manual_transcript(
     session_id: str,
     body: ManualTranscriptRequest,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> WorkflowResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     adapter = _ManualTranscriptAdapter(transcript_text=body.transcript_text)
 
     try:
@@ -180,7 +189,9 @@ async def generate_draft_summary(
     session_id: str,
     body: ClinicalSummaryDraftRequest,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> WorkflowResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         result = await create_and_save_clinical_summary_draft(
             pool=pool,
@@ -215,7 +226,9 @@ async def generate_draft_summary(
 async def get_review_package(
     session_id: str,
     body: ReviewPackageRequest,
+    auth: AuthContext = Depends(get_auth_context),
 ) -> WorkflowResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         package = build_review_package(
             clinic_id=body.clinic_id,
@@ -253,7 +266,9 @@ async def approve_summary(
     session_id: str,
     body: ApproveSummaryRequest,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> WorkflowResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         result = await approve_summary_after_review(
             pool=pool,
@@ -286,7 +301,9 @@ async def reject_summary(
     session_id: str,
     body: RejectSummaryRequest,
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> WorkflowResponse:
+    require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
         result = await reject_summary_after_review(
             pool=pool,
@@ -322,7 +339,9 @@ async def get_patient_timeline(
     include_drafts: bool = Query(False),
     language: str = Query("de-AT"),
     pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_auth_context),
 ) -> TimelineReportResponse:
+    require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
         result = await create_patient_timeline_report(
             pool=pool,
