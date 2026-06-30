@@ -203,7 +203,7 @@
    - Full backend tests: 702/702 passed
 
 27. Module 29 — Consultation session API routes
-   - Commit: (pending)
+   - Commit: e832a91
    - `backend/app/schemas/consultations.py`
    - `backend/app/api/routes/consultations.py`
    - `backend/app/api/router.py` (updated)
