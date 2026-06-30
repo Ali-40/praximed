@@ -269,3 +269,189 @@ def test_vapi_check_unexpected_error_returns_500(client_full):
         response = client.post(CHECK_URL, json=CHECK_PAYLOAD)
     assert response.status_code == 500
     assert "Internal error" in response.json()["detail"]
+
+
+# ===========================================================================
+# Module 18 — Capture appointment request route tests
+# ===========================================================================
+
+CAPTURE_URL = "/vapi/tools/capture-appointment-request"
+
+CAPTURE_PAYLOAD = {
+    "clinic_ref":   CLINIC_REF,
+    "call_id":      "vapi-call-abc123",
+    "patient_name": "Maria Muster",
+}
+
+FAKE_CAPTURE_RESULT = {
+    "ok":        True,
+    "clinic_id": TENANT_ID,
+    "request": {
+        "id":              "22222222-2222-4222-8222-222222222222",
+        "clinic_id":       TENANT_ID,
+        "source":          "vapi",
+        "source_ref":      "vapi-call-abc123",
+        "patient_name":    "Maria Muster",
+        "status":          "new",
+        "action_required": True,
+        "created_at":      "2024-06-03T09:00:00+00:00",
+        "updated_at":      "2024-06-03T09:00:00+00:00",
+    },
+    "message": (
+        "The appointment request has been captured and forwarded to the clinic. "
+        "Staff must review and confirm the appointment before it is booked."
+    ),
+}
+
+CAPTURE_FUNC = (
+    "backend.app.modules.vapi.vapi_appointment_capture.capture_vapi_appointment_request"
+)
+
+
+# ---------------------------------------------------------------------------
+# 1. POST /vapi/tools/capture-appointment-request returns 200
+# ---------------------------------------------------------------------------
+
+def test_capture_returns_200(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)):
+        response = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert "request" in body
+
+
+# ---------------------------------------------------------------------------
+# 2. Route calls capture_vapi_appointment_request with correct args
+# ---------------------------------------------------------------------------
+
+def test_capture_route_calls_capture_service(client_full):
+    client, _loader, _cfg = client_full
+    mock_fn = AsyncMock(return_value=FAKE_CAPTURE_RESULT)
+    with patch(CAPTURE_FUNC, new=mock_fn):
+        client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    mock_fn.assert_awaited_once()
+    kw = mock_fn.call_args.kwargs
+    assert kw["clinic_ref"]   == CLINIC_REF
+    assert kw["call_id"]      == "vapi-call-abc123"
+    assert kw["patient_name"] == "Maria Muster"
+
+
+# ---------------------------------------------------------------------------
+# 3. Route passes app DB pool to capture service
+# ---------------------------------------------------------------------------
+
+def test_capture_route_passes_pool(client_full):
+    client, _loader, _cfg = client_full
+    captured: list[Any] = []
+
+    async def capturing(*args, **kwargs):
+        captured.append(kwargs.get("pool"))
+        return FAKE_CAPTURE_RESULT
+
+    with patch(CAPTURE_FUNC, new=capturing):
+        client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+
+    assert len(captured) == 1
+    assert captured[0] is FAKE_POOL
+
+
+# ---------------------------------------------------------------------------
+# 4. Route passes app config_loader to capture service
+# ---------------------------------------------------------------------------
+
+def test_capture_route_passes_config_loader(client_full):
+    client, fake_loader, _cfg = client_full
+    captured: list[Any] = []
+
+    async def capturing(*args, **kwargs):
+        captured.append(kwargs.get("config_loader"))
+        return FAKE_CAPTURE_RESULT
+
+    with patch(CAPTURE_FUNC, new=capturing):
+        client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+
+    assert len(captured) == 1
+    assert captured[0] is fake_loader
+
+
+# ---------------------------------------------------------------------------
+# 5. Response message does not claim appointment is already confirmed
+# ---------------------------------------------------------------------------
+
+def test_capture_message_not_auto_confirmed(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)):
+        response = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    msg = response.json()["message"].lower()
+    assert "captured" in msg or "staff" in msg
+    assert "appointment is confirmed" not in msg
+    assert "automatically confirmed" not in msg
+    assert "booking confirmed" not in msg
+
+
+# ---------------------------------------------------------------------------
+# 6. Missing db_pool returns 503
+# ---------------------------------------------------------------------------
+
+def test_capture_missing_pool_returns_503(client_no_pool):
+    response = client_no_pool.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert response.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# 7. Missing config_loader returns 503
+# ---------------------------------------------------------------------------
+
+def test_capture_missing_config_loader_returns_503(client_no_loader):
+    response = client_no_loader.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert response.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# 8. Invalid request body returns 422
+# ---------------------------------------------------------------------------
+
+def test_capture_invalid_body_returns_422(client_full):
+    client, _loader, _cfg = client_full
+    # Missing required patient_name; invalid urgency_level
+    response = client.post(CAPTURE_URL, json={
+        "clinic_ref": CLINIC_REF,
+        "call_id":    "vapi-call-abc123",
+        "patient_name": "",
+    })
+    assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# 9. Invalid capture input maps to 400
+# ---------------------------------------------------------------------------
+
+def test_capture_invalid_input_returns_400(client_full):
+    from backend.app.modules.vapi.vapi_appointment_capture import (
+        InvalidVapiAppointmentCaptureError,
+    )
+    client, _loader, _cfg = client_full
+    with patch(
+        CAPTURE_FUNC,
+        new=AsyncMock(side_effect=InvalidVapiAppointmentCaptureError("bad input")),
+    ):
+        response = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert response.status_code == 400
+    assert "bad input" in response.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# 10. Unexpected capture error maps to 500
+# ---------------------------------------------------------------------------
+
+def test_capture_unexpected_error_returns_500(client_full):
+    client, _loader, _cfg = client_full
+    with patch(
+        CAPTURE_FUNC,
+        new=AsyncMock(side_effect=RuntimeError("db exploded")),
+    ):
+        response = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert response.status_code == 500
+    assert "Internal error" in response.json()["detail"]
