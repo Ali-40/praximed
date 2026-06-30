@@ -256,4 +256,64 @@ CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_preferred_starts
 CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_source
     ON appointment_requests (clinic_id, source);
 
+-- ---------------------------------------------------------------------------
+-- H) clinic_notifications  (Module 19)
+--    Internal notification records for alerting clinic staff about events
+--    such as urgent calls, human handoffs, new appointment requests, etc.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS clinic_notifications (
+    id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id             UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    recipient_user_id     UUID        REFERENCES clinic_users(id) ON DELETE SET NULL,
+    channel               TEXT        NOT NULL,
+    notification_type     TEXT        NOT NULL,
+    priority              TEXT        NOT NULL DEFAULT 'normal',
+    title                 TEXT        NOT NULL,
+    message               TEXT        NOT NULL,
+    status                TEXT        NOT NULL DEFAULT 'pending',
+    related_resource_type TEXT,
+    related_resource_id   TEXT,
+    scheduled_for         TIMESTAMPTZ,
+    sent_at               TIMESTAMPTZ,
+    read_at               TIMESTAMPTZ,
+    error_message         TEXT,
+    raw_payload           JSONB,
+    created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT clinic_notifications_channel_check CHECK (
+        channel IN ('internal', 'sms', 'push', 'email', 'webhook')
+    ),
+    CONSTRAINT clinic_notifications_type_check CHECK (
+        notification_type IN ('urgent_call', 'human_handoff', 'callback_needed', 'appointment_request', 'cancellation', 'calendar_sync_failure', 'summary_ready', 'system')
+    ),
+    CONSTRAINT clinic_notifications_priority_check CHECK (
+        priority IN ('low', 'normal', 'high', 'urgent', 'emergency')
+    ),
+    CONSTRAINT clinic_notifications_status_check CHECK (
+        status IN ('pending', 'sent', 'failed', 'read', 'cancelled')
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_created
+    ON clinic_notifications (clinic_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_status
+    ON clinic_notifications (clinic_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_priority
+    ON clinic_notifications (clinic_id, priority);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_type
+    ON clinic_notifications (clinic_id, notification_type);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_recipient
+    ON clinic_notifications (clinic_id, recipient_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_scheduled
+    ON clinic_notifications (clinic_id, scheduled_for);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_notifications_clinic_resource
+    ON clinic_notifications (clinic_id, related_resource_type, related_resource_id);
+
 COMMIT;

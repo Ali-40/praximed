@@ -71,6 +71,7 @@ REQUIRED_TABLES = [
     "audit_log",
     "clinic_call_logs",
     "appointment_requests",
+    "clinic_notifications",
 ]
 
 
@@ -128,6 +129,14 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "status", "urgency_level", "action_required",
         "assigned_user_id", "raw_payload", "created_at", "updated_at",
     ],
+    "clinic_notifications": [
+        "id", "clinic_id", "recipient_user_id",
+        "channel", "notification_type", "priority",
+        "title", "message", "status",
+        "related_resource_type", "related_resource_id",
+        "scheduled_for", "sent_at", "read_at",
+        "error_message", "raw_payload", "created_at", "updated_at",
+    ],
 }
 
 
@@ -167,6 +176,13 @@ REQUIRED_INDEXES = [
     ("idx_appointment_requests_clinic_urgency",        "appointment_requests", "urgency_level"),
     ("idx_appointment_requests_clinic_preferred_starts", "appointment_requests", "preferred_starts_at"),
     ("idx_appointment_requests_clinic_source",         "appointment_requests", "source"),
+    ("idx_clinic_notifications_clinic_created",    "clinic_notifications", "created_at"),
+    ("idx_clinic_notifications_clinic_status",     "clinic_notifications", "status"),
+    ("idx_clinic_notifications_clinic_priority",   "clinic_notifications", "priority"),
+    ("idx_clinic_notifications_clinic_type",       "clinic_notifications", "notification_type"),
+    ("idx_clinic_notifications_clinic_recipient",  "clinic_notifications", "recipient_user_id"),
+    ("idx_clinic_notifications_clinic_scheduled",  "clinic_notifications", "scheduled_for"),
+    ("idx_clinic_notifications_clinic_resource",   "clinic_notifications", "related_resource_type"),
 ]
 
 
@@ -229,6 +245,7 @@ FK_TABLES = [
     "audit_log",
     "clinic_call_logs",
     "appointment_requests",
+    "clinic_notifications",
 ]
 
 
@@ -310,6 +327,7 @@ ON_DELETE_CASCADE_TABLES = [
     ("clinic_calendar_sync_events",  "on delete cascade"),
     ("clinic_call_logs",             "on delete cascade"),
     ("appointment_requests",         "on delete cascade"),
+    ("clinic_notifications",         "on delete cascade"),
 ]
 
 
@@ -391,3 +409,66 @@ def test_appointment_requests_time_range_check(sql_lower: str):
     assert re.search(r"preferred_ends_at.*>.*preferred_starts_at", block, re.DOTALL), (
         "appointment_requests must have CHECK (preferred_ends_at > preferred_starts_at)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Module 19 — clinic_notifications specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_clinic_notifications_recipient_user_fk(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_notifications")
+    assert re.search(
+        r"recipient_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\)",
+        block,
+        re.DOTALL,
+    ), "clinic_notifications.recipient_user_id must REFERENCES clinic_users(id)"
+
+
+def test_clinic_notifications_recipient_user_on_delete_set_null(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_notifications")
+    assert re.search(
+        r"recipient_user_id\s+uuid.*references\s+clinic_users\s*\(\s*id\s*\).*on\s+delete\s+set\s+null",
+        block,
+        re.DOTALL,
+    ), "clinic_notifications.recipient_user_id FK must be ON DELETE SET NULL"
+
+
+def test_clinic_notifications_channel_check(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_notifications")
+    assert re.search(r"check\s*\(.*\bchannel\b.*\bin\b", block, re.DOTALL), (
+        "clinic_notifications must have a CHECK constraint on channel with IN"
+    )
+    for val in ("'internal'", "'sms'", "'push'", "'email'", "'webhook'"):
+        assert val in block, f"clinic_notifications channel CHECK must include value {val}"
+
+
+def test_clinic_notifications_type_check(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_notifications")
+    assert re.search(r"check\s*\(.*\bnotification_type\b.*\bin\b", block, re.DOTALL), (
+        "clinic_notifications must have a CHECK constraint on notification_type with IN"
+    )
+    for val in (
+        "'urgent_call'", "'human_handoff'", "'callback_needed'",
+        "'appointment_request'", "'cancellation'", "'calendar_sync_failure'",
+        "'summary_ready'", "'system'",
+    ):
+        assert val in block, f"clinic_notifications notification_type CHECK must include value {val}"
+
+
+def test_clinic_notifications_priority_check(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_notifications")
+    assert re.search(r"check\s*\(.*\bpriority\b.*\bin\b", block, re.DOTALL), (
+        "clinic_notifications must have a CHECK constraint on priority with IN"
+    )
+    for val in ("'low'", "'normal'", "'high'", "'urgent'", "'emergency'"):
+        assert val in block, f"clinic_notifications priority CHECK must include value {val}"
+
+
+def test_clinic_notifications_status_check(sql_lower: str):
+    block = _table_block(sql_lower, "clinic_notifications")
+    assert re.search(r"check\s*\(.*\bstatus\b.*\bin\b", block, re.DOTALL), (
+        "clinic_notifications must have a CHECK constraint on status with IN"
+    )
+    for val in ("'pending'", "'sent'", "'failed'", "'read'", "'cancelled'"):
+        assert val in block, f"clinic_notifications status CHECK must include value {val}"

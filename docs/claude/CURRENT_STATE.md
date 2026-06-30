@@ -78,6 +78,8 @@
 
 ## Latest git log expected
 
+- Sprint 1 / Module 18 — Vapi appointment capture integration
+- Populate Claude orchestration docs for Module 18
 - Sprint 1 / Module 17 — Appointment request API routes
 - Populate Claude orchestration docs for Module 17
 - Sprint 1 / Module 16 — Appointment request repository
@@ -97,5 +99,15 @@
 - Sprint 1 Module 2: asyncpg connection pool
 - Sprint 1 Module 1: secure clinic config loader
 
+16. Module 18 — Vapi appointment capture integration
+   - Commit: 9231a6b
+   - `backend/app/modules/vapi/vapi_appointment_capture.py`
+   - `backend/app/schemas/vapi.py` (updated)
+   - `backend/app/api/routes/vapi_tools.py` (updated)
+   - `backend/tests/test_vapi_appointment_capture.py`
+   - `backend/tests/test_vapi_tool_routes.py` (updated)
+   - Module 18 tests: 34/34 passed
+   - Full backend tests: 419/419 passed
+
 ## Next module
-Sprint 1 / Module 18 — Vapi Appointment Capture Integration.
+Sprint 1 / Module 19 — Notification Schema Contract.
