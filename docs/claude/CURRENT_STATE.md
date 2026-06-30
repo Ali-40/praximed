@@ -78,6 +78,7 @@
 
 ## Latest git log expected
 
+- Sprint 1 / Module 23 — Notification API routes
 - Sprint 1 / Module 22 — Vapi notification integration
 - Sprint 1 / Module 21 — Notification router service
 - Sprint 1 / Module 20 — Notification repository
@@ -144,5 +145,21 @@
    - Module 22 tests: 42/42 passed
    - Full backend tests: 519/519 passed
 
+21. Module 23 — Notification API routes
+   - Commit: 085cafa
+   - `backend/app/schemas/notifications.py`
+   - `backend/app/api/routes/notifications.py`
+   - `backend/app/api/router.py` (updated)
+   - `backend/tests/test_notification_schemas.py`
+   - `backend/tests/test_notification_routes.py`
+   - Module 23 tests: 26/26 passed
+   - Full backend tests: 545/545 passed
+
+## Architecture checkpoint
+
+- Architecture Checkpoint 01 created: `docs/claude/ARCHITECTURE_CHECKPOINT_01.md`
+- Sprint 1 complete (Modules 1–23)
+- Sprint 2 scope defined: Clinical Documentation Engine (Modules 24–34)
+
 ## Next module
-Sprint 1 / Module 23 — Notification API Routes.
+Sprint 2 / Module 24 — Patient Schema Contract.
