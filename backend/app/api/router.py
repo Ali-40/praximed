@@ -15,6 +15,7 @@ from backend.app.api.routes import calendar_webhooks
 from backend.app.api.routes import availability
 from backend.app.api.routes import vapi_tools
 from backend.app.api.routes import vapi_webhooks
+from backend.app.api.routes import appointment_requests
 
 api_router = APIRouter()
 
@@ -23,3 +24,4 @@ api_router.include_router(calendar_webhooks.router, prefix="/webhooks")
 api_router.include_router(availability.router)
 api_router.include_router(vapi_tools.router)
 api_router.include_router(vapi_webhooks.router, prefix="/webhooks")
+api_router.include_router(appointment_requests.router)
