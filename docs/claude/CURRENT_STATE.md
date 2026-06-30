@@ -78,6 +78,7 @@
 
 ## Latest git log expected
 
+- Sprint 1 / Module 20 — Notification repository
 - Sprint 1 / Module 19 — Notification schema contract
 - Sprint 1 / Module 18 — Vapi appointment capture integration
 - Populate Claude orchestration docs for Module 18
@@ -117,5 +118,12 @@
    - Schema tests: 194/194 passed
    - Full backend tests: 455/455 passed
 
+18. Module 20 — Notification repository
+   - Commit: 6c37a74
+   - `backend/app/db/repositories/notification_repo.py`
+   - `backend/tests/test_notification_repo.py`
+   - Module 20 tests: 26/26 passed
+   - Full backend tests: 481/481 passed
+
 ## Next module
-Sprint 1 / Module 20 — Notification Repository.
+Sprint 1 / Module 21 — Notification Router Service.

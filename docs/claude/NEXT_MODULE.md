@@ -1,4 +1,4 @@
-# Sprint 1 / Module 20 — Notification Repository
+# Sprint 1 / Module 21 — Notification Router Service
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -20,21 +20,26 @@
 14. Module 17: appointment request API schemas and routes
 15. Module 18: Vapi appointment capture integration
 16. Module 19: notification schema contract
+17. Module 20: notification repository
 
 All are committed. Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Create the database repository layer for clinic_notifications.
+Create the internal notification routing service.
 
 ## Purpose
-PraxisMed needs a clean repository to create and manage internal notification records before adding SMS, push, email, or frontend notification delivery.
+PraxisMed needs a service that converts important system events into clinic notification records using the existing notification repository.
+
+This module does not send SMS, push, email, or webhooks yet.
+It only decides notification content/priority/channel and creates records in `clinic_notifications`.
 
 ## Create or update only
 
-1. `backend/app/db/repositories/notification_repo.py`
-2. `backend/tests/test_notification_repo.py`
-3. `docs/claude/CURRENT_STATE.md`
-4. `docs/claude/NEXT_MODULE.md`
+1. `backend/app/modules/notifications/__init__.py`
+2. `backend/app/modules/notifications/notification_router.py`
+3. `backend/tests/test_notification_router.py`
+4. `docs/claude/CURRENT_STATE.md`
+5. `docs/claude/NEXT_MODULE.md`
 
 Do not create notification sender code yet.
 Do not build SMS.
@@ -43,117 +48,105 @@ Do not build email.
 Do not build frontend.
 Do not modify Vapi modules.
 Do not modify appointment request modules.
+Do not create FastAPI routes.
 Do not use a real database in tests.
 
-## Repository requirements
+## Module requirements
 
-### File: `backend/app/db/repositories/notification_repo.py`
+### File: `backend/app/modules/notifications/notification_router.py`
 
 ### Custom exceptions
-- `NotificationRepoError`
-- `InvalidNotificationError`
+- `NotificationRouterError`
+- `InvalidNotificationEventError`
 
-### Allowed values
-- channel: `internal`, `sms`, `push`, `email`, `webhook`
-- notification_type: `urgent_call`, `human_handoff`, `callback_needed`, `appointment_request`, `cancellation`, `calendar_sync_failure`, `summary_ready`, `system`
-- priority: `low`, `normal`, `high`, `urgent`, `emergency`
-- status: `pending`, `sent`, `failed`, `read`, `cancelled`
+### Supported notification types
+`urgent_call`, `human_handoff`, `callback_needed`, `appointment_request`, `cancellation`, `calendar_sync_failure`, `summary_ready`, `system`
 
-### Public async functions
+### Allowed channels
+`internal`, `sms`, `push`, `email`, `webhook`
 
-#### 1. `create_notification(pool, clinic_id, channel, notification_type, title, message, priority="normal", recipient_user_id=None, status="pending", related_resource_type=None, related_resource_id=None, scheduled_for=None, raw_payload=None)`
+### Allowed priorities
+`low`, `normal`, `high`, `urgent`, `emergency`
 
-Behavior:
-- Validate `clinic_id` is not empty.
-- Validate `channel`.
+### Public functions
+
+#### 1. `infer_priority(notification_type, urgency_level=None) -> str`
+
+- If `urgency_level` is provided and valid (`low`, `normal`, `urgent`, `emergency`), map it directly.
+- If `urgency_level` is not provided, use type defaults:
+  - `urgent_call` → `urgent`
+  - `human_handoff` → `urgent`
+  - `callback_needed` → `high`
+  - `appointment_request` → `normal`
+  - `cancellation` → `high`
+  - `calendar_sync_failure` → `high`
+  - `summary_ready` → `normal`
+  - `system` → `normal`
+- Invalid `notification_type` raises `InvalidNotificationEventError`.
+- Invalid `urgency_level` raises `InvalidNotificationEventError`.
+
+#### 2. `build_notification_event(clinic_id, notification_type, title, message, channel="internal", priority=None, urgency_level=None, recipient_user_id=None, related_resource_type=None, related_resource_id=None, scheduled_for=None, raw_payload=None) -> dict`
+
+- Validate `clinic_id` not empty.
 - Validate `notification_type`.
-- Validate `priority`.
-- Validate `status`.
-- Validate `title` is not empty.
-- Validate `message` is not empty.
-- Use parameterized SQL only.
-- Insert into `clinic_notifications`.
-- Return created row.
+- Validate `title` not empty.
+- Validate `message` not empty.
+- Validate `channel`.
+- If `priority` is None, call `infer_priority`.
+- If `priority` is provided, validate it.
+- Return normalized event dict with all fields.
 
-#### 2. `get_notification_by_id(pool, clinic_id, notification_id)`
+#### 3. `route_notification_event(pool, event: dict) -> dict`
 
-Behavior:
-- Return matching notification or None.
-- Must filter by `clinic_id`.
+- Validate/normalize event using `build_notification_event`.
+- Call `notification_repo.create_notification` with normalized values.
+- Return `{ok: True, notification: ..., message: "..."}`.
 
-#### 3. `list_notifications(pool, clinic_id, status=None, priority=None, notification_type=None, recipient_user_id=None, limit=50)`
+#### 4. `create_urgent_call_notification(pool, clinic_id, call_id, caller_phone=None, urgency_level="urgent", recipient_user_id=None, raw_payload=None) -> dict`
 
-Behavior:
-- Return recent notifications for a clinic.
-- Must filter by `clinic_id`.
-- `limit` must be between 1 and 100.
-- Optional filters for `status`, `priority`, `notification_type`, `recipient_user_id`.
-- Validate filters if provided.
+- Creates internal `urgent_call` notification.
+- `related_resource_type = "clinic_call_logs"`, `related_resource_id = call_id`.
+- Message includes `caller_phone` if provided.
 
-#### 4. `mark_notification_sent(pool, clinic_id, notification_id)`
+#### 5. `create_appointment_request_notification(pool, clinic_id, request_id, patient_name, urgency_level="normal", recipient_user_id=None, raw_payload=None) -> dict`
 
-Behavior:
-- Set `status='sent'`.
-- Set `sent_at=now()`.
-- Return updated row.
+- Creates internal `appointment_request` notification.
+- `related_resource_type = "appointment_requests"`, `related_resource_id = request_id`.
+- Message includes `patient_name`.
 
-#### 5. `mark_notification_failed(pool, clinic_id, notification_id, error_message)`
+#### 6. `create_calendar_sync_failure_notification(pool, clinic_id, message, recipient_user_id=None, raw_payload=None) -> dict`
 
-Behavior:
-- Validate `error_message` is not empty.
-- Set `status='failed'`.
-- Set `error_message`.
-- Return updated row.
+- Creates internal `calendar_sync_failure` notification with priority `high`.
+- `related_resource_type = "calendar_sync"`.
 
-#### 6. `mark_notification_read(pool, clinic_id, notification_id)`
+## Tests required in `test_notification_router.py`
 
-Behavior:
-- Set `status='read'`.
-- Set `read_at=now()`.
-- Return updated row.
-
-#### 7. `cancel_notification(pool, clinic_id, notification_id)`
-
-Behavior:
-- Set `status='cancelled'`.
-- Return updated row.
-
-### Implementation rules
-- Use async functions.
-- Use asyncpg-style pool.
-- Use `pool.fetchrow` and `pool.fetch`.
-- Use parameterized SQL placeholders only.
-- No direct database connection in tests.
-- No external service calls.
-- Keep repository small and readable.
-
-## Tests required in `test_notification_repo.py`
-
-1. `create_notification` calls `fetchrow`.
-2. `create_notification` raises `InvalidNotificationError` for empty `clinic_id`.
-3. `create_notification` raises `InvalidNotificationError` for empty `title`.
-4. `create_notification` raises `InvalidNotificationError` for empty `message`.
-5. `create_notification` validates invalid `channel`.
-6. `create_notification` validates invalid `notification_type`.
-7. `create_notification` validates invalid `priority`.
-8. `create_notification` validates invalid `status`.
-9. `get_notification_by_id` calls `fetchrow` and filters by `clinic_id`.
-10. `list_notifications` calls `fetch`.
-11. `list_notifications` validates `limit`.
-12. `list_notifications` supports `status` filter.
-13. `list_notifications` supports `priority` filter.
-14. `list_notifications` supports `notification_type` filter.
-15. `list_notifications` supports `recipient_user_id` filter.
-16. `mark_notification_sent` calls `fetchrow`.
-17. `mark_notification_failed` calls `fetchrow` and validates `error_message`.
-18. `mark_notification_read` calls `fetchrow`.
-19. `cancel_notification` calls `fetchrow`.
-20. SQL uses parameterized placeholders, not string formatting.
+1. `infer_priority` returns `urgent` for `urgent_call`.
+2. `infer_priority` returns `high` for `callback_needed`.
+3. `infer_priority` uses `urgency_level` override.
+4. `infer_priority` raises for invalid `notification_type`.
+5. `infer_priority` raises for invalid `urgency_level`.
+6. `build_notification_event` returns normalized event.
+7. `build_notification_event` defaults channel to `internal`.
+8. `build_notification_event` infers priority when `priority` is None.
+9. `build_notification_event` validates empty `clinic_id`.
+10. `build_notification_event` validates empty `title`.
+11. `build_notification_event` validates empty `message`.
+12. `build_notification_event` validates invalid `channel`.
+13. `build_notification_event` validates invalid `priority`.
+14. `route_notification_event` calls `notification_repo.create_notification`.
+15. `route_notification_event` passes normalized values to `create_notification`.
+16. `create_urgent_call_notification` creates `urgent_call` with `related_resource_type=clinic_call_logs`.
+17. `create_urgent_call_notification` includes `caller_phone` in message if provided.
+18. `create_appointment_request_notification` creates `appointment_request` with `related_resource_type=appointment_requests`.
+19. `create_appointment_request_notification` includes `patient_name` in message.
+20. `create_calendar_sync_failure_notification` creates `calendar_sync_failure` with high priority.
+21. Repository error is handled or propagated cleanly.
 
 ## Run
 
 ```
-pytest -v backend/tests/test_notification_repo.py
+pytest -v backend/tests/test_notification_router.py
 ```
 
 Then run all tests:
@@ -164,14 +157,15 @@ pytest -v backend/tests
 
 ## Acceptance criteria
 
-- All Module 20 tests pass.
+- All Module 21 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only `notification_repo.py`, its tests, and orchestration docs are changed.
+- Only `notification_router.py`, its tests, `__init__.py`, and orchestration docs are changed.
 - No sender code yet.
 - No SMS/push/email yet.
+- No FastAPI routes yet.
 - Commit all changes only if tests pass.
 
 ## Commit message
 
-`Sprint 1 / Module 20 — Notification repository`
+`Sprint 1 / Module 21 — Notification router service`
