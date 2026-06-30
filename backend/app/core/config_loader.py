@@ -84,6 +84,20 @@ class ClinicConfig(BaseModel):
         description="Map of feature-flag name → enabled",
     )
 
+    # Booking / availability rules — consumed by the availability engine
+    opening_hours: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "Map of weekday name (lowercase) → {open: 'HH:MM', close: 'HH:MM'} "
+            "or null / absent key for closed days. "
+            "Example: {\"monday\": {\"open\": \"08:00\", \"close\": \"18:00\"}, \"sunday\": null}"
+        ),
+    )
+    calendar_rules: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Appointment booking rules, e.g. {\"slot_minutes\": 30}",
+    )
+
     # Optional free-form extras stored in the DB
     extra: Optional[Dict[str, Any]] = Field(
         None,
