@@ -221,7 +221,7 @@
    - Full backend tests: 764/764 passed
 
 29. Module 31 — Transcription adapter interface
-   - Commit: (pending)
+   - Commit: 9aa2cb7
    - `backend/app/modules/transcription/__init__.py`
    - `backend/app/modules/transcription/transcription_service.py`
    - `backend/tests/test_transcription_service.py`
