@@ -78,6 +78,7 @@
 
 ## Latest git log expected
 
+- Sprint 1 / Module 21 — Notification router service
 - Sprint 1 / Module 20 — Notification repository
 - Sprint 1 / Module 19 — Notification schema contract
 - Sprint 1 / Module 18 — Vapi appointment capture integration
@@ -125,5 +126,13 @@
    - Module 20 tests: 26/26 passed
    - Full backend tests: 481/481 passed
 
+19. Module 21 — Notification router service
+   - Commit: c0d4bd4
+   - `backend/app/modules/notifications/__init__.py`
+   - `backend/app/modules/notifications/notification_router.py`
+   - `backend/tests/test_notification_router.py`
+   - Module 21 tests: 21/21 passed
+   - Full backend tests: 502/502 passed
+
 ## Next module
-Sprint 1 / Module 21 — Notification Router Service.
+Sprint 1 / Module 22 — Vapi Notification Integration.

@@ -1,4 +1,4 @@
-# Sprint 1 / Module 21 — Notification Router Service
+# Sprint 1 / Module 22 — Vapi Notification Integration
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -21,132 +21,98 @@
 15. Module 18: Vapi appointment capture integration
 16. Module 19: notification schema contract
 17. Module 20: notification repository
+18. Module 21: notification router service
 
 All are committed. Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Create the internal notification routing service.
+Integrate the notification router into existing Vapi flows so important Vapi events create internal notification records.
 
 ## Purpose
-PraxisMed needs a service that converts important system events into clinic notification records using the existing notification repository.
+PraxisMed should automatically create internal clinic notifications when:
+1. Vapi call event requires human handoff or urgent attention.
+2. Vapi appointment capture creates a new appointment request.
 
-This module does not send SMS, push, email, or webhooks yet.
-It only decides notification content/priority/channel and creates records in `clinic_notifications`.
+This module must not send SMS, push, email, or external webhooks yet.
+It only creates internal notification records through the existing `notification_router` service.
 
 ## Create or update only
 
-1. `backend/app/modules/notifications/__init__.py`
-2. `backend/app/modules/notifications/notification_router.py`
-3. `backend/tests/test_notification_router.py`
-4. `docs/claude/CURRENT_STATE.md`
-5. `docs/claude/NEXT_MODULE.md`
+1. `backend/app/modules/vapi/vapi_event_handler.py`
+2. `backend/app/modules/vapi/vapi_appointment_capture.py`
+3. `backend/tests/test_vapi_event_handler.py`
+4. `backend/tests/test_vapi_appointment_capture.py`
+5. `docs/claude/CURRENT_STATE.md`
+6. `docs/claude/NEXT_MODULE.md`
 
-Do not create notification sender code yet.
-Do not build SMS.
-Do not build push.
-Do not build email.
-Do not build frontend.
-Do not modify Vapi modules.
-Do not modify appointment request modules.
-Do not create FastAPI routes.
+Do not create notification API routes yet.
+Do not build SMS, push, email, or frontend.
+Do not modify `notification_repo.py` or `notification_router.py` unless absolutely required.
 Do not use a real database in tests.
 
-## Module requirements
+## Integration requirements
 
-### File: `backend/app/modules/notifications/notification_router.py`
+### A) Update `vapi_event_handler.py`
 
-### Custom exceptions
-- `NotificationRouterError`
-- `InvalidNotificationEventError`
+In `process_vapi_call_event`:
 
-### Supported notification types
-`urgent_call`, `human_handoff`, `callback_needed`, `appointment_request`, `cancellation`, `calendar_sync_failure`, `summary_ready`, `system`
+**Existing behavior must remain** (normalize payload, upsert call log, return ok response).
 
-### Allowed channels
-`internal`, `sms`, `push`, `email`, `webhook`
+**Add notification integration:**
 
-### Allowed priorities
-`low`, `normal`, `high`, `urgent`, `emergency`
+- When `event_type == "human_handoff.required"`: call `notification_router.create_urgent_call_notification`
+- When `event_type == "call.ended"` AND (`urgency_level in ["urgent", "emergency"]` OR `action_required` is true): call `create_urgent_call_notification`
+- If notification creation fails, do not fail the call event processing — set `notification_created=False`
+- Return dict includes `notification_created: bool`
 
-### Public functions
+### B) Update `vapi_appointment_capture.py`
 
-#### 1. `infer_priority(notification_type, urgency_level=None) -> str`
+In `capture_vapi_appointment_request`:
 
-- If `urgency_level` is provided and valid (`low`, `normal`, `urgent`, `emergency`), map it directly.
-- If `urgency_level` is not provided, use type defaults:
-  - `urgent_call` → `urgent`
-  - `human_handoff` → `urgent`
-  - `callback_needed` → `high`
-  - `appointment_request` → `normal`
-  - `cancellation` → `high`
-  - `calendar_sync_failure` → `high`
-  - `summary_ready` → `normal`
-  - `system` → `normal`
-- Invalid `notification_type` raises `InvalidNotificationEventError`.
-- Invalid `urgency_level` raises `InvalidNotificationEventError`.
+**Existing behavior must remain** (validate, load config, create appointment request, return ok + staff confirmation message).
 
-#### 2. `build_notification_event(clinic_id, notification_type, title, message, channel="internal", priority=None, urgency_level=None, recipient_user_id=None, related_resource_type=None, related_resource_id=None, scheduled_for=None, raw_payload=None) -> dict`
+**Add notification integration:**
 
-- Validate `clinic_id` not empty.
-- Validate `notification_type`.
-- Validate `title` not empty.
-- Validate `message` not empty.
-- Validate `channel`.
-- If `priority` is None, call `infer_priority`.
-- If `priority` is provided, validate it.
-- Return normalized event dict with all fields.
+- After `appointment_request_repo.create_appointment_request` succeeds, call `notification_router.create_appointment_request_notification`
+- If notification fails: `notification_created=False`, but still return `ok=True`
+- If notification succeeds: `notification_created=True`
+- Do not create notification before appointment request creation succeeds
+- Do not confirm or book the appointment
 
-#### 3. `route_notification_event(pool, event: dict) -> dict`
+## Testing requirements
 
-- Validate/normalize event using `build_notification_event`.
-- Call `notification_repo.create_notification` with normalized values.
-- Return `{ok: True, notification: ..., message: "..."}`.
+### Update `test_vapi_event_handler.py` — add 7 tests
 
-#### 4. `create_urgent_call_notification(pool, clinic_id, call_id, caller_phone=None, urgency_level="urgent", recipient_user_id=None, raw_payload=None) -> dict`
+1. `human_handoff.required` creates urgent call notification.
+2. Urgent `call.ended` creates urgent call notification.
+3. `action_required` `call.ended` creates urgent call notification.
+4. Normal `call.ended` does not create notification.
+5. Notification failure does not break successful call event processing.
+6. Process result includes `notification_created=True` when created.
+7. Process result includes `notification_created=False` when skipped or failed.
 
-- Creates internal `urgent_call` notification.
-- `related_resource_type = "clinic_call_logs"`, `related_resource_id = call_id`.
-- Message includes `caller_phone` if provided.
+Existing tests must still pass.
 
-#### 5. `create_appointment_request_notification(pool, clinic_id, request_id, patient_name, urgency_level="normal", recipient_user_id=None, raw_payload=None) -> dict`
+### Update `test_vapi_appointment_capture.py` — add 10 tests
 
-- Creates internal `appointment_request` notification.
-- `related_resource_type = "appointment_requests"`, `related_resource_id = request_id`.
-- Message includes `patient_name`.
+1. Creates appointment request notification after repository success.
+2. Passes `request_id` to notification helper when available.
+3. Passes `patient_name` to notification helper.
+4. Passes `urgency_level` to notification helper.
+5. Does not create notification if appointment request creation fails.
+6. Notification failure does not break successful appointment request capture.
+7. Response includes `notification_created=True` when created.
+8. Response includes `notification_created=False` when notification fails.
+9. Response message still says staff confirmation is required.
+10. Response message does not say appointment is confirmed.
 
-#### 6. `create_calendar_sync_failure_notification(pool, clinic_id, message, recipient_user_id=None, raw_payload=None) -> dict`
-
-- Creates internal `calendar_sync_failure` notification with priority `high`.
-- `related_resource_type = "calendar_sync"`.
-
-## Tests required in `test_notification_router.py`
-
-1. `infer_priority` returns `urgent` for `urgent_call`.
-2. `infer_priority` returns `high` for `callback_needed`.
-3. `infer_priority` uses `urgency_level` override.
-4. `infer_priority` raises for invalid `notification_type`.
-5. `infer_priority` raises for invalid `urgency_level`.
-6. `build_notification_event` returns normalized event.
-7. `build_notification_event` defaults channel to `internal`.
-8. `build_notification_event` infers priority when `priority` is None.
-9. `build_notification_event` validates empty `clinic_id`.
-10. `build_notification_event` validates empty `title`.
-11. `build_notification_event` validates empty `message`.
-12. `build_notification_event` validates invalid `channel`.
-13. `build_notification_event` validates invalid `priority`.
-14. `route_notification_event` calls `notification_repo.create_notification`.
-15. `route_notification_event` passes normalized values to `create_notification`.
-16. `create_urgent_call_notification` creates `urgent_call` with `related_resource_type=clinic_call_logs`.
-17. `create_urgent_call_notification` includes `caller_phone` in message if provided.
-18. `create_appointment_request_notification` creates `appointment_request` with `related_resource_type=appointment_requests`.
-19. `create_appointment_request_notification` includes `patient_name` in message.
-20. `create_calendar_sync_failure_notification` creates `calendar_sync_failure` with high priority.
-21. Repository error is handled or propagated cleanly.
+Mock `notification_router` functions in tests. No real database.
 
 ## Run
 
 ```
-pytest -v backend/tests/test_notification_router.py
+pytest -v backend/tests/test_vapi_event_handler.py
+pytest -v backend/tests/test_vapi_appointment_capture.py
 ```
 
 Then run all tests:
@@ -157,15 +123,16 @@ pytest -v backend/tests
 
 ## Acceptance criteria
 
-- All Module 21 tests pass.
+- All Module 22 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only `notification_router.py`, its tests, `__init__.py`, and orchestration docs are changed.
-- No sender code yet.
-- No SMS/push/email yet.
-- No FastAPI routes yet.
+- Human handoff / urgent Vapi events create notification records.
+- Vapi appointment capture creates a notification record.
+- Notification failures do not break the primary flow.
+- No actual SMS/push/email sent.
+- No notification API routes created.
 - Commit all changes only if tests pass.
 
 ## Commit message
 
-`Sprint 1 / Module 21 — Notification router service`
+`Sprint 1 / Module 22 — Vapi notification integration`

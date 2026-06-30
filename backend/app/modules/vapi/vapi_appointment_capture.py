@@ -108,9 +108,26 @@ async def capture_vapi_appointment_request(
         "The patient will be contacted once staff confirm the appointment."
     )
 
+    notification_created = False
+    try:
+        from backend.app.modules.notifications import notification_router  # local import avoids circulars
+        request_id = row.get("id") if isinstance(row, dict) else None
+        await notification_router.create_appointment_request_notification(
+            pool=pool,
+            clinic_id=clinic_id,
+            request_id=request_id,
+            patient_name=patient_name,
+            urgency_level=urgency_level,
+            raw_payload=raw_payload,
+        )
+        notification_created = True
+    except Exception:
+        notification_created = False
+
     return {
-        "ok": True,
-        "clinic_id": clinic_id,
-        "request": row,
-        "message": message,
+        "ok":                  True,
+        "clinic_id":           clinic_id,
+        "request":             row,
+        "message":             message,
+        "notification_created": notification_created,
     }

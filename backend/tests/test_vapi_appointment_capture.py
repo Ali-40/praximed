@@ -209,3 +209,147 @@ async def test_repo_error_propagates():
             await capture_vapi_appointment_request(
                 _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
             )
+
+
+# ---------------------------------------------------------------------------
+# Module 22 — Notification integration tests
+# ---------------------------------------------------------------------------
+
+NOTIF_PATH = "backend.app.modules.notifications.notification_router.create_appointment_request_notification"
+
+FAKE_NOTIF = {"ok": True, "notification": {"id": "notif-001"}, "message": "created"}
+
+REQUEST_ID = FAKE_ROW["id"]
+
+
+# 13. Creates appointment request notification after repository success
+
+@pytest.mark.asyncio
+async def test_creates_appointment_request_notification():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            result = await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    mock_notif.assert_awaited_once()
+    assert result["notification_created"] is True
+
+
+# 14. Passes request_id to notification helper when available
+
+@pytest.mark.asyncio
+async def test_passes_request_id_to_notification():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    call_kwargs = mock_notif.call_args.kwargs
+    assert call_kwargs["request_id"] == REQUEST_ID
+
+
+# 15. Passes patient_name to notification helper
+
+@pytest.mark.asyncio
+async def test_passes_patient_name_to_notification():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    call_kwargs = mock_notif.call_args.kwargs
+    assert call_kwargs["patient_name"] == PATIENT
+
+
+# 16. Passes urgency_level to notification helper
+
+@pytest.mark.asyncio
+async def test_passes_urgency_level_to_notification():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT,
+                urgency_level="urgent",
+            )
+    call_kwargs = mock_notif.call_args.kwargs
+    assert call_kwargs["urgency_level"] == "urgent"
+
+
+# 17. Does not create notification if appointment request creation fails
+
+@pytest.mark.asyncio
+async def test_no_notification_if_repo_fails():
+    from backend.app.db.repositories.appointment_request_repo import InvalidAppointmentRequestError
+    with patch(
+        f"{REPO_PATH}.create_appointment_request",
+        new=AsyncMock(side_effect=InvalidAppointmentRequestError("bad")),
+    ):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            with pytest.raises(InvalidAppointmentRequestError):
+                await capture_vapi_appointment_request(
+                    _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+                )
+    mock_notif.assert_not_called()
+
+
+# 18. Notification failure does not break successful appointment request capture
+
+@pytest.mark.asyncio
+async def test_notification_failure_does_not_break_capture():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(side_effect=RuntimeError("notif down"))):
+            result = await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    assert result["ok"] is True
+    assert result["notification_created"] is False
+
+
+# 19. Response includes notification_created=True when created
+
+@pytest.mark.asyncio
+async def test_response_notification_created_true():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)):
+            result = await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    assert result["notification_created"] is True
+
+
+# 20. Response includes notification_created=False when notification fails
+
+@pytest.mark.asyncio
+async def test_response_notification_created_false():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(side_effect=RuntimeError("down"))):
+            result = await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    assert result["notification_created"] is False
+
+
+# 21. Response message still says staff confirmation is required
+
+@pytest.mark.asyncio
+async def test_response_message_says_confirmation_required():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)):
+            result = await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    assert "confirm" in result["message"].lower()
+
+
+# 22. Response message does not say appointment is confirmed
+
+@pytest.mark.asyncio
+async def test_response_message_does_not_say_confirmed():
+    with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)):
+            result = await capture_vapi_appointment_request(
+                _make_pool(), _make_loader(), CLINIC_REF, CALL_ID, PATIENT
+            )
+    lower = result["message"].lower()
+    assert "appointment is confirmed" not in lower
+    assert "appointment has been confirmed" not in lower

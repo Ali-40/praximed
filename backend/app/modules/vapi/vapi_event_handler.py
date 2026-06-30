@@ -126,6 +126,7 @@ async def process_vapi_call_event(pool: Any, payload: Dict[str, Any]) -> Dict[st
     Returns a summary dict suitable for returning as an HTTP response body.
     """
     from backend.app.db.repositories import call_repo  # local import avoids circulars
+    from backend.app.modules.notifications import notification_router  # local import avoids circulars
 
     normalised = normalize_vapi_call_event(payload)
 
@@ -147,12 +148,36 @@ async def process_vapi_call_event(pool: Any, payload: Dict[str, Any]) -> Dict[st
         raw_payload=payload,
     )
 
+    notification_created = False
+    should_notify = normalised["event_type"] == "human_handoff.required" or (
+        normalised["event_type"] == "call.ended"
+        and (
+            normalised["urgency_level"] in ("urgent", "emergency")
+            or normalised["action_required"]
+        )
+    )
+
+    if should_notify:
+        try:
+            await notification_router.create_urgent_call_notification(
+                pool=pool,
+                clinic_id=normalised["clinic_id"],
+                call_id=normalised["call_id"],
+                caller_phone=normalised.get("caller_phone"),
+                urgency_level=normalised["urgency_level"],
+                raw_payload=payload,
+            )
+            notification_created = True
+        except Exception:
+            notification_created = False
+
     return {
-        "ok":         True,
-        "clinic_id":  normalised["clinic_id"],
-        "event_type": normalised["event_type"],
-        "call_id":    normalised["call_id"],
-        "message":    f"Event {normalised['event_type']!r} processed successfully.",
+        "ok":                  True,
+        "clinic_id":           normalised["clinic_id"],
+        "event_type":          normalised["event_type"],
+        "call_id":             normalised["call_id"],
+        "message":             f"Event {normalised['event_type']!r} processed successfully.",
+        "notification_created": notification_created,
     }
 
 

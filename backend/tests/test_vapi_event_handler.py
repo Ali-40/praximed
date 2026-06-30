@@ -156,3 +156,109 @@ async def test_process_event_propagates_repo_error():
     ):
         with pytest.raises(CallRepoError):
             await process_vapi_call_event(pool, _base_payload())
+
+
+# ---------------------------------------------------------------------------
+# Module 22 — Notification integration tests
+# ---------------------------------------------------------------------------
+
+NOTIF_PATH = "backend.app.modules.notifications.notification_router.create_urgent_call_notification"
+FAKE_UPSERT = {"id": "abc", "external_call_id": CALL_ID}
+FAKE_NOTIF  = {"ok": True, "notification": {"id": "notif-001"}, "message": "created"}
+
+
+# 10. human_handoff.required creates urgent call notification
+
+@pytest.mark.asyncio
+async def test_human_handoff_creates_urgent_call_notification():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            result = await process_vapi_call_event(
+                pool, _base_payload(event_type="human_handoff.required")
+            )
+    mock_notif.assert_awaited_once()
+    assert result["notification_created"] is True
+
+
+# 11. urgent call.ended creates urgent call notification
+
+@pytest.mark.asyncio
+async def test_urgent_call_ended_creates_notification():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            result = await process_vapi_call_event(
+                pool, _base_payload(event_type="call.ended", urgency_level="urgent")
+            )
+    mock_notif.assert_awaited_once()
+    assert result["notification_created"] is True
+
+
+# 12. action_required call.ended creates urgent call notification
+
+@pytest.mark.asyncio
+async def test_action_required_call_ended_creates_notification():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            result = await process_vapi_call_event(
+                pool, _base_payload(event_type="call.ended", action_required=True)
+            )
+    mock_notif.assert_awaited_once()
+    assert result["notification_created"] is True
+
+
+# 13. normal call.ended does not create notification
+
+@pytest.mark.asyncio
+async def test_normal_call_ended_no_notification():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)) as mock_notif:
+            result = await process_vapi_call_event(
+                pool,
+                _base_payload(event_type="call.ended", urgency_level="normal", action_required=False),
+            )
+    mock_notif.assert_not_called()
+    assert result["notification_created"] is False
+
+
+# 14. notification failure does not break successful call event processing
+
+@pytest.mark.asyncio
+async def test_notification_failure_does_not_break_call_event():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(side_effect=RuntimeError("notif down"))):
+            result = await process_vapi_call_event(
+                pool, _base_payload(event_type="human_handoff.required")
+            )
+    assert result["ok"] is True
+    assert result["notification_created"] is False
+
+
+# 15. process result includes notification_created=True when created
+
+@pytest.mark.asyncio
+async def test_result_includes_notification_created_true():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)):
+            result = await process_vapi_call_event(
+                pool, _base_payload(event_type="human_handoff.required")
+            )
+    assert result["notification_created"] is True
+
+
+# 16. process result includes notification_created=False when skipped
+
+@pytest.mark.asyncio
+async def test_result_includes_notification_created_false_when_skipped():
+    pool = MagicMock()
+    with patch(UPSERT_PATH, new=AsyncMock(return_value=FAKE_UPSERT)):
+        with patch(NOTIF_PATH, new=AsyncMock(return_value=FAKE_NOTIF)):
+            result = await process_vapi_call_event(
+                pool, _base_payload(event_type="call.started")
+            )
+    assert result["notification_created"] is False
