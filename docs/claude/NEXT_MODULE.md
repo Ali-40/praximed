@@ -1,4 +1,4 @@
-# Sprint 1 / Module 19 — Notification Schema Contract
+# Sprint 1 / Module 20 — Notification Repository
 
 ## Current project folder
 `/Users/aliabdeltawab/Documents/praximed`
@@ -19,101 +19,141 @@
 13. Module 16: appointment request repository
 14. Module 17: appointment request API schemas and routes
 15. Module 18: Vapi appointment capture integration
+16. Module 19: notification schema contract
 
 All are committed. Do not modify completed modules unless absolutely required.
 
 ## Task scope
-Add the database schema contract for internal notifications.
+Create the database repository layer for clinic_notifications.
 
 ## Purpose
-PraxisMed needs a notification system so doctors/receptionists can be alerted about:
-
-- urgent Vapi calls
-- human handoff required
-- callback needed
-- new appointment request
-- cancellation
-- calendar sync failure
-- consultation summary ready later
+PraxisMed needs a clean repository to create and manage internal notification records before adding SMS, push, email, or frontend notification delivery.
 
 ## Create or update only
 
-1. `backend/app/db/schema.sql`
-2. `backend/tests/test_schema_contract.py`
+1. `backend/app/db/repositories/notification_repo.py`
+2. `backend/tests/test_notification_repo.py`
 3. `docs/claude/CURRENT_STATE.md`
 4. `docs/claude/NEXT_MODULE.md`
 
-Do not create repository code yet.
 Do not create notification sender code yet.
 Do not build SMS.
 Do not build push.
 Do not build email.
+Do not build frontend.
 Do not modify Vapi modules.
 Do not modify appointment request modules.
-Do not build frontend.
-No real database connection during tests.
+Do not use a real database in tests.
 
-## Schema requirement
+## Repository requirements
 
-Add table: `clinic_notifications`
+### File: `backend/app/db/repositories/notification_repo.py`
 
-### Required columns
+### Custom exceptions
+- `NotificationRepoError`
+- `InvalidNotificationError`
 
-| Column | Type | Constraints |
-|---|---|---|
-| id | UUID | PRIMARY KEY |
-| clinic_id | UUID NOT NULL | REFERENCES clinics(id) ON DELETE CASCADE |
-| recipient_user_id | UUID | REFERENCES clinic_users(id) ON DELETE SET NULL |
-| channel | TEXT NOT NULL | |
-| notification_type | TEXT NOT NULL | |
-| priority | TEXT NOT NULL | DEFAULT 'normal' |
-| title | TEXT NOT NULL | |
-| message | TEXT NOT NULL | |
-| status | TEXT NOT NULL | DEFAULT 'pending' |
-| related_resource_type | TEXT | |
-| related_resource_id | TEXT | |
-| scheduled_for | TIMESTAMPTZ | |
-| sent_at | TIMESTAMPTZ | |
-| read_at | TIMESTAMPTZ | |
-| error_message | TEXT | |
-| raw_payload | JSONB | |
-| created_at | TIMESTAMPTZ NOT NULL | DEFAULT now() |
-| updated_at | TIMESTAMPTZ NOT NULL | DEFAULT now() |
+### Allowed values
+- channel: `internal`, `sms`, `push`, `email`, `webhook`
+- notification_type: `urgent_call`, `human_handoff`, `callback_needed`, `appointment_request`, `cancellation`, `calendar_sync_failure`, `summary_ready`, `system`
+- priority: `low`, `normal`, `high`, `urgent`, `emergency`
+- status: `pending`, `sent`, `failed`, `read`, `cancelled`
 
-### Constraints
+### Public async functions
 
-- `CHECK (channel IN ('internal', 'sms', 'push', 'email', 'webhook'))`
-- `CHECK (notification_type IN ('urgent_call', 'human_handoff', 'callback_needed', 'appointment_request', 'cancellation', 'calendar_sync_failure', 'summary_ready', 'system'))`
-- `CHECK (priority IN ('low', 'normal', 'high', 'urgent', 'emergency'))`
-- `CHECK (status IN ('pending', 'sent', 'failed', 'read', 'cancelled'))`
+#### 1. `create_notification(pool, clinic_id, channel, notification_type, title, message, priority="normal", recipient_user_id=None, status="pending", related_resource_type=None, related_resource_id=None, scheduled_for=None, raw_payload=None)`
 
-### Indexes
+Behavior:
+- Validate `clinic_id` is not empty.
+- Validate `channel`.
+- Validate `notification_type`.
+- Validate `priority`.
+- Validate `status`.
+- Validate `title` is not empty.
+- Validate `message` is not empty.
+- Use parameterized SQL only.
+- Insert into `clinic_notifications`.
+- Return created row.
 
-- `clinic_notifications(clinic_id, created_at)`
-- `clinic_notifications(clinic_id, status)`
-- `clinic_notifications(clinic_id, priority)`
-- `clinic_notifications(clinic_id, notification_type)`
-- `clinic_notifications(clinic_id, recipient_user_id)`
-- `clinic_notifications(clinic_id, scheduled_for)`
-- `clinic_notifications(clinic_id, related_resource_type, related_resource_id)`
+#### 2. `get_notification_by_id(pool, clinic_id, notification_id)`
 
-## Update test_schema_contract.py to verify
+Behavior:
+- Return matching notification or None.
+- Must filter by `clinic_id`.
 
-1. `clinic_notifications` table exists.
-2. All critical columns exist.
-3. `clinic_id` references `clinics(id)`.
-4. `recipient_user_id` references `clinic_users(id)`.
-5. Channel check constraint exists.
-6. Notification type check constraint exists.
-7. Priority check constraint exists.
-8. Status check constraint exists.
-9. All required indexes exist.
-10. Existing schema contract tests still pass.
+#### 3. `list_notifications(pool, clinic_id, status=None, priority=None, notification_type=None, recipient_user_id=None, limit=50)`
+
+Behavior:
+- Return recent notifications for a clinic.
+- Must filter by `clinic_id`.
+- `limit` must be between 1 and 100.
+- Optional filters for `status`, `priority`, `notification_type`, `recipient_user_id`.
+- Validate filters if provided.
+
+#### 4. `mark_notification_sent(pool, clinic_id, notification_id)`
+
+Behavior:
+- Set `status='sent'`.
+- Set `sent_at=now()`.
+- Return updated row.
+
+#### 5. `mark_notification_failed(pool, clinic_id, notification_id, error_message)`
+
+Behavior:
+- Validate `error_message` is not empty.
+- Set `status='failed'`.
+- Set `error_message`.
+- Return updated row.
+
+#### 6. `mark_notification_read(pool, clinic_id, notification_id)`
+
+Behavior:
+- Set `status='read'`.
+- Set `read_at=now()`.
+- Return updated row.
+
+#### 7. `cancel_notification(pool, clinic_id, notification_id)`
+
+Behavior:
+- Set `status='cancelled'`.
+- Return updated row.
+
+### Implementation rules
+- Use async functions.
+- Use asyncpg-style pool.
+- Use `pool.fetchrow` and `pool.fetch`.
+- Use parameterized SQL placeholders only.
+- No direct database connection in tests.
+- No external service calls.
+- Keep repository small and readable.
+
+## Tests required in `test_notification_repo.py`
+
+1. `create_notification` calls `fetchrow`.
+2. `create_notification` raises `InvalidNotificationError` for empty `clinic_id`.
+3. `create_notification` raises `InvalidNotificationError` for empty `title`.
+4. `create_notification` raises `InvalidNotificationError` for empty `message`.
+5. `create_notification` validates invalid `channel`.
+6. `create_notification` validates invalid `notification_type`.
+7. `create_notification` validates invalid `priority`.
+8. `create_notification` validates invalid `status`.
+9. `get_notification_by_id` calls `fetchrow` and filters by `clinic_id`.
+10. `list_notifications` calls `fetch`.
+11. `list_notifications` validates `limit`.
+12. `list_notifications` supports `status` filter.
+13. `list_notifications` supports `priority` filter.
+14. `list_notifications` supports `notification_type` filter.
+15. `list_notifications` supports `recipient_user_id` filter.
+16. `mark_notification_sent` calls `fetchrow`.
+17. `mark_notification_failed` calls `fetchrow` and validates `error_message`.
+18. `mark_notification_read` calls `fetchrow`.
+19. `cancel_notification` calls `fetchrow`.
+20. SQL uses parameterized placeholders, not string formatting.
 
 ## Run
 
 ```
-pytest -v backend/tests/test_schema_contract.py
+pytest -v backend/tests/test_notification_repo.py
 ```
 
 Then run all tests:
@@ -124,14 +164,14 @@ pytest -v backend/tests
 
 ## Acceptance criteria
 
-- All Module 19 tests pass.
+- All Module 20 tests pass.
 - All previous tests still pass.
 - No real database connection is used.
-- Only schema contract and orchestration docs are changed.
-- No repository code yet.
-- No notification sender code yet.
+- Only `notification_repo.py`, its tests, and orchestration docs are changed.
+- No sender code yet.
+- No SMS/push/email yet.
 - Commit all changes only if tests pass.
 
 ## Commit message
 
-`Sprint 1 / Module 19 — Notification schema contract`
+`Sprint 1 / Module 20 — Notification repository`

@@ -78,6 +78,7 @@
 
 ## Latest git log expected
 
+- Sprint 1 / Module 19 — Notification schema contract
 - Sprint 1 / Module 18 — Vapi appointment capture integration
 - Populate Claude orchestration docs for Module 18
 - Sprint 1 / Module 17 — Appointment request API routes
@@ -109,5 +110,12 @@
    - Module 18 tests: 34/34 passed
    - Full backend tests: 419/419 passed
 
+17. Module 19 — Notification schema contract
+   - Commit: 8814c0b
+   - `backend/app/db/schema.sql` — added `clinic_notifications` table
+   - `backend/tests/test_schema_contract.py` — extended to 194 tests
+   - Schema tests: 194/194 passed
+   - Full backend tests: 455/455 passed
+
 ## Next module
-Sprint 1 / Module 19 — Notification Schema Contract.
+Sprint 1 / Module 20 — Notification Repository.
