@@ -78,6 +78,7 @@
 
 ## Latest git log expected
 
+- Sprint 2 / Module 24 — Patient schema contract
 - Sprint 1 / Module 23 — Notification API routes
 - Sprint 1 / Module 22 — Vapi notification integration
 - Sprint 1 / Module 21 — Notification router service
@@ -163,5 +164,19 @@
 - Sprint 1 complete (Modules 1–23)
 - Sprint 2 started: Clinical Documentation Engine (Modules 24–34)
 
+22. Module 24 — Patient schema contract
+   - Commit: bdbed09
+   - `backend/app/db/schema.sql` — added `patients` table
+   - `backend/tests/test_schema_contract.py` — extended to 223 tests
+   - Schema tests: 223/223 passed
+   - Full backend tests: 574/574 passed
+
+23. Module 25 — Patient repository
+   - Commit: (pending)
+   - `backend/app/db/repositories/patient_repo.py`
+   - `backend/tests/test_patient_repo.py`
+   - Module 25 tests: 21/21 passed
+   - Full backend tests: 595/595 passed
+
 ## Next module
-Sprint 2 / Module 24 — Patient Schema Contract.
+Sprint 2 / Module 26 — Patient API routes.
