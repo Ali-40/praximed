@@ -254,10 +254,20 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 02 created: `docs/claude/ARCHITECTURE_CHECKPOINT_02.md`
-- Commit: 7e478c5
+- Commit: 7e478c5 / follow-up docs: 2855d2f
 - Full backend tests: 908/908 passed
 - Sprint 2 complete (Modules 24–34)
 - Sprint 3 started: Clinical Workflow API Routes (Module 35+)
 
+33. Module 35 — Clinical workflow API routes
+   - Commit: 9c36593
+   - `backend/app/schemas/clinical_workflows.py`
+   - `backend/app/api/routes/clinical_workflows.py`
+   - `backend/app/api/router.py` (updated)
+   - `backend/tests/test_clinical_workflow_schemas.py`
+   - `backend/tests/test_clinical_workflow_routes.py`
+   - Module 35 tests: 47/47 passed (18 schema + 29 routes)
+   - Full backend tests: 955/955 passed
+
 ## Next module
-Sprint 3 / Module 35 — Clinical Workflow API Routes.
+Sprint 3 / Module 36 — TBD.
