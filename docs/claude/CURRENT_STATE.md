@@ -454,11 +454,14 @@
    - Manual local signed n8n webhook: HTTP 200 OK
    - Local integration smoke checkpoint created
 
-49. Module 51 — Local integration smoke result checkpoint (in progress)
-   - Commit: TBD
+49. Module 51 — Local integration smoke result checkpoint
+   - Commit: 2872c99
    - `docs/integrations/LOCAL_SMOKE_RESULTS.md` (new)
-   - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated)
+   - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated — Section L added)
+   - `docs/claude/CURRENT_STATE.md` (updated)
+   - `docs/claude/NEXT_MODULE.md` (updated — Module 52 placeholder)
    - No production code changes
+   - Full backend tests: 1312/1312 passed
 
 ## Next module
 Sprint 6 / Module 52 — External Integration Compatibility Plan for Vapi and n8n (pending review).
