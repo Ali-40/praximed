@@ -14,7 +14,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from backend.app.api.dependencies.machine_auth import (
+    get_machine_auth_context,
+    require_vapi_tool_access,
+)
 from backend.app.api.deps import get_config_loader, get_db_pool
+from backend.app.core.machine_auth import MachineAuthContext
 from backend.app.core.config_loader import ConfigNotFoundError, ConfigValidationError
 from backend.app.db.repositories.appointment_request_repo import InvalidAppointmentRequestError
 from backend.app.modules.calendar_sync import availability_engine
@@ -48,6 +53,7 @@ async def vapi_check_availability(
     body: VapiAvailabilityCheckRequest,
     pool: Any = Depends(get_db_pool),
     config_loader: Any = Depends(get_config_loader),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> VapiAvailabilityCheckResponse:
     """
     Check whether a specific time slot is bookable for the given clinic.
@@ -55,6 +61,7 @@ async def vapi_check_availability(
     Returns a Vapi-friendly response with a plain-language ``message`` the
     voice agent can read directly to the caller.
     """
+    require_vapi_tool_access(requested_clinic_id=body.clinic_ref, machine_context=machine_auth)
     try:
         config = await config_loader.load(body.clinic_ref)
     except ConfigNotFoundError:
@@ -109,6 +116,7 @@ async def vapi_suggest_slots(
     body: VapiSlotSuggestionRequest,
     pool: Any = Depends(get_db_pool),
     config_loader: Any = Depends(get_config_loader),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> VapiSlotSuggestionResponse:
     """
     Suggest available time slots for the given clinic on a specific date.
@@ -116,6 +124,7 @@ async def vapi_suggest_slots(
     Returns a Vapi-friendly response.  When no slots are found the message
     instructs the agent to offer a callback instead.
     """
+    require_vapi_tool_access(requested_clinic_id=body.clinic_ref, machine_context=machine_auth)
     try:
         config = await config_loader.load(body.clinic_ref)
     except ConfigNotFoundError:
@@ -168,6 +177,7 @@ async def vapi_capture_appointment_request(
     body: VapiAppointmentCaptureRequest,
     pool: Any = Depends(get_db_pool),
     config_loader: Any = Depends(get_config_loader),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> VapiAppointmentCaptureResponse:
     """
     Capture an appointment request from a completed Vapi phone session.
@@ -176,6 +186,7 @@ async def vapi_capture_appointment_request(
     status='new' and action_required=True so clinic staff can review and
     confirm before the appointment is considered booked.
     """
+    require_vapi_tool_access(requested_clinic_id=body.clinic_ref, machine_context=machine_auth)
     try:
         result = await vapi_appointment_capture.capture_vapi_appointment_request(
             pool=pool,

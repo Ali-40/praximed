@@ -28,7 +28,12 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.app.api.dependencies.machine_auth import (
+    get_machine_auth_context,
+    require_n8n_calendar_sync_access,
+)
 from backend.app.api.deps import get_db_pool
+from backend.app.core.machine_auth import MachineAuthContext
 from backend.app.modules.calendar_sync.calendar_sync import (
     InvalidCalendarPayloadError,
     UnsupportedCalendarEventTypeError,
@@ -73,6 +78,7 @@ async def n8n_calendar_sync(
     payload: Dict[str, Any],
     pool: Any = Depends(get_db_pool),
     _secret: None = Depends(_verify_webhook_secret),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> Dict[str, Any]:
     """
     Receive a calendar sync event from n8n and process it.
@@ -85,10 +91,15 @@ async def n8n_calendar_sync(
     Error mapping
     -------------
     400  Invalid or missing payload fields.
-    401  Webhook secret mismatch.
+    401  Webhook secret mismatch or missing machine auth.
+    403  Machine service or scope not permitted.
     500  Unexpected error in the sync service.
     503  Database pool not yet initialised (returned by ``get_db_pool``).
     """
+    require_n8n_calendar_sync_access(
+        requested_clinic_id=payload.get("clinic_id"),
+        machine_context=machine_auth,
+    )
     try:
         result = await process_calendar_sync_payload(pool, payload)
         return result

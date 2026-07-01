@@ -308,5 +308,18 @@
    - Module 39 tests: 45/45 passed (30 core + 15 dependencies)
    - Full backend tests: 1063/1063 passed
 
+38. Module 40 — Apply machine guards to integration routes
+   - Commit: TBD
+   - `backend/app/api/routes/availability.py` (updated)
+   - `backend/app/api/routes/vapi_tools.py` (updated)
+   - `backend/app/api/routes/vapi_webhooks.py` (updated)
+   - `backend/app/api/routes/calendar_webhooks.py` (updated)
+   - `backend/tests/test_availability_routes.py` (updated)
+   - `backend/tests/test_vapi_tool_routes.py` (updated)
+   - `backend/tests/test_vapi_webhook_route.py` (updated)
+   - `backend/tests/test_calendar_webhook_route.py` (updated)
+   - Module 40 tests: 20/20 passed (5 availability + 5 vapi_tools + 5 vapi_webhook + 5 calendar_webhook)
+   - Full backend tests: 1083/1083 passed
+
 ## Next module
-Sprint 3 — next module TBD.
+Sprint 3 / Module 40 — Apply machine guards to integration routes (complete, awaiting commit).

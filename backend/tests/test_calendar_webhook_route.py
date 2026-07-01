@@ -21,7 +21,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
+from backend.app.api.dependencies.machine_auth import get_machine_auth_context
 from backend.app.api.deps import get_db_pool
+from backend.app.core.machine_auth import MachineAuthContext
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -41,7 +43,17 @@ VALID_PAYLOAD = {
     "event_type":            "connection_upsert",
 }
 
+CLINIC_ID = "11111111-1111-4111-8111-111111111111"
+OTHER_CLINIC_ID = "99999999-9999-4999-8999-999999999999"
+
 FAKE_POOL = object()   # sentinel — identity tested in test 3
+
+
+def _machine_auth() -> MachineAuthContext:
+    return MachineAuthContext(
+        service_name="n8n", clinic_id=CLINIC_ID, scopes={"calendar:sync"}
+    )
+
 
 SYNC_SERVICE = (
     "backend.app.api.routes.calendar_webhooks.process_calendar_sync_payload"
@@ -62,28 +74,33 @@ SUCCESS_RESULT = {
 
 @pytest.fixture()
 def client_with_pool():
-    """
-    TestClient whose ``get_db_pool`` dependency is overridden to return
-    FAKE_POOL.  The override is removed after each test.
-    """
-    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    """TestClient with pool and machine auth overrides."""
+    app.dependency_overrides[get_db_pool]              = lambda: FAKE_POOL
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
     yield TestClient(app)
-    app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
 
 
 @pytest.fixture()
 def client_no_pool():
-    """
-    TestClient with NO pool override — exercises the real ``get_db_pool``
-    which raises 503 when ``app.state.db_pool`` is absent.
-    """
+    """TestClient with machine auth override — no pool."""
     app.dependency_overrides.pop(get_db_pool, None)
-    # Ensure no pool is on app.state from a previous test.
-    # Starlette's State raises KeyError (not AttributeError) on missing keys.
     try:
         del app.state.db_pool
     except (AttributeError, KeyError):
         pass
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
+
+
+@pytest.fixture()
+def client_no_auth():
+    """TestClient with pool override — no machine auth override."""
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides.pop(get_machine_auth_context, None)
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
 
@@ -267,4 +284,94 @@ def test_no_real_db_connection_needed(client_with_pool, monkeypatch):
     with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)):
         response = client_with_pool.post(URL, json=VALID_PAYLOAD)
 
+    assert response.status_code == 200
+
+
+# ===========================================================================
+# Module 40 — Machine auth guard tests
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# 12. Missing X-Service-Name header → 401
+# ---------------------------------------------------------------------------
+
+def test_missing_machine_auth_headers_returns_401(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    response = client_no_auth.post(URL, json=VALID_PAYLOAD)
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 13. Invalid service name → 401
+# ---------------------------------------------------------------------------
+
+def test_invalid_service_name_returns_401(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    response = client_no_auth.post(
+        URL,
+        json=VALID_PAYLOAD,
+        headers={
+            "X-Service-Name": "rogue-bot",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "calendar:sync",
+        },
+    )
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 14. Wrong clinic → 403
+# ---------------------------------------------------------------------------
+
+def test_wrong_clinic_returns_403(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)):
+        response = client_no_auth.post(
+            URL,
+            json=VALID_PAYLOAD,
+            headers={
+                "X-Service-Name": "n8n",
+                "X-Service-Clinic-Id": OTHER_CLINIC_ID,
+                "X-Service-Scopes": "calendar:sync",
+            },
+        )
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 15. Missing required scope → 403
+# ---------------------------------------------------------------------------
+
+def test_missing_scope_returns_403(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)):
+        response = client_no_auth.post(
+            URL,
+            json=VALID_PAYLOAD,
+            headers={
+                "X-Service-Name": "n8n",
+                "X-Service-Clinic-Id": CLINIC_ID,
+                "X-Service-Scopes": "vapi:tool",
+            },
+        )
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 16. Valid machine auth → 200
+# ---------------------------------------------------------------------------
+
+def test_valid_machine_auth_returns_200(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)):
+        response = client_no_auth.post(
+            URL,
+            json=VALID_PAYLOAD,
+            headers={
+                "X-Service-Name": "n8n",
+                "X-Service-Clinic-Id": CLINIC_ID,
+                "X-Service-Scopes": "calendar:sync",
+            },
+        )
     assert response.status_code == 200

@@ -16,7 +16,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
+from backend.app.api.dependencies.machine_auth import get_machine_auth_context
 from backend.app.api.deps import get_db_pool
+from backend.app.core.machine_auth import MachineAuthContext
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -41,7 +43,16 @@ SUCCESS_RESULT = {
     "message":    "Event 'call.started' processed successfully.",
 }
 
+OTHER_CLINIC_ID = "99999999-9999-4999-8999-999999999999"
+
 FAKE_POOL = object()
+
+
+def _machine_auth() -> MachineAuthContext:
+    return MachineAuthContext(
+        service_name="vapi", clinic_id=CLINIC_ID, scopes={"vapi:webhook"}
+    )
+
 
 SECRET_ENV   = "PRAXIMED_VAPI_WEBHOOK_SECRET"
 SECRET_VALUE = "vapi-super-secret-999"
@@ -56,9 +67,11 @@ PROCESS_EVENT = "backend.app.api.routes.vapi_webhooks.process_vapi_call_event"
 
 @pytest.fixture()
 def client_with_pool():
-    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_db_pool]              = lambda: FAKE_POOL
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
     yield TestClient(app)
-    app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
 
 
 @pytest.fixture()
@@ -68,6 +81,17 @@ def client_no_pool():
         del app.state.db_pool
     except (AttributeError, KeyError):
         pass
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
+
+
+@pytest.fixture()
+def client_no_auth():
+    """TestClient with pool override — no machine auth override."""
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides.pop(get_machine_auth_context, None)
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
 
@@ -210,3 +234,93 @@ def test_unexpected_error_returns_500(client_with_pool, monkeypatch):
         response = client_with_pool.post(URL, json=VALID_PAYLOAD)
     assert response.status_code == 500
     assert "Internal error" in response.json()["detail"]
+
+
+# ===========================================================================
+# Module 40 — Machine auth guard tests
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# 11. Missing X-Service-Name header → 401
+# ---------------------------------------------------------------------------
+
+def test_missing_machine_auth_headers_returns_401(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    response = client_no_auth.post(URL, json=VALID_PAYLOAD)
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 12. Invalid service name → 401
+# ---------------------------------------------------------------------------
+
+def test_invalid_service_name_returns_401(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    response = client_no_auth.post(
+        URL,
+        json=VALID_PAYLOAD,
+        headers={
+            "X-Service-Name": "rogue-bot",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:webhook",
+        },
+    )
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 13. Wrong clinic → 403
+# ---------------------------------------------------------------------------
+
+def test_wrong_clinic_returns_403(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)):
+        response = client_no_auth.post(
+            URL,
+            json=VALID_PAYLOAD,
+            headers={
+                "X-Service-Name": "vapi",
+                "X-Service-Clinic-Id": OTHER_CLINIC_ID,
+                "X-Service-Scopes": "vapi:webhook",
+            },
+        )
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 14. Missing required scope → 403
+# ---------------------------------------------------------------------------
+
+def test_missing_scope_returns_403(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)):
+        response = client_no_auth.post(
+            URL,
+            json=VALID_PAYLOAD,
+            headers={
+                "X-Service-Name": "vapi",
+                "X-Service-Clinic-Id": CLINIC_ID,
+                "X-Service-Scopes": "availability:read",
+            },
+        )
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 15. Valid machine auth → 200
+# ---------------------------------------------------------------------------
+
+def test_valid_machine_auth_returns_200(client_no_auth, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)):
+        response = client_no_auth.post(
+            URL,
+            json=VALID_PAYLOAD,
+            headers={
+                "X-Service-Name": "vapi",
+                "X-Service-Clinic-Id": CLINIC_ID,
+                "X-Service-Scopes": "vapi:webhook",
+            },
+        )
+    assert response.status_code == 200

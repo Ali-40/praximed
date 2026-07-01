@@ -29,7 +29,12 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from backend.app.api.dependencies.machine_auth import (
+    get_machine_auth_context,
+    require_vapi_webhook_access,
+)
 from backend.app.api.deps import get_db_pool
+from backend.app.core.machine_auth import MachineAuthContext
 from backend.app.modules.vapi.vapi_event_handler import (
     InvalidVapiEventPayloadError,
     UnsupportedVapiEventTypeError,
@@ -68,6 +73,7 @@ async def vapi_call_event(
     payload: Dict[str, Any],
     pool: Any = Depends(get_db_pool),
     _secret: None = Depends(_verify_vapi_secret),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> Dict[str, Any]:
     """
     Receive a Vapi call event and persist it via the call event handler.
@@ -75,10 +81,15 @@ async def vapi_call_event(
     Error mapping
     -------------
     400  Invalid or unsupported payload.
-    401  Webhook secret mismatch.
+    401  Webhook secret mismatch or missing machine auth.
+    403  Machine service or scope not permitted.
     500  Unexpected error in the event handler.
     503  Database pool not yet initialised.
     """
+    require_vapi_webhook_access(
+        requested_clinic_id=payload.get("clinic_id"),
+        machine_context=machine_auth,
+    )
     try:
         result = await process_vapi_call_event(pool, payload)
         return result

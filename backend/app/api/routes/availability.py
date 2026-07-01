@@ -1,10 +1,13 @@
 """
 Availability API routes — PraxisMed Sprint 1 / Module 10
+Updated: Sprint 3 / Module 40 — machine access guards applied (availability:read)
 
 Exposes two endpoints under /calendar/availability:
 
     POST /calendar/availability/check   — is a specific slot bookable?
     POST /calendar/availability/suggest — suggest available slots for a date
+
+Access policy: vapi, internal, system, dashboard — availability:read scope required.
 """
 
 from __future__ import annotations
@@ -14,11 +17,16 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from backend.app.api.dependencies.machine_auth import (
+    get_machine_auth_context,
+    require_availability_read_access,
+)
 from backend.app.api.deps import get_config_loader, get_db_pool
 from backend.app.core.config_loader import (
     ConfigNotFoundError,
     ConfigValidationError,
 )
+from backend.app.core.machine_auth import MachineAuthContext
 from backend.app.modules.calendar_sync import availability_engine
 from backend.app.modules.calendar_sync.availability_engine import (
     InvalidAvailabilityRangeError,
@@ -41,6 +49,7 @@ async def check_availability(
     body: AvailabilityCheckRequest,
     pool: Any = Depends(get_db_pool),
     config_loader: Any = Depends(get_config_loader),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> AvailabilityCheckResponse:
     """
     Check whether a specific time slot is bookable for the given clinic.
@@ -48,6 +57,9 @@ async def check_availability(
     Returns ``available: true`` when the slot falls within opening hours and
     has no overlapping calendar blocks; ``available: false`` otherwise.
     """
+    require_availability_read_access(
+        requested_clinic_id=body.clinic_ref, machine_context=machine_auth
+    )
     try:
         config = await config_loader.load(body.clinic_ref)
     except ConfigNotFoundError:
@@ -87,10 +99,14 @@ async def suggest_slots(
     body: SuggestedSlotsRequest,
     pool: Any = Depends(get_db_pool),
     config_loader: Any = Depends(get_config_loader),
+    machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> SuggestedSlotsResponse:
     """
     Suggest available time slots for the given clinic on a specific date.
     """
+    require_availability_read_access(
+        requested_clinic_id=body.clinic_ref, machine_context=machine_auth
+    )
     try:
         config = await config_loader.load(body.clinic_ref)
     except ConfigNotFoundError:

@@ -20,7 +20,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
+from backend.app.api.dependencies.machine_auth import get_machine_auth_context
 from backend.app.api.deps import get_db_pool, get_config_loader
+from backend.app.core.machine_auth import MachineAuthContext
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -54,7 +56,16 @@ SUGGEST_SLOTS = (
     "backend.app.api.routes.vapi_tools.availability_engine.suggest_available_slots"
 )
 
+OTHER_CLINIC_ID = "99999999-9999-4999-8999-999999999999"
+
 FAKE_POOL = object()
+
+
+def _machine_auth() -> MachineAuthContext:
+    return MachineAuthContext(
+        service_name="vapi", clinic_id=CLINIC_REF, scopes={"vapi:tool"}
+    )
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -81,11 +92,13 @@ def _make_fake_loader(config: Any = None) -> MagicMock:
 def client_full():
     fake_config = _make_fake_config()
     fake_loader = _make_fake_loader(fake_config)
-    app.dependency_overrides[get_db_pool]       = lambda: FAKE_POOL
-    app.dependency_overrides[get_config_loader] = lambda: fake_loader
+    app.dependency_overrides[get_db_pool]              = lambda: FAKE_POOL
+    app.dependency_overrides[get_config_loader]        = lambda: fake_loader
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
     yield TestClient(app), fake_loader, fake_config
-    app.dependency_overrides.pop(get_db_pool,       None)
-    app.dependency_overrides.pop(get_config_loader, None)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_config_loader,        None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
 
 
 @pytest.fixture()
@@ -96,23 +109,40 @@ def client_no_pool():
     except (AttributeError, KeyError):
         pass
     fake_loader = _make_fake_loader()
-    app.dependency_overrides[get_config_loader] = lambda: fake_loader
+    app.dependency_overrides[get_config_loader]        = lambda: fake_loader
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
     yield TestClient(app)
-    app.dependency_overrides.pop(get_db_pool,       None)
-    app.dependency_overrides.pop(get_config_loader, None)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_config_loader,        None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
 
 
 @pytest.fixture()
 def client_no_loader():
-    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_db_pool]              = lambda: FAKE_POOL
+    app.dependency_overrides[get_machine_auth_context] = _machine_auth
     app.dependency_overrides.pop(get_config_loader, None)
     try:
         del app.state.config_loader
     except (AttributeError, KeyError):
         pass
     yield TestClient(app)
-    app.dependency_overrides.pop(get_db_pool,       None)
-    app.dependency_overrides.pop(get_config_loader, None)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_config_loader,        None)
+    app.dependency_overrides.pop(get_machine_auth_context, None)
+
+
+@pytest.fixture()
+def client_no_auth():
+    """TestClient with pool + loader overrides — no machine auth override."""
+    fake_config = _make_fake_config()
+    fake_loader = _make_fake_loader(fake_config)
+    app.dependency_overrides[get_db_pool]       = lambda: FAKE_POOL
+    app.dependency_overrides[get_config_loader] = lambda: fake_loader
+    app.dependency_overrides.pop(get_machine_auth_context, None)
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool,              None)
+    app.dependency_overrides.pop(get_config_loader,        None)
 
 
 # ---------------------------------------------------------------------------
@@ -455,3 +485,86 @@ def test_capture_unexpected_error_returns_500(client_full):
         response = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
     assert response.status_code == 500
     assert "Internal error" in response.json()["detail"]
+
+
+# ===========================================================================
+# Module 40 — Machine auth guard tests
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# 11. Missing X-Service-Name header → 401
+# ---------------------------------------------------------------------------
+
+def test_missing_machine_auth_headers_returns_401(client_no_auth):
+    response = client_no_auth.post(CHECK_URL, json=CHECK_PAYLOAD)
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 12. Invalid service name → 401
+# ---------------------------------------------------------------------------
+
+def test_invalid_service_name_returns_401(client_no_auth):
+    response = client_no_auth.post(
+        CHECK_URL,
+        json=CHECK_PAYLOAD,
+        headers={
+            "X-Service-Name": "rogue-bot",
+            "X-Service-Clinic-Id": CLINIC_REF,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 13. Wrong clinic → 403
+# ---------------------------------------------------------------------------
+
+def test_wrong_clinic_returns_403(client_no_auth):
+    response = client_no_auth.post(
+        CHECK_URL,
+        json=CHECK_PAYLOAD,
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Service-Clinic-Id": OTHER_CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 14. Missing required scope → 403
+# ---------------------------------------------------------------------------
+
+def test_missing_scope_returns_403(client_no_auth):
+    response = client_no_auth.post(
+        CHECK_URL,
+        json=CHECK_PAYLOAD,
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Service-Clinic-Id": CLINIC_REF,
+            "X-Service-Scopes": "availability:read",
+        },
+    )
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# 15. Valid machine auth → 200
+# ---------------------------------------------------------------------------
+
+def test_valid_machine_auth_returns_200(client_no_auth):
+    with patch(IS_SLOT_BOOKABLE, new=AsyncMock(return_value=True)):
+        response = client_no_auth.post(
+            CHECK_URL,
+            json=CHECK_PAYLOAD,
+            headers={
+                "X-Service-Name": "vapi",
+                "X-Service-Clinic-Id": CLINIC_REF,
+                "X-Service-Scopes": "vapi:tool",
+            },
+        )
+    assert response.status_code == 200
