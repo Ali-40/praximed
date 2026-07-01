@@ -482,5 +482,19 @@
    - No production code changes
    - Full backend tests: 1312/1312 passed
 
+51. Module 53 — Provider header compatibility config
+   - Commit: 3b1937e
+   - `backend/app/core/webhook_provider_config.py` (new)
+   - `backend/app/api/dependencies/webhook_signature.py` (updated)
+   - `backend/tests/test_webhook_provider_config.py` (new — 21 tests)
+   - `backend/tests/test_webhook_signature_dependencies.py` (updated — 5 new alias tests)
+   - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (updated — Section L added)
+   - Module 53 tests: 26 new tests passed (21 config + 5 alias dependency)
+   - Full backend tests: 1338/1338 passed
+   - Vapi accepted headers: X-Vapi-Signature, X-Vapi-Hmac-Sha256, X-Signature
+   - n8n accepted headers: X-N8N-Signature, X-N8n-Signature, X-Signature
+   - Internal accepted headers: X-Internal-Signature, X-Signature
+   - HMAC verification unchanged; missing/invalid signatures still fail
+
 ## Next module
-Sprint 6 / Module 53 — Provider Header Compatibility Config (pending).
+Sprint 6 / Module 54 — TBD (pending review).
