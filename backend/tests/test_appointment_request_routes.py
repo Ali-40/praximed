@@ -64,6 +64,7 @@ FAKE_ROW = {
 }
 
 REPO = "backend.app.api.routes.appointment_requests.appointment_request_repo"
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 FAKE_POOL = MagicMock()
 
@@ -376,4 +377,72 @@ def test_doctor_role_allowed(client_no_auth):
                 "X-User-Role": "doctor",
             },
         )
+    assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Audit logging tests (Module 43)
+# ---------------------------------------------------------------------------
+
+
+def test_create_appointment_request_records_audit_event(client):
+    with patch(f"{REPO}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "appointment_request.create"
+    assert event["resource_type"] == "appointment_requests"
+
+
+def test_status_update_records_audit_event(client):
+    updated = {**FAKE_ROW, "status": "confirmed"}
+    with patch(f"{REPO}.update_appointment_request_status", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.patch(STATUS_URL, params={"clinic_id": CLINIC_ID}, json={"status": "confirmed"})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "appointment_request.status_update"
+
+
+def test_assign_records_audit_event(client):
+    updated = {**FAKE_ROW, "assigned_user_id": USER_ID}
+    with patch(f"{REPO}.assign_appointment_request", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.patch(ASSIGN_URL, params={"clinic_id": CLINIC_ID}, json={"assigned_user_id": USER_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "appointment_request.assign"
+
+
+def test_callback_needed_records_warning_audit_event(client):
+    updated = {**FAKE_ROW, "status": "callback_needed"}
+    with patch(f"{REPO}.mark_callback_needed", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CALLBACK_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "appointment_request.callback_needed"
+    assert event["severity"] == "warning"
+
+
+def test_archive_records_audit_event(client):
+    archived = {**FAKE_ROW, "status": "archived"}
+    with patch(f"{REPO}.archive_appointment_request", new=AsyncMock(return_value=archived)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(ARCHIVE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "appointment_request.archive"
+
+
+def test_audit_failure_does_not_break_appointment_request_route(client):
+    with patch(f"{REPO}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client.post(BASE_URL, json=CREATE_BODY)
     assert resp.status_code == 200

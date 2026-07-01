@@ -1,6 +1,7 @@
 """
 Patient API routes — PraxisMed Sprint 2 / Module 26
 Updated: Sprint 3 / Module 37 — tenant guards applied (staff-level access)
+Updated: Sprint 4 / Module 43 — audit logging for mutation routes
 
 Seven endpoints under /patients for creating, upserting, listing, fetching,
 updating, and archiving clinic patient records.
@@ -20,6 +21,7 @@ from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import patient_repo
 from backend.app.db.repositories.patient_repo import InvalidPatientError
+from backend.app.modules.audit import audit_logger
 from backend.app.schemas.patients import (
     PatientCreate,
     PatientListResponse,
@@ -60,6 +62,10 @@ async def create_patient(
         logger.exception("Unexpected error creating patient")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="patient.create", resource_type="patients",
+        resource_id=row.get("id"), metadata={"route": "create_patient"},
+    ))
     return PatientResponse(ok=True, patient=row)
 
 
@@ -90,6 +96,10 @@ async def upsert_patient_by_external_id(
         logger.exception("Unexpected error upserting patient")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="patient.upsert_by_external_id", resource_type="patients",
+        resource_id=row.get("id"), metadata={"route": "upsert_patient_by_external_id"},
+    ))
     return PatientResponse(ok=True, patient=row)
 
 
@@ -205,6 +215,10 @@ async def update_patient(
     if row is None:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="patient.update", resource_type="patients",
+        resource_id=patient_id, metadata={"route": "update_patient"},
+    ))
     return PatientResponse(ok=True, patient=row)
 
 
@@ -231,4 +245,8 @@ async def archive_patient(
     if row is None:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="patient.archive", resource_type="patients",
+        resource_id=patient_id, metadata={"route": "archive_patient"},
+    ))
     return PatientResponse(ok=True, patient=row)

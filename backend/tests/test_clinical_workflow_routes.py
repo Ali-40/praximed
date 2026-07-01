@@ -39,6 +39,7 @@ REJECT_URL = f"{BASE}/consultations/{SESSION_ID}/reject-summary"
 TIMELINE_URL = f"{BASE}/patients/{PATIENT_ID}/timeline"
 
 SVC = "backend.app.api.routes.clinical_workflows"
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 FAKE_POOL = MagicMock()
 
@@ -632,4 +633,97 @@ def test_owner_role_allowed(client_no_auth):
                 "X-User-Role": "owner",
             },
         )
+    assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Audit logging tests (Module 43)
+# ---------------------------------------------------------------------------
+
+
+def test_audio_reference_records_audit_event(client):
+    with patch(f"{SVC}.attach_audio_reference_to_consultation", new=AsyncMock(return_value=FAKE_AUDIO_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(AUDIO_URL, json={"clinic_id": CLINIC_ID, "file_name": "a.mp3", "content_type": "audio/mpeg", "file_size_bytes": 1024})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "clinical_workflow.audio_reference_attach"
+    assert event["resource_type"] == "consultation_sessions"
+
+
+def test_manual_transcript_records_audit_event(client):
+    with patch(f"{SVC}.transcribe_consultation_audio", new=AsyncMock(return_value=FAKE_TRANSCRIPT_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(TRANSCRIPT_URL, json={"clinic_id": CLINIC_ID, "transcript_text": "...", "audio_file_path": "p.mp3"})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "clinical_workflow.manual_transcript_save"
+
+
+def test_draft_summary_records_audit_event(client):
+    with patch(f"{SVC}.create_and_save_clinical_summary_draft", new=AsyncMock(return_value=FAKE_DRAFT_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(DRAFT_URL, json={"clinic_id": CLINIC_ID, "transcript_text": "Chief complaint."})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "clinical_workflow.draft_summary_create"
+
+
+def test_approve_summary_records_critical_audit_event(client):
+    with patch(f"{SVC}.approve_summary_after_review", new=AsyncMock(return_value=FAKE_APPROVE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(APPROVE_URL, json={
+            "clinic_id": CLINIC_ID,
+            "approved_summary": VALID_DRAFT_SUMMARY,
+            "approved_by_user_id": "doc-1",
+        })
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "clinical_workflow.summary_approve"
+    assert event["severity"] == "critical"
+
+
+def test_reject_summary_records_critical_audit_event(client):
+    with patch(f"{SVC}.reject_summary_after_review", new=AsyncMock(return_value=FAKE_REJECT_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(REJECT_URL, json={
+            "clinic_id": CLINIC_ID,
+            "rejected_reason": "incomplete",
+            "rejected_by_user_id": "doc-1",
+        })
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "clinical_workflow.summary_reject"
+    assert event["severity"] == "critical"
+
+
+def test_review_package_does_not_record_audit_event(client):
+    with patch(f"{SVC}.build_review_package", return_value=FAKE_REVIEW_PACKAGE), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(REVIEW_URL, json={
+            "clinic_id": CLINIC_ID,
+            "draft_summary": VALID_DRAFT_SUMMARY,
+            "transcript_text": "text",
+        })
+    assert resp.status_code == 200
+    mock_audit.assert_not_awaited()
+
+
+def test_timeline_does_not_record_audit_event(client):
+    with patch(f"{SVC}.create_patient_timeline_report", new=AsyncMock(return_value=FAKE_TIMELINE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.get(TIMELINE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_not_awaited()
+
+
+def test_audit_failure_does_not_break_workflow_route(client):
+    with patch(f"{SVC}.attach_audio_reference_to_consultation", new=AsyncMock(return_value=FAKE_AUDIO_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client.post(AUDIO_URL, json={"clinic_id": CLINIC_ID, "file_name": "a.mp3", "content_type": "audio/mpeg", "file_size_bytes": 1024})
     assert resp.status_code == 200

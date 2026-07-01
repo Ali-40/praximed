@@ -62,6 +62,7 @@ FAKE_ROW = {
 }
 
 REPO = "backend.app.api.routes.notifications.notification_repo"
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 FAKE_POOL = MagicMock()
 
@@ -376,4 +377,58 @@ def test_doctor_role_allowed(client_no_auth):
                 "X-User-Role": "doctor",
             },
         )
+    assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Audit logging tests (Module 43)
+# ---------------------------------------------------------------------------
+
+
+def test_create_notification_records_audit_event(client):
+    with patch(f"{REPO}.create_notification", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "notification.create"
+    assert event["resource_type"] == "clinic_notifications"
+    assert event["actor_type"] == "user"
+
+
+def test_mark_read_records_audit_event(client):
+    with patch(f"{REPO}.mark_notification_read", new=AsyncMock(return_value={**FAKE_ROW, "status": "read"})), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(READ_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "notification.mark_read"
+
+
+def test_cancel_notification_records_audit_event(client):
+    with patch(f"{REPO}.cancel_notification", new=AsyncMock(return_value={**FAKE_ROW, "status": "cancelled"})), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CANCEL_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "notification.cancel"
+
+
+def test_audit_metadata_excludes_message_and_raw_payload(client):
+    with patch(f"{REPO}.create_notification", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        client.post(BASE_URL, json=CREATE_BODY)
+    event = mock_audit.call_args[0][1]
+    meta = event.get("metadata", {})
+    assert "message" not in meta
+    assert "raw_payload" not in meta
+
+
+def test_audit_failure_does_not_break_notification_route(client):
+    with patch(f"{REPO}.create_notification", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client.post(BASE_URL, json=CREATE_BODY)
     assert resp.status_code == 200

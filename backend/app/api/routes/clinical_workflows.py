@@ -1,6 +1,7 @@
 """
 Clinical workflow API routes — PraxisMed Sprint 3 / Module 35
 Updated: Sprint 3 / Module 37 — tenant guards applied (clinical-level access)
+Updated: Sprint 4 / Module 43 — audit logging for mutation routes
 
 Seven endpoints that expose the clinical workflow service layer:
   - audio reference attachment
@@ -27,6 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from backend.app.api.dependencies.auth import get_auth_context, require_clinical_clinic_access
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
+from backend.app.modules.audit import audit_logger
 from backend.app.modules.audio.audio_storage import (
     AudioStorageError,
     InvalidAudioUploadError,
@@ -131,6 +133,11 @@ async def attach_audio_reference(
         logger.exception("Unexpected error attaching audio reference")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="clinical_workflow.audio_reference_attach",
+        resource_type="consultation_sessions", resource_id=session_id,
+        metadata={"route": "attach_audio_reference"},
+    ))
     return WorkflowResponse(ok=True, result=result, message=result.get("message"))
 
 
@@ -173,6 +180,11 @@ async def save_manual_transcript(
         logger.exception("Unexpected error saving manual transcript")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="clinical_workflow.manual_transcript_save",
+        resource_type="consultation_sessions", resource_id=session_id,
+        metadata={"route": "save_manual_transcript"},
+    ))
     return WorkflowResponse(ok=True, result=result, message=result.get("message"))
 
 
@@ -211,6 +223,11 @@ async def generate_draft_summary(
         logger.exception("Unexpected error generating draft summary")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="clinical_workflow.draft_summary_create",
+        resource_type="consultation_sessions", resource_id=session_id,
+        metadata={"route": "generate_draft_summary"},
+    ))
     return WorkflowResponse(ok=True, result=result, message=result.get("message"))
 
 
@@ -285,6 +302,11 @@ async def approve_summary(
         logger.exception("Unexpected error approving summary")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="clinical_workflow.summary_approve",
+        resource_type="consultation_sessions", resource_id=session_id,
+        severity="critical", metadata={"route": "approve_summary"},
+    ))
     return WorkflowResponse(ok=True, result=result, message=result.get("message"))
 
 
@@ -320,6 +342,11 @@ async def reject_summary(
         logger.exception("Unexpected error rejecting summary")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="clinical_workflow.summary_reject",
+        resource_type="consultation_sessions", resource_id=session_id,
+        severity="critical", metadata={"route": "reject_summary"},
+    ))
     return WorkflowResponse(ok=True, result=result, message=result.get("message"))
 
 

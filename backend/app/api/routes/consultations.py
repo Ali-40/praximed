@@ -1,6 +1,7 @@
 """
 Consultation session API routes — PraxisMed Sprint 2 / Module 29
 Updated: Sprint 3 / Module 37 — tenant guards applied (clinical-level access)
+Updated: Sprint 4 / Module 43 — audit logging for mutation routes
 
 Ten endpoints under /consultations covering the full session lifecycle:
 create, list, fetch, status update, audio attach, transcript, draft summary,
@@ -20,6 +21,7 @@ from backend.app.api.dependencies.auth import get_auth_context, require_clinical
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import consultation_repo
+from backend.app.modules.audit import audit_logger
 from backend.app.db.repositories.consultation_repo import InvalidConsultationSessionError
 from backend.app.schemas.consultations import (
     ConsultationApprove,
@@ -63,6 +65,10 @@ async def create_consultation_session(
         logger.exception("Unexpected error creating consultation session")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.create", resource_type="consultation_sessions",
+        resource_id=row.get("id"), metadata={"route": "create_consultation_session"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -151,6 +157,10 @@ async def update_consultation_status(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.status_update", resource_type="consultation_sessions",
+        resource_id=session_id, metadata={"route": "update_consultation_status", "status": body.status},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -179,6 +189,10 @@ async def attach_audio(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.audio_attach", resource_type="consultation_sessions",
+        resource_id=session_id, metadata={"route": "attach_audio"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -207,6 +221,10 @@ async def save_transcript(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.transcript_save", resource_type="consultation_sessions",
+        resource_id=session_id, metadata={"route": "save_transcript"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -235,6 +253,10 @@ async def save_draft_summary(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.draft_summary_save", resource_type="consultation_sessions",
+        resource_id=session_id, metadata={"route": "save_draft_summary"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -264,6 +286,10 @@ async def approve_consultation(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.approve", resource_type="consultation_sessions",
+        resource_id=session_id, severity="critical", metadata={"route": "approve_consultation"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -293,6 +319,10 @@ async def reject_consultation(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.reject", resource_type="consultation_sessions",
+        resource_id=session_id, severity="critical", metadata={"route": "reject_consultation"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)
 
 
@@ -319,4 +349,8 @@ async def archive_consultation(
     if row is None:
         raise HTTPException(status_code=404, detail="Consultation session not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="consultation.archive", resource_type="consultation_sessions",
+        resource_id=session_id, metadata={"route": "archive_consultation"},
+    ))
     return ConsultationResponse(ok=True, consultation=row)

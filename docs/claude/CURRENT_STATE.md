@@ -342,7 +342,7 @@
    - Full backend tests: 1103/1103 passed
 
 40. Module 42 — Audit logging foundation
-   - Commit: TBD
+   - Commit: f085f83
    - `backend/app/db/repositories/audit_repo.py` (new)
    - `backend/app/modules/audit/__init__.py` (new)
    - `backend/app/modules/audit/audit_logger.py` (new)
@@ -351,5 +351,20 @@
    - Module 42 tests: 42/42 passed (20 repo + 22 logger)
    - Full backend tests: 1145/1145 passed
 
+41. Module 43 — Audit logging integration for PHI mutations
+   - Commit: TBD
+   - `backend/app/api/routes/patients.py` (updated)
+   - `backend/app/api/routes/consultations.py` (updated)
+   - `backend/app/api/routes/clinical_workflows.py` (updated)
+   - `backend/app/api/routes/appointment_requests.py` (updated)
+   - `backend/app/api/routes/notifications.py` (updated)
+   - `backend/tests/test_patient_routes.py` (updated)
+   - `backend/tests/test_consultation_routes.py` (updated)
+   - `backend/tests/test_clinical_workflow_routes.py` (updated)
+   - `backend/tests/test_appointment_request_routes.py` (updated)
+   - `backend/tests/test_notification_routes.py` (updated)
+   - Module 43 tests: TBD
+   - Full backend tests: TBD
+
 ## Next module
-Sprint 4 / Module 42 — Audit logging foundation (in progress).
+Sprint 4 / Module 43 — Audit logging integration for PHI mutations (in progress).

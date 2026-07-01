@@ -1,6 +1,7 @@
 """
 Notification API routes — PraxisMed Sprint 1 / Module 23
 Updated: Sprint 3 / Module 38 — tenant guards applied (staff-level access)
+Updated: Sprint 4 / Module 43 — audit logging for mutation routes
 
 Exposes five endpoints under /notifications for creating, listing, fetching,
 marking as read, and cancelling internal clinic notification records.
@@ -19,6 +20,7 @@ from backend.app.api.dependencies.auth import get_auth_context, require_staff_cl
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import notification_repo
+from backend.app.modules.audit import audit_logger
 from backend.app.db.repositories.notification_repo import InvalidNotificationError
 from backend.app.schemas.notifications import (
     NotificationCreate,
@@ -59,6 +61,10 @@ async def create_notification(
         logger.exception("Unexpected error creating notification")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="notification.create", resource_type="clinic_notifications",
+        resource_id=row.get("id"), metadata={"route": "create_notification", "channel": row.get("channel")},
+    ))
     return NotificationResponse(ok=True, notification=row)
 
 
@@ -142,6 +148,10 @@ async def mark_notification_read(
     if row is None:
         raise HTTPException(status_code=404, detail="Notification not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="notification.mark_read", resource_type="clinic_notifications",
+        resource_id=notification_id, metadata={"route": "mark_notification_read"},
+    ))
     return NotificationResponse(ok=True, notification=row)
 
 
@@ -168,4 +178,8 @@ async def cancel_notification(
     if row is None:
         raise HTTPException(status_code=404, detail="Notification not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="notification.cancel", resource_type="clinic_notifications",
+        resource_id=notification_id, metadata={"route": "cancel_notification"},
+    ))
     return NotificationResponse(ok=True, notification=row)

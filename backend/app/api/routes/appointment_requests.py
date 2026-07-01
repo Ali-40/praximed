@@ -1,6 +1,7 @@
 """
 Appointment Request API routes — PraxisMed Sprint 1 / Module 17
 Updated: Sprint 3 / Module 38 — tenant guards applied (staff-level access)
+Updated: Sprint 4 / Module 43 — audit logging for mutation routes
 
 Exposes seven endpoints under /appointment-requests for creating, listing,
 fetching, updating, assigning, and archiving appointment requests.
@@ -19,6 +20,7 @@ from backend.app.api.dependencies.auth import get_auth_context, require_staff_cl
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import appointment_request_repo
+from backend.app.modules.audit import audit_logger
 from backend.app.db.repositories.appointment_request_repo import InvalidAppointmentRequestError
 from backend.app.schemas.appointment_requests import (
     AppointmentRequestAssign,
@@ -62,6 +64,10 @@ async def create_appointment_request(
         logger.exception("Unexpected error creating appointment request")
         raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="appointment_request.create", resource_type="appointment_requests",
+        resource_id=row.get("id"), metadata={"route": "create_appointment_request"},
+    ))
     return AppointmentRequestResponse(ok=True, request=row)
 
 
@@ -144,6 +150,10 @@ async def update_appointment_request_status(
     if row is None:
         raise HTTPException(status_code=404, detail="Appointment request not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="appointment_request.status_update", resource_type="appointment_requests",
+        resource_id=request_id, metadata={"route": "update_appointment_request_status", "status": body.status},
+    ))
     return AppointmentRequestResponse(ok=True, request=row)
 
 
@@ -172,6 +182,10 @@ async def assign_appointment_request(
     if row is None:
         raise HTTPException(status_code=404, detail="Appointment request not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="appointment_request.assign", resource_type="appointment_requests",
+        resource_id=request_id, metadata={"route": "assign_appointment_request"},
+    ))
     return AppointmentRequestResponse(ok=True, request=row)
 
 
@@ -198,6 +212,10 @@ async def mark_callback_needed(
     if row is None:
         raise HTTPException(status_code=404, detail="Appointment request not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="appointment_request.callback_needed", resource_type="appointment_requests",
+        resource_id=request_id, severity="warning", metadata={"route": "mark_callback_needed"},
+    ))
     return AppointmentRequestResponse(ok=True, request=row)
 
 
@@ -224,4 +242,8 @@ async def archive_appointment_request(
     if row is None:
         raise HTTPException(status_code=404, detail="Appointment request not found")
 
+    await audit_logger.safe_record_audit_event(pool, audit_logger.build_user_audit_event(
+        auth, action="appointment_request.archive", resource_type="appointment_requests",
+        resource_id=request_id, metadata={"route": "archive_appointment_request"},
+    ))
     return AppointmentRequestResponse(ok=True, request=row)

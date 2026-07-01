@@ -64,6 +64,7 @@ FAKE_ROW = {
 }
 
 REPO = "backend.app.api.routes.patients.patient_repo"
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 FAKE_POOL = MagicMock()
 
@@ -429,3 +430,60 @@ def test_doctor_role_allowed_for_patient_routes(client_no_auth):
             },
         )
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Audit logging tests (Module 43)
+# ---------------------------------------------------------------------------
+
+
+def test_create_patient_records_audit_event(client):
+    with patch(f"{REPO}.create_patient", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "patient.create"
+    assert event["resource_type"] == "patients"
+    assert event["actor_type"] == "user"
+
+
+def test_update_patient_records_audit_event(client):
+    updated = {**FAKE_ROW, "full_name": "Ada B. Lovelace"}
+    with patch(f"{REPO}.update_patient", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.patch(PATCH_URL, params={"clinic_id": CLINIC_ID}, json={"full_name": "Ada B. Lovelace"})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "patient.update"
+
+
+def test_archive_patient_records_audit_event(client):
+    archived = {**FAKE_ROW, "status": "archived"}
+    with patch(f"{REPO}.archive_patient", new=AsyncMock(return_value=archived)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(ARCHIVE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "patient.archive"
+
+
+def test_audit_failure_does_not_break_patient_route(client):
+    with patch(f"{REPO}.create_patient", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db error"})):
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+
+
+def test_audit_metadata_does_not_include_notes_or_raw_payload(client):
+    row_with_phi = {**FAKE_ROW, "notes": "Private note", "raw_payload": {"sensitive": True}}
+    with patch(f"{REPO}.create_patient", new=AsyncMock(return_value=row_with_phi)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        client.post(BASE_URL, json=CREATE_BODY)
+    event = mock_audit.call_args[0][1]
+    meta = event.get("metadata", {})
+    assert "notes" not in meta
+    assert "raw_payload" not in meta

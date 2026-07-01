@@ -67,6 +67,7 @@ FAKE_ROW = {
 }
 
 REPO = "backend.app.api.routes.consultations.consultation_repo"
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 FAKE_POOL = MagicMock()
 
@@ -485,4 +486,78 @@ def test_owner_role_allowed(client_no_auth):
                 "X-User-Role": "owner",
             },
         )
+    assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Audit logging tests (Module 43)
+# ---------------------------------------------------------------------------
+
+
+def test_create_consultation_records_audit_event(client):
+    with patch(f"{REPO}.create_consultation_session", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "consultation.create"
+    assert event["resource_type"] == "consultation_sessions"
+
+
+def test_save_transcript_records_audit_event(client):
+    updated = {**FAKE_ROW, "transcript_text": "..."}
+    with patch(f"{REPO}.save_transcript", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(TRANSCRIPT_URL, params={"clinic_id": CLINIC_ID}, json={"transcript_text": "..."})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "consultation.transcript_save"
+
+
+def test_approve_consultation_records_critical_audit_event(client):
+    updated = {**FAKE_ROW, "approval_status": "approved"}
+    with patch(f"{REPO}.approve_consultation_summary", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(APPROVE_URL, params={"clinic_id": CLINIC_ID},
+                           json={"approved_summary": {"diagnosis": "ok"}, "approved_by_user_id": "doc-1"})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "consultation.approve"
+    assert event["severity"] == "critical"
+
+
+def test_reject_consultation_records_critical_audit_event(client):
+    updated = {**FAKE_ROW, "approval_status": "rejected"}
+    with patch(f"{REPO}.reject_consultation_summary", new=AsyncMock(return_value=updated)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(REJECT_URL, params={"clinic_id": CLINIC_ID},
+                           json={"rejected_reason": "incomplete", "rejected_by_user_id": "doc-1"})
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "consultation.reject"
+    assert event["severity"] == "critical"
+
+
+def test_audit_metadata_excludes_phi_fields(client):
+    sensitive = {**FAKE_ROW, "transcript_text": "Patient says X", "draft_summary": {"key": "val"},
+                 "approved_summary": {"key": "val"}, "rejected_reason": "private"}
+    with patch(f"{REPO}.create_consultation_session", new=AsyncMock(return_value=sensitive)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        client.post(BASE_URL, json=CREATE_BODY)
+    event = mock_audit.call_args[0][1]
+    meta = event.get("metadata", {})
+    assert "transcript_text" not in meta
+    assert "draft_summary" not in meta
+    assert "approved_summary" not in meta
+    assert "rejected_reason" not in meta
+
+
+def test_audit_failure_does_not_break_consultation_route(client):
+    with patch(f"{REPO}.create_consultation_session", new=AsyncMock(return_value=FAKE_ROW)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client.post(BASE_URL, json=CREATE_BODY)
     assert resp.status_code == 200
