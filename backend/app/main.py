@@ -2,18 +2,61 @@
 PraxisMed API — FastAPI application entry point (Sprint 1 / Module 7)
 
 Start the server with:
-    uvicorn backend.app.main:app --reload
+    python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 
-The database pool, authentication middleware, and additional routers will be
-wired up in later sprints.  This skeleton keeps startup side-effects to a
-minimum so the app can be imported safely in tests without any I/O.
+Database pool lifecycle (Module 49)
+-------------------------------------
+On startup the app reads DATABASE_URL from the environment and initialises an
+asyncpg connection pool via create_db_pool, storing it on app.state.db_pool.
+If DATABASE_URL is absent the pool is set to None and DB-backed routes return
+503 until the variable is configured — the app itself does not crash.
+On shutdown the pool is closed and app.state.db_pool is reset to None.
+
+No migrations are run automatically; use backend/scripts/run_migrations.py.
 """
 
 from __future__ import annotations
 
+import logging
+import os
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
 from fastapi import FastAPI
 
 from backend.app.api.router import api_router
+from backend.app.db.pool import close_db_pool, create_db_pool
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # --------------- startup ---------------
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        try:
+            pool = await create_db_pool(database_url)
+            app.state.db_pool = pool
+            logger.info("Database pool initialised successfully")
+        except Exception as exc:
+            logger.error("Failed to initialise database pool: %s", exc)
+            app.state.db_pool = None
+    else:
+        logger.warning(
+            "DATABASE_URL is not set — app.state.db_pool is None. "
+            "DB-backed routes will return 503 until DATABASE_URL is configured."
+        )
+        app.state.db_pool = None
+
+    yield
+
+    # --------------- shutdown ---------------
+    pool = getattr(app.state, "db_pool", None)
+    if pool is not None:
+        await close_db_pool(pool)
+        app.state.db_pool = None
+
 
 app = FastAPI(
     title="PraxisMed API",
@@ -21,6 +64,7 @@ app = FastAPI(
     description=(
         "Multi-tenant AI automation backend for private medical clinics in Austria."
     ),
+    lifespan=lifespan,
 )
 
 app.include_router(api_router)

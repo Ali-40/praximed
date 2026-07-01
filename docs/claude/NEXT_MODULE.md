@@ -1,15 +1,17 @@
-# Sprint 5 / Module 48 — Local Integration Runbook and Signed Webhook Test Helper
+# Sprint 5 / Module 49 — Local Runtime Database Pool Startup
 
 Task scope:
-Create local integration documentation and helper scripts for testing signed Vapi/n8n-style webhook requests.
+Wire FastAPI runtime startup/shutdown to initialize and close the asyncpg database pool from DATABASE_URL.
 
 Purpose:
-PraxisMed now requires MachineAuthContext headers, HMAC-SHA256 webhook signatures, and local PostgreSQL migration/smoke setup before configuring real Vapi or n8n dashboards.
+Tests inject fake db_pool into app.state, but real local runtime does not initialize app.state.db_pool.
+Local webhook/API requests therefore return "Database pool is not initialised."
 
-Files created:
-- docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md
-- backend/scripts/sign_webhook_payload.py
-- backend/tests/test_signed_webhook_helper_contract.py
+This module adds safe runtime DB pool lifecycle management so local development can use the PostgreSQL Docker database created in Module 45.
+
+Files created/updated:
+- backend/app/main.py (lifespan handler added)
+- backend/tests/test_app_lifespan_db_pool.py (new)
 
 Commit message:
-Sprint 5 / Module 48 — Local integration runbook and signed webhook helper
+Sprint 5 / Module 49 — Local runtime database pool startup

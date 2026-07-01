@@ -421,11 +421,20 @@
 
 46. Module 48 — Local integration runbook and signed webhook helper
    - Commit: 60f61fa
+   - Docs commit: d6a3e3b
    - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (new)
    - `backend/scripts/sign_webhook_payload.py` (new)
    - `backend/tests/test_signed_webhook_helper_contract.py` (new)
    - Module 48 tests: 25/25 passed
    - Full backend tests: 1281/1281 passed
+   - Manual signed webhook curl reached backend but returned 503: runtime DB pool startup was missing
+
+47. Module 49 — Local runtime database pool startup (in progress)
+   - Commit: TBD
+   - `backend/app/main.py` (updated)
+   - `backend/tests/test_app_lifespan_db_pool.py` (new)
+   - Module 49 tests: TBD
+   - Full backend tests: TBD
 
 ## Next module
-Sprint 5 / Module 49 — TBD.
+Sprint 5 / Module 49 — Local runtime database pool startup (in progress).
