@@ -232,6 +232,23 @@ for alias-aware header lookup.
 
 ---
 
+## N. Module 55 Local Tunnel Provider Test Runbook (Implemented)
+
+Sprint 6 / Module 55 created `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md`.
+
+The runbook documents the full safe procedure for testing real Vapi and n8n against the local FastAPI backend through a public tunnel (ngrok or Cloudflare Tunnel). It covers:
+
+- Local startup checklist (Docker PostgreSQL, env exports, Alembic migrations, seed data, uvicorn).
+- Tunnel setup using `ngrok http 8000` and the resulting endpoint paths for Vapi and n8n.
+- Vapi real test plan: dashboard configuration, required headers (including provider aliases), verification steps, and what to record.
+- n8n real test plan: workflow configuration, HMAC Code node example, test vs production URL distinction.
+- Evidence template for recording results after each real provider test session.
+- Cleanup procedure (stop ngrok, stop uvicorn, optional docker compose down, unset secrets, rotate provider-side secrets).
+
+No code changes were made in this module. The runbook is documentation only.
+
+---
+
 ## M. Module 54 Provider Machine Header Compatibility (Implemented)
 
 Sprint 6 / Module 54 added `backend/app/core/machine_provider_config.py` with a

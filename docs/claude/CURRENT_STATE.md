@@ -508,5 +508,15 @@
    - Conflicting duplicate aliases rejected with HTTP 401
    - Required scope and tenant/clinic enforcement unchanged
 
+53. Module 55 — Local tunnel real provider test runbook
+   - Commit: 708952a
+   - Docs commit: TBD
+   - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (new)
+   - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (updated — Section N added)
+   - `docs/claude/CURRENT_STATE.md` (updated)
+   - `docs/claude/NEXT_MODULE.md` (updated — Module 56 placeholder)
+   - No production code changes
+   - Full backend tests: 1380/1380 passed
+
 ## Next module
-Sprint 6 / Module 55 — TBD (pending review).
+Sprint 6 / Module 56 — Real Vapi Tunnel Smoke Test Evidence (pending manual dashboard setup).
