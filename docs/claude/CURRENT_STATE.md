@@ -400,13 +400,13 @@
    - Manual local PostgreSQL smoke flow passed: Docker started, migration applied, key tables confirmed
 
 44. Module 46 — Webhook signature verification foundation
-   - Commit: TBD
+   - Commit: 41d0a46
    - `backend/app/core/webhook_signature.py` (new)
    - `backend/app/api/dependencies/webhook_signature.py` (new)
    - `backend/tests/test_webhook_signature.py` (new)
    - `backend/tests/test_webhook_signature_dependencies.py` (new)
-   - Module 46 tests: TBD
-   - Full backend tests: TBD
+   - Module 46 tests: 33/33 passed (23 core + 10 dependencies)
+   - Full backend tests: 1250/1250 passed
 
 ## Next module
-Sprint 5 / Module 46 — Webhook signature verification foundation (in progress).
+Sprint 5 / Module 47 — Apply webhook signature enforcement to existing routes.
