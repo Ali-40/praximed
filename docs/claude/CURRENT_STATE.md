@@ -473,7 +473,7 @@
 - Sprint 6 started: External Integration Compatibility (Module 52+)
 
 50. Module 52 — External integration compatibility plan
-   - Commit: TBD
+   - Commit: f50c94c
    - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (new)
    - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated — Section M rewritten)
    - `docs/claude/CURRENT_STATE.md` (updated)
