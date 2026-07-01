@@ -332,14 +332,24 @@
 - Sprint 4 started: Database Migration Foundation (Module 41)
 
 39. Module 41 — Database migration foundation
-   - Commit: TBD
+   - Commit: 2daf4fd
    - `backend/alembic.ini` (new)
    - `backend/migrations/env.py` (new)
    - `backend/migrations/script.py.mako` (new)
    - `backend/migrations/versions/0001_initial_schema.py` (new)
    - `backend/tests/test_migration_contract.py` (new)
-   - Module 41 tests: TBD
-   - Full backend tests: TBD
+   - Migration tests: 20/20 passed
+   - Full backend tests: 1103/1103 passed
+
+40. Module 42 — Audit logging foundation
+   - Commit: TBD
+   - `backend/app/db/repositories/audit_repo.py` (new)
+   - `backend/app/modules/audit/__init__.py` (new)
+   - `backend/app/modules/audit/audit_logger.py` (new)
+   - `backend/tests/test_audit_repo.py` (new)
+   - `backend/tests/test_audit_logger.py` (new)
+   - Module 42 tests: 42/42 passed (20 repo + 22 logger)
+   - Full backend tests: 1145/1145 passed
 
 ## Next module
-Sprint 4 / Module 41 — Database migration foundation (in progress).
+Sprint 4 / Module 42 — Audit logging foundation (in progress).

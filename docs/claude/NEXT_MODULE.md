@@ -1,58 +1,47 @@
-# Sprint 4 / Module 41 — Database Migration Foundation
-
-## Current project folder
-`/Users/aliabdeltawab/Documents/praximed`
-
-## Completed modules
-- Sprint 1, Modules 1–23: all committed.
-- Sprint 2, Modules 24–34: all committed.
-- Sprint 3, Modules 35–40: all committed.
-- Architecture Checkpoint 03: committed.
-
-Do not modify completed modules unless absolutely required.
-
-## Task scope
-Create the database migration foundation for PraxisMed.
+# Sprint 4 / Module 43 — Audit Route Integration
 
 ## Purpose
-PraxisMed currently has a strong schema contract in `backend/app/db/schema.sql`, but no migration system. Before real PostgreSQL setup, Vapi/n8n integration, frontend work, or pilots, the project needs a migration foundation so schema changes can be applied safely and versioned.
 
-This module creates the migration scaffold and baseline migration only.
+Module 42 created the audit logging foundation (repository + service layer).
+Module 43 wires audit logging into the existing PHI-changing routes so that
+compliance-relevant actions are recorded automatically.
 
-Do not connect to a real database.
-Do not run real migrations against PostgreSQL.
-Do not change the current database schema.
-Do not modify production runtime behavior.
-Do not create new tables beyond what already exists in schema.sql.
+No new tables. No schema changes. Route integration only.
 
-## Create or update only
+## Scope
 
-1. `backend/alembic.ini`
-2. `backend/migrations/env.py`
-3. `backend/migrations/script.py.mako`
-4. `backend/migrations/versions/0001_initial_schema.py`
-5. `backend/tests/test_migration_contract.py`
-6. `docs/claude/CURRENT_STATE.md`
-7. `docs/claude/NEXT_MODULE.md`
+Wire `audit_logger.safe_record_audit_event` into:
 
-## Migration requirements
+1. Appointment request routes (create, status update)
+2. Patient routes (create, update)
+3. Consultation session routes (create, approve, reject)
+4. Notification routes (create)
 
-1. Alembic-style migration scaffold.
-2. Baseline migration of the current schema.sql state.
-3. `revision = "0001_initial_schema"`, `down_revision = None`.
-4. `upgrade()` creates all tables from schema.sql, including constraints, FKs, indexes.
-5. `downgrade()` drops tables in safe reverse dependency order.
-6. Static and deterministic — no real database required for tests.
+Use `safe_record_audit_event` — audit failure must never break the primary
+business action.
 
-## Acceptance criteria
+## Files to create or update
 
-- All Module 41 tests pass.
-- All previous tests still pass.
-- No real database connection used.
-- No schema changes introduced.
-- schema.sql remains unchanged.
-- Commit only if all tests pass.
+1. `backend/app/api/routes/appointment_requests.py` (updated)
+2. `backend/app/api/routes/patients.py` (updated)
+3. `backend/app/api/routes/consultations.py` (updated)
+4. `backend/app/api/routes/notifications.py` (updated)
+5. `backend/tests/test_appointment_request_routes.py` (updated)
+6. `backend/tests/test_patient_routes.py` (updated)
+7. `backend/tests/test_consultation_routes.py` (updated)
+8. `backend/tests/test_notification_routes.py` (updated)
+9. `docs/claude/CURRENT_STATE.md`
+10. `docs/claude/NEXT_MODULE.md`
+
+## Do not modify
+
+- `backend/app/db/schema.sql`
+- `backend/migrations/`
+- `backend/app/db/repositories/audit_repo.py`
+- `backend/app/modules/audit/audit_logger.py`
+- `backend/app/core/auth_context.py`
+- `backend/app/core/machine_auth.py`
 
 ## Commit message
 
-`Sprint 4 / Module 41 — Database migration foundation`
+Sprint 4 / Module 43 — Audit route integration
