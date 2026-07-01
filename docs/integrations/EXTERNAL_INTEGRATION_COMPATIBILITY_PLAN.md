@@ -189,3 +189,43 @@ This module should:
 - Not change any route logic, machine auth logic, or HMAC computation.
 
 This is a minimal, targeted change that eliminates the highest-risk compatibility gap (header name mismatch) before real dashboards are touched.
+
+---
+
+## L. Module 53 Provider Header Compatibility (Implemented)
+
+Sprint 6 / Module 53 added `backend/app/core/webhook_provider_config.py` with a
+`WebhookProviderConfig` dataclass and provider-specific accepted signature header aliases.
+The webhook signature dependencies were updated to use `extract_signature_from_headers`
+for alias-aware header lookup.
+
+**Vapi accepted signature headers (in priority order):**
+
+| Header | Notes |
+|---|---|
+| `X-Vapi-Signature` | Primary local convention header |
+| `X-Vapi-Hmac-Sha256` | Alternate explicit HMAC name |
+| `X-Signature` | Shared generic alias |
+
+**n8n accepted signature headers (in priority order):**
+
+| Header | Notes |
+|---|---|
+| `X-N8N-Signature` | Primary local convention header |
+| `X-N8n-Signature` | Alternate capitalization |
+| `X-Signature` | Shared generic alias |
+
+**Internal accepted signature headers (in priority order):**
+
+| Header | Notes |
+|---|---|
+| `X-Internal-Signature` | Primary local convention header |
+| `X-Signature` | Shared generic alias |
+
+**What remains unchanged:**
+
+- HMAC-SHA256 verification is still required for all providers. No weakening of security.
+- Missing or invalid signatures still return HTTP 401.
+- Missing secrets still return HTTP 503.
+- Machine auth headers (`X-Service-Name`, `X-Service-Clinic-Id`, `X-Service-Scopes`) are unchanged and must still be sent.
+- Real Vapi and n8n dashboards have not been configured. This is still local-only preparation.

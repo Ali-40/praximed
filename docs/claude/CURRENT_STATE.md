@@ -474,6 +474,7 @@
 
 50. Module 52 — External integration compatibility plan
    - Commit: f50c94c
+   - Docs commit: 39c472e
    - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (new)
    - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated — Section M rewritten)
    - `docs/claude/CURRENT_STATE.md` (updated)
@@ -482,4 +483,4 @@
    - Full backend tests: 1312/1312 passed
 
 ## Next module
-Sprint 6 / Module 53 — Provider Header Compatibility Config (pending review).
+Sprint 6 / Module 53 — Provider Header Compatibility Config (pending).

@@ -1,5 +1,6 @@
 """
 Integration tests for webhook signature FastAPI dependencies — PraxisMed Sprint 5 / Module 46
+Updated: Sprint 6 / Module 53 — alias header acceptance tests
 
 Strategy:
 - Tiny test-only FastAPI app with three routes, one per provider dependency.
@@ -81,7 +82,7 @@ def _sig(payload: bytes, secret: str) -> str:
 
 
 # ===========================================================================
-# Vapi dependency tests (1–4)
+# Vapi dependency tests (1–4) — original
 # ===========================================================================
 
 
@@ -98,7 +99,7 @@ def test_vapi_dependency_returns_200_with_valid_signature(client, monkeypatch):
 
 
 def test_vapi_dependency_returns_401_with_missing_signature(client, monkeypatch):
-    """Test 2 — Missing X-Vapi-Signature header → 401."""
+    """Test 2 — Missing signature header → 401."""
     monkeypatch.setenv(VAPI_ENV, VAPI_SECRET)
     resp = client.post(VAPI_ROUTE, content=PAYLOAD)
     assert resp.status_code == 401
@@ -127,7 +128,7 @@ def test_vapi_dependency_returns_503_when_secret_missing(client, monkeypatch):
 
 
 # ===========================================================================
-# n8n dependency tests (5–6)
+# n8n dependency tests (5–6) — original
 # ===========================================================================
 
 
@@ -154,7 +155,7 @@ def test_n8n_dependency_returns_401_with_invalid_signature(client, monkeypatch):
 
 
 # ===========================================================================
-# internal dependency tests (7–8)
+# internal dependency tests (7–8) — original
 # ===========================================================================
 
 
@@ -184,7 +185,7 @@ def test_dependency_verifies_raw_request_body_exactly(client, monkeypatch):
 
 
 # ===========================================================================
-# Safety checks (9–10)
+# Safety checks (9–10) — original
 # ===========================================================================
 
 
@@ -203,3 +204,68 @@ def test_no_external_service_calls():
     content = open(mod.__file__).read()
     assert "import requests" not in content
     assert "import httpx" not in content
+
+
+# ===========================================================================
+# Alias header acceptance (tests 11–15) — Module 53
+# ===========================================================================
+
+
+def test_vapi_dependency_accepts_x_vapi_hmac_sha256(client, monkeypatch):
+    """Test 11 — Vapi dependency accepts X-Vapi-Hmac-Sha256 alias → 200."""
+    monkeypatch.setenv(VAPI_ENV, VAPI_SECRET)
+    resp = client.post(
+        VAPI_ROUTE,
+        content=PAYLOAD,
+        headers={"X-Vapi-Hmac-Sha256": _sig(PAYLOAD, VAPI_SECRET)},
+    )
+    assert resp.status_code == 200
+
+
+def test_vapi_dependency_accepts_x_signature(client, monkeypatch):
+    """Test 12 — Vapi dependency accepts shared X-Signature alias → 200."""
+    monkeypatch.setenv(VAPI_ENV, VAPI_SECRET)
+    resp = client.post(
+        VAPI_ROUTE,
+        content=PAYLOAD,
+        headers={"X-Signature": _sig(PAYLOAD, VAPI_SECRET)},
+    )
+    assert resp.status_code == 200
+
+
+def test_n8n_dependency_accepts_x_signature(client, monkeypatch):
+    """Test 13 — n8n dependency accepts shared X-Signature alias → 200."""
+    monkeypatch.setenv(N8N_ENV, N8N_SECRET)
+    resp = client.post(
+        N8N_ROUTE,
+        content=PAYLOAD,
+        headers={"X-Signature": _sig(PAYLOAD, N8N_SECRET)},
+    )
+    assert resp.status_code == 200
+
+
+def test_internal_dependency_accepts_x_signature(client, monkeypatch):
+    """Test 14 — Internal dependency accepts shared X-Signature alias → 200."""
+    monkeypatch.setenv(INTERNAL_ENV, INT_SECRET)
+    resp = client.post(
+        INTERNAL_ROUTE,
+        content=PAYLOAD,
+        headers={"X-Signature": _sig(PAYLOAD, INT_SECRET)},
+    )
+    assert resp.status_code == 200
+
+
+def test_dependency_rejects_conflicting_signature_headers(client, monkeypatch):
+    """Test 15 — Two accepted headers with different values → 401."""
+    monkeypatch.setenv(VAPI_ENV, VAPI_SECRET)
+    valid_sig   = _sig(PAYLOAD, VAPI_SECRET)
+    invalid_sig = "sha256=deadbeefdeadbeef"
+    resp = client.post(
+        VAPI_ROUTE,
+        content=PAYLOAD,
+        headers={
+            "X-Vapi-Signature": valid_sig,
+            "X-Vapi-Hmac-Sha256": invalid_sig,
+        },
+    )
+    assert resp.status_code == 401
