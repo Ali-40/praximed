@@ -409,14 +409,14 @@
    - Module 46 tests: 33/33 passed (23 core + 10 dependencies)
    - Full backend tests: 1250/1250 passed
 
-45. Module 47 — Apply webhook signature enforcement (in progress)
-   - Commit: TBD
+45. Module 47 — Apply webhook signature enforcement
+   - Commit: c161c16
    - `backend/app/api/routes/vapi_webhooks.py` (updated)
    - `backend/app/api/routes/calendar_webhooks.py` (updated)
    - `backend/tests/test_vapi_webhook_route.py` (updated)
    - `backend/tests/test_calendar_webhook_route.py` (updated)
-   - Module 47 tests: TBD
-   - Full backend tests: TBD
+   - Module 47 tests: 12 new sig enforcement tests passed (6 Vapi + 6 n8n)
+   - Full backend tests: 1256/1256 passed
 
 ## Next module
-Sprint 5 / Module 47 — Apply webhook signature enforcement to existing routes (in progress).
+Sprint 5 / Module 48 — TBD.
