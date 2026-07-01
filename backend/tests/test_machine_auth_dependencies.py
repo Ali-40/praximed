@@ -294,3 +294,266 @@ def test_no_database_used():
     resp = client.get("/test/machine-me", headers=_headers())
     assert resp.status_code == 200
     assert "service_name" in resp.json()
+
+
+# ===========================================================================
+# Module 54 — provider alias tests (16–33)
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# 16. Original canonical headers still work
+# ---------------------------------------------------------------------------
+
+
+def test_original_headers_still_accepted():
+    """Test 16 — Original X-Service-Name / X-Service-Clinic-Id / X-Service-Scopes still work."""
+    resp = client.get("/test/machine-me", headers=_headers())
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["service_name"] == "vapi"
+    assert data["clinic_id"] == CLINIC_ID
+    assert "vapi:tool" in data["scopes"]
+
+
+# ---------------------------------------------------------------------------
+# 17–19. Vapi alias headers
+# ---------------------------------------------------------------------------
+
+
+def test_vapi_accepts_x_vapi_service_name():
+    """Test 17 — Vapi machine auth accepts X-Vapi-Service-Name alias."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Vapi-Service-Name": "vapi",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["service_name"] == "vapi"
+
+
+def test_vapi_accepts_x_vapi_clinic_id():
+    """Test 18 — Vapi machine auth accepts X-Vapi-Clinic-Id alias."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Vapi-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["clinic_id"] == CLINIC_ID
+
+
+def test_vapi_accepts_x_vapi_scopes():
+    """Test 19 — Vapi machine auth accepts X-Vapi-Scopes alias."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Vapi-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 200
+    assert "vapi:tool" in resp.json()["scopes"]
+
+
+# ---------------------------------------------------------------------------
+# 20–22. n8n alias headers
+# ---------------------------------------------------------------------------
+
+
+def test_n8n_accepts_x_n8n_service_name():
+    """Test 20 — n8n machine auth accepts X-N8N-Service-Name alias."""
+    resp = client.post(
+        "/test/n8n-calendar",
+        headers={
+            "X-N8N-Service-Name": "n8n",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "calendar:sync",
+        },
+    )
+    assert resp.status_code == 200
+
+
+def test_n8n_accepts_x_n8n_clinic_id():
+    """Test 21 — n8n machine auth accepts X-N8N-Clinic-Id alias."""
+    resp = client.post(
+        "/test/n8n-calendar",
+        headers={
+            "X-Service-Name": "n8n",
+            "X-N8N-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "calendar:sync",
+        },
+    )
+    assert resp.status_code == 200
+
+
+def test_n8n_accepts_x_n8n_scopes():
+    """Test 22 — n8n machine auth accepts X-N8N-Scopes alias."""
+    resp = client.post(
+        "/test/n8n-calendar",
+        headers={
+            "X-Service-Name": "n8n",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-N8N-Scopes": "calendar:sync",
+        },
+    )
+    assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# 23–25. internal alias headers
+# ---------------------------------------------------------------------------
+
+
+def test_internal_accepts_x_internal_service_name():
+    """Test 23 — Internal machine auth accepts X-Internal-Service-Name alias."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Internal-Service-Name": "internal",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["service_name"] == "internal"
+
+
+def test_internal_accepts_x_internal_clinic_id():
+    """Test 24 — Internal machine auth accepts X-Internal-Clinic-Id alias."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "internal",
+            "X-Internal-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json()["clinic_id"] == CLINIC_ID
+
+
+def test_internal_accepts_x_internal_scopes():
+    """Test 25 — Internal machine auth accepts X-Internal-Scopes alias."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "internal",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Internal-Scopes": "availability:read",
+        },
+    )
+    assert resp.status_code == 200
+    assert "availability:read" in resp.json()["scopes"]
+
+
+# ---------------------------------------------------------------------------
+# 26–28. Duplicate conflicting alias rejection
+# ---------------------------------------------------------------------------
+
+
+def test_duplicate_service_name_aliases_with_different_values_fail():
+    """Test 26 — Conflicting service_name alias values → 401."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Provider-Name": "n8n",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 401
+
+
+def test_duplicate_clinic_id_aliases_with_different_values_fail():
+    """Test 27 — Conflicting clinic_id alias values → 401."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Vapi-Clinic-Id": "other-clinic",
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 401
+
+
+def test_duplicate_scopes_aliases_with_different_values_fail():
+    """Test 28 — Conflicting scopes alias values → 401."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+            "X-Vapi-Scopes": "availability:read",
+        },
+    )
+    assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# 29–33. Existing failure behaviors preserved
+# ---------------------------------------------------------------------------
+
+
+def test_missing_service_name_still_fails():
+    """Test 29 — Missing service name header → 401."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={"X-Service-Clinic-Id": CLINIC_ID, "X-Service-Scopes": "vapi:tool"},
+    )
+    assert resp.status_code == 401
+
+
+def test_missing_clinic_id_still_fails():
+    """Test 30 — Missing clinic ID → route-level 403 when clinic is required."""
+    resp = client.get(
+        "/test/machine-access",
+        headers={"X-Service-Name": "vapi", "X-Service-Scopes": "vapi:tool"},
+    )
+    assert resp.status_code == 403
+
+
+def test_missing_scopes_still_fails():
+    """Test 31 — Missing scopes → route-level 403 when scope is required."""
+    resp = client.post(
+        "/test/vapi-tool",
+        headers={"X-Service-Name": "vapi", "X-Service-Clinic-Id": CLINIC_ID},
+    )
+    assert resp.status_code == 403
+
+
+def test_invalid_provider_still_fails():
+    """Test 32 — Unknown service name → 401."""
+    resp = client.get(
+        "/test/machine-me",
+        headers={
+            "X-Service-Name": "rogue-service",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "vapi:tool",
+        },
+    )
+    assert resp.status_code == 401
+
+
+def test_required_scope_enforcement_still_works():
+    """Test 33 — Valid service/clinic but missing required scope → 403."""
+    resp = client.post(
+        "/test/vapi-tool",
+        headers={
+            "X-Service-Name": "vapi",
+            "X-Service-Clinic-Id": CLINIC_ID,
+            "X-Service-Scopes": "availability:read",  # not vapi:tool
+        },
+    )
+    assert resp.status_code == 403

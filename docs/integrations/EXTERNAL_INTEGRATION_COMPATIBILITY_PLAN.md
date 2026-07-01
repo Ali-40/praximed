@@ -229,3 +229,52 @@ for alias-aware header lookup.
 - Missing secrets still return HTTP 503.
 - Machine auth headers (`X-Service-Name`, `X-Service-Clinic-Id`, `X-Service-Scopes`) are unchanged and must still be sent.
 - Real Vapi and n8n dashboards have not been configured. This is still local-only preparation.
+
+---
+
+## M. Module 54 Provider Machine Header Compatibility (Implemented)
+
+Sprint 6 / Module 54 added `backend/app/core/machine_provider_config.py` with a
+`MachineProviderConfig` dataclass and provider-specific accepted machine auth header
+aliases. The `get_machine_auth_context` dependency was updated to use
+alias-aware extraction for service_name, clinic_id, and scopes.
+
+**Original local headers remain fully supported:**
+
+| Header | Purpose |
+|---|---|
+| `X-Service-Name` | Service name (primary) |
+| `X-Service-Clinic-Id` | Clinic UUID (primary) |
+| `X-Service-Scopes` | Comma-separated scopes (primary) |
+
+**Vapi aliases also accepted:**
+
+| Field | Accepted aliases |
+|---|---|
+| service_name | `X-Service-Name`, `X-Vapi-Service-Name`, `X-Provider-Name` |
+| clinic_id | `X-Service-Clinic-Id`, `X-Vapi-Clinic-Id`, `X-Clinic-Id` |
+| scopes | `X-Service-Scopes`, `X-Vapi-Scopes`, `X-Provider-Scopes` |
+
+**n8n aliases also accepted:**
+
+| Field | Accepted aliases |
+|---|---|
+| service_name | `X-Service-Name`, `X-N8N-Service-Name`, `X-N8n-Service-Name`, `X-Provider-Name` |
+| clinic_id | `X-Service-Clinic-Id`, `X-N8N-Clinic-Id`, `X-N8n-Clinic-Id`, `X-Clinic-Id` |
+| scopes | `X-Service-Scopes`, `X-N8N-Scopes`, `X-N8n-Scopes`, `X-Provider-Scopes` |
+
+**Internal aliases also accepted:**
+
+| Field | Accepted aliases |
+|---|---|
+| service_name | `X-Service-Name`, `X-Internal-Service-Name`, `X-Provider-Name` |
+| clinic_id | `X-Service-Clinic-Id`, `X-Internal-Clinic-Id`, `X-Clinic-Id` |
+| scopes | `X-Service-Scopes`, `X-Internal-Scopes`, `X-Provider-Scopes` |
+
+**What remains unchanged:**
+
+- Conflicting duplicate alias values (same field, different values) are rejected with HTTP 401.
+- Missing service name is still HTTP 401.
+- Required scope enforcement is still performed by route-level `require_*` helpers.
+- Tenant/clinic_id checks are unchanged.
+- Real Vapi and n8n dashboards have not been configured. This is still local-only preparation.
