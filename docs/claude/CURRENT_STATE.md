@@ -352,7 +352,7 @@
    - Full backend tests: 1145/1145 passed
 
 41. Module 43 — Audit logging integration for PHI mutations
-   - Commit: TBD
+   - Commit: 726710a
    - `backend/app/api/routes/patients.py` (updated)
    - `backend/app/api/routes/consultations.py` (updated)
    - `backend/app/api/routes/clinical_workflows.py` (updated)
@@ -363,8 +363,28 @@
    - `backend/tests/test_clinical_workflow_routes.py` (updated)
    - `backend/tests/test_appointment_request_routes.py` (updated)
    - `backend/tests/test_notification_routes.py` (updated)
-   - Module 43 tests: TBD
-   - Full backend tests: TBD
+   - Module 43 tests: 30/30 new audit tests passed
+   - Full backend tests: 1175/1175 passed
+
+42. Module 44 — Audit logging integration for machine routes
+   - Commit: 005e43a
+   - `backend/app/api/routes/vapi_webhooks.py` (updated)
+   - `backend/app/api/routes/calendar_webhooks.py` (updated)
+   - `backend/app/api/routes/vapi_tools.py` (updated)
+   - `backend/tests/test_vapi_webhook_route.py` (updated)
+   - `backend/tests/test_calendar_webhook_route.py` (updated)
+   - `backend/tests/test_vapi_tool_routes.py` (updated)
+   - Module 44 tests: 18/18 new tests passed
+   - Full backend tests: 1193/1193 passed
+
+## Architecture checkpoint
+
+- Architecture Checkpoint 04 created: `docs/claude/ARCHITECTURE_CHECKPOINT_04.md`
+- Scope: Modules 41–44, Sprint 4 complete
+- Focus: migration foundation, audit logging foundation, PHI/machine audit integration, integration readiness, remaining risks before pilot
+- Full backend tests: 1193/1193 passed
+- Sprint 4 complete (Modules 41–44)
+- Sprint 5 started: Local PostgreSQL Docker + Migration Runner Smoke Test (Module 45)
 
 ## Next module
-Sprint 4 / Module 43 — Audit logging integration for PHI mutations (in progress).
+Sprint 5 / Module 45 — Local PostgreSQL Docker + Migration Runner Smoke Test (pending).
