@@ -429,12 +429,12 @@
    - Full backend tests: 1281/1281 passed
    - Manual signed webhook curl reached backend but returned 503: runtime DB pool startup was missing
 
-47. Module 49 — Local runtime database pool startup (in progress)
-   - Commit: TBD
-   - `backend/app/main.py` (updated)
+47. Module 49 — Local runtime database pool startup
+   - Commit: b6cb614
+   - `backend/app/main.py` (updated — lifespan handler added)
    - `backend/tests/test_app_lifespan_db_pool.py` (new)
-   - Module 49 tests: TBD
-   - Full backend tests: TBD
+   - Module 49 tests: 9/9 passed
+   - Full backend tests: 1290/1290 passed
 
 ## Next module
-Sprint 5 / Module 49 — Local runtime database pool startup (in progress).
+Sprint 5 / Module 50 — TBD.
