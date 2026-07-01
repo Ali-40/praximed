@@ -324,11 +324,22 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 03 created: `docs/claude/ARCHITECTURE_CHECKPOINT_03.md`
+- Commit: 8169ee4
 - Scope: Modules 35–40, Sprint 3 complete
 - Focus: access control map, human/machine auth guards, integration readiness, remaining risks before pilot
 - Full backend tests: 1083/1083 passed
 - Sprint 3 complete (Modules 35–40)
 - Sprint 4 started: Database Migration Foundation (Module 41)
 
+39. Module 41 — Database migration foundation
+   - Commit: TBD
+   - `backend/alembic.ini` (new)
+   - `backend/migrations/env.py` (new)
+   - `backend/migrations/script.py.mako` (new)
+   - `backend/migrations/versions/0001_initial_schema.py` (new)
+   - `backend/tests/test_migration_contract.py` (new)
+   - Module 41 tests: TBD
+   - Full backend tests: TBD
+
 ## Next module
-Sprint 4 / Module 41 — Database Migration Foundation (pending).
+Sprint 4 / Module 41 — Database migration foundation (in progress).
