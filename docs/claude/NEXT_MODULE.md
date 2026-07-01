@@ -1,3 +1,3 @@
-# Sprint 6 / Module 52 — External Integration Compatibility Plan for Vapi and n8n
+# Sprint 6 / Module 53 — Provider Header Compatibility Config
 
-Status: pending. Do not execute until local smoke checkpoint is reviewed.
+Status: pending. Do not execute until Module 52 is reviewed.

@@ -456,12 +456,30 @@
 
 49. Module 51 — Local integration smoke result checkpoint
    - Commit: 2872c99
+   - Docs commit: ced433c
    - `docs/integrations/LOCAL_SMOKE_RESULTS.md` (new)
    - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated — Section L added)
    - `docs/claude/CURRENT_STATE.md` (updated)
    - `docs/claude/NEXT_MODULE.md` (updated — Module 52 placeholder)
    - No production code changes
    - Full backend tests: 1312/1312 passed
+   - Local signed Vapi webhook smoke test passed with HTTP 200
+   - Bad Vapi signature returned HTTP 401
+   - Local signed n8n calendar sync webhook smoke test passed with HTTP 200
+
+## Architecture checkpoint
+
+- Sprint 5 complete (Modules 45–51)
+- Sprint 6 started: External Integration Compatibility (Module 52+)
+
+50. Module 52 — External integration compatibility plan
+   - Commit: TBD
+   - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (new)
+   - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated — Section M rewritten)
+   - `docs/claude/CURRENT_STATE.md` (updated)
+   - `docs/claude/NEXT_MODULE.md` (updated — Module 53 placeholder)
+   - No production code changes
+   - Full backend tests: 1312/1312 passed
 
 ## Next module
-Sprint 6 / Module 52 — External Integration Compatibility Plan for Vapi and n8n (pending review).
+Sprint 6 / Module 53 — Provider Header Compatibility Config (pending review).

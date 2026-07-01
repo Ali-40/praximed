@@ -246,10 +246,19 @@ Real DB writes, HMAC signature verification, and machine auth all work end-to-en
 
 ---
 
-## M. Real Vapi / n8n Setup Is Not Done Yet
+## M. Before Real Vapi / n8n Setup
 
 This runbook covers **local testing only**.
 
-Real Vapi dashboard configuration (webhook URL, signing secret) and real n8n workflow setup will be done in a later sprint once the local integration flow is confirmed stable.
+Before configuring real Vapi or n8n dashboards, read the compatibility plan:
 
-Do not configure production Vapi or n8n endpoints until that sprint is reached.
+[`docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md`](EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md)
+
+The compatibility plan documents:
+
+- What headers and signature formats our backend currently requires.
+- What Vapi and n8n can realistically send.
+- Where adapters or config changes may be needed.
+- A safe step-by-step sequence for the first real external test.
+
+Real Vapi dashboard configuration (webhook URL, signing secret) and real n8n workflow setup must follow the compatibility review first. Do not configure production Vapi or n8n endpoints before that review is complete.
