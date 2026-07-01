@@ -6,6 +6,7 @@ This runbook is for **local integration testing only**, before any real Vapi or 
 
 It shows how to:
 - Start local PostgreSQL and run Alembic migrations
+- Seed local fake test data (deterministic UUIDs)
 - Run the FastAPI backend locally
 - Generate HMAC-SHA256 signed webhook headers
 - Send signed test requests to the Vapi and n8n webhook routes
@@ -57,9 +58,31 @@ python backend/scripts/db_smoke_test.py
 
 Expected output: no errors and exit code 0.
 
+### 6. Seed local test data
+
+```bash
+python backend/scripts/seed_local_data.py
+```
+
+This inserts deterministic fake-only rows into the local database using the fixed UUIDs below.
+**Seed data is not production data.** It is safe to run multiple times — the script is idempotent.
+
 ---
 
-## D. Required Local Environment Variables
+## D. Deterministic Local Test UUIDs
+
+These UUIDs are hard-coded in the seed script and used in all local smoke payloads:
+
+| Resource | UUID |
+|---|---|
+| Clinic | `11111111-1111-1111-1111-111111111111` |
+| Doctor user | `22222222-2222-2222-2222-222222222222` |
+| Patient | `33333333-3333-3333-3333-333333333333` |
+| Consultation session | `44444444-4444-4444-4444-444444444444` |
+
+---
+
+## E. Required Local Environment Variables
 
 Set these in your shell before starting the backend. **Use local placeholder values only.**
 
@@ -79,19 +102,17 @@ export INTERNAL_WEBHOOK_SECRET=local-internal-secret-change-me
 
 ---
 
-## E. Start Backend Locally
+## F. Start Backend Locally
 
 ```bash
-# TODO: confirm exact uvicorn entry point once app startup is finalised
-# Placeholder — replace with the actual command for this project:
-# uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Wait until you see `Application startup complete` in the logs before sending requests.
 
 ---
 
-## F. Machine Auth Headers
+## G. Machine Auth Headers
 
 Every integration route requires machine auth headers in addition to the webhook signature.
 
@@ -100,7 +121,7 @@ Every integration route requires machine auth headers in addition to the webhook
 | Header | Value |
 |---|---|
 | `X-Service-Name` | `vapi` |
-| `X-Service-Clinic-Id` | `<clinic-uuid>` |
+| `X-Service-Clinic-Id` | `11111111-1111-1111-1111-111111111111` |
 | `X-Service-Scopes` | `vapi:webhook` |
 | `X-Vapi-Signature` | `sha256=<hmac-sha256-hex-digest>` |
 
@@ -109,13 +130,13 @@ Every integration route requires machine auth headers in addition to the webhook
 | Header | Value |
 |---|---|
 | `X-Service-Name` | `n8n` |
-| `X-Service-Clinic-Id` | `<clinic-uuid>` |
+| `X-Service-Clinic-Id` | `11111111-1111-1111-1111-111111111111` |
 | `X-Service-Scopes` | `calendar:sync` |
 | `X-N8N-Signature` | `sha256=<hmac-sha256-hex-digest>` |
 
 ---
 
-## G. Signed Request Generation
+## H. Signed Request Generation
 
 Use the helper script to compute a webhook signature over a JSON payload:
 
@@ -123,17 +144,21 @@ Use the helper script to compute a webhook signature over a JSON payload:
 # Sign an inline JSON string
 python backend/scripts/sign_webhook_payload.py \
   --secret "$VAPI_WEBHOOK_SECRET" \
-  --payload '{"clinic_id":"clinic-1","event_type":"call.started","call_id":"local-test-001"}'
+  --payload '{"clinic_id":"11111111-1111-1111-1111-111111111111","call_id":"local-test-call-1","event_type":"call.ended","action_required":false}'
 
-# Sign a file
+# Sign a payload fixture file
+python backend/scripts/sign_webhook_payload.py \
+  --secret "$VAPI_WEBHOOK_SECRET" \
+  --payload-file docs/integrations/local_payloads/vapi_call_event.json
+
 python backend/scripts/sign_webhook_payload.py \
   --secret "$N8N_WEBHOOK_SECRET" \
-  --payload-file /tmp/calendar_payload.json
+  --payload-file docs/integrations/local_payloads/n8n_calendar_sync.json
 
 # Output plain hex digest (no sha256= prefix)
 python backend/scripts/sign_webhook_payload.py \
   --secret "$VAPI_WEBHOOK_SECRET" \
-  --payload '{"event":"test"}' \
+  --payload-file docs/integrations/local_payloads/vapi_call_event.json \
   --prefix false
 ```
 
@@ -141,49 +166,46 @@ The script prints only the signature to stdout. It never logs the secret.
 
 ---
 
-## H. Example Local curl Requests
+## I. Example Local curl Requests
 
-### Vapi call event webhook
+### Vapi call event webhook (using payload file)
 
 ```bash
-VAPI_PAYLOAD='{"clinic_id":"clinic-1","event_type":"call.started","call_id":"local-test-001"}'
-
 VAPI_SIG=$(python backend/scripts/sign_webhook_payload.py \
   --secret "$VAPI_WEBHOOK_SECRET" \
-  --payload "$VAPI_PAYLOAD")
+  --payload-file docs/integrations/local_payloads/vapi_call_event.json)
 
 curl -X POST http://127.0.0.1:8000/webhooks/vapi/call-event \
   -H "Content-Type: application/json" \
   -H "X-Service-Name: vapi" \
-  -H "X-Service-Clinic-Id: clinic-1" \
+  -H "X-Service-Clinic-Id: 11111111-1111-1111-1111-111111111111" \
   -H "X-Service-Scopes: vapi:webhook" \
   -H "X-Vapi-Signature: $VAPI_SIG" \
-  -d "$VAPI_PAYLOAD"
+  -d @docs/integrations/local_payloads/vapi_call_event.json
 ```
 
-### n8n calendar sync webhook
+### n8n calendar sync webhook (using payload file)
 
 ```bash
-N8N_PAYLOAD='{"clinic_id":"clinic-1","provider":"google","external_calendar_id":"cal@example.com","event_type":"connection_upsert"}'
-
 N8N_SIG=$(python backend/scripts/sign_webhook_payload.py \
   --secret "$N8N_WEBHOOK_SECRET" \
-  --payload "$N8N_PAYLOAD")
+  --payload-file docs/integrations/local_payloads/n8n_calendar_sync.json)
 
 curl -X POST http://127.0.0.1:8000/webhooks/n8n/calendar-sync \
   -H "Content-Type: application/json" \
   -H "X-Service-Name: n8n" \
-  -H "X-Service-Clinic-Id: clinic-1" \
+  -H "X-Service-Clinic-Id: 11111111-1111-1111-1111-111111111111" \
   -H "X-Service-Scopes: calendar:sync" \
   -H "X-N8N-Signature: $N8N_SIG" \
-  -d "$N8N_PAYLOAD"
+  -d @docs/integrations/local_payloads/n8n_calendar_sync.json
 ```
 
-> **Note:** Use only safe fake local payloads. Do not include real patient data. Do not include real secrets in curl commands shown to others.
+> **Note:** All payloads use deterministic local UUIDs from the seed script.
+> They contain no real patient data and no real clinic data.
 
 ---
 
-## I. Expected Results
+## J. Expected Results
 
 | Condition | HTTP Status |
 |---|---|
@@ -197,7 +219,7 @@ curl -X POST http://127.0.0.1:8000/webhooks/n8n/calendar-sync \
 
 ---
 
-## J. Stop Local PostgreSQL
+## K. Stop Local PostgreSQL
 
 ```bash
 docker compose -f docker-compose.postgres.yml down
@@ -207,7 +229,7 @@ docker compose -f docker-compose.postgres.yml down
 
 ---
 
-## K. Real Vapi / n8n Setup Is Not Done Yet
+## L. Real Vapi / n8n Setup Is Not Done Yet
 
 This runbook covers **local testing only**.
 

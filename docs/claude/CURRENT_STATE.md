@@ -431,10 +431,23 @@
 
 47. Module 49 — Local runtime database pool startup
    - Commit: b6cb614
+   - Docs commit: 1fa34d1
    - `backend/app/main.py` (updated — lifespan handler added)
    - `backend/tests/test_app_lifespan_db_pool.py` (new)
    - Module 49 tests: 9/9 passed
    - Full backend tests: 1290/1290 passed
+   - Manual signed webhook curl passed signature/auth layer; good signature reached DB logic; bad signature returned 401
+   - Current local gap: seed data and valid UUID smoke payloads
+
+48. Module 50 — Local seed data and webhook smoke fixtures (in progress)
+   - Commit: TBD
+   - `backend/scripts/seed_local_data.py` (new)
+   - `docs/integrations/local_payloads/vapi_call_event.json` (new)
+   - `docs/integrations/local_payloads/n8n_calendar_sync.json` (new)
+   - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated)
+   - `backend/tests/test_local_seed_contract.py` (new)
+   - Module 50 tests: TBD
+   - Full backend tests: TBD
 
 ## Next module
-Sprint 5 / Module 50 — TBD.
+Sprint 5 / Module 50 — Local seed data and webhook smoke fixtures (in progress).

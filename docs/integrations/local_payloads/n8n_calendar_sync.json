@@ -1,0 +1,6 @@
+{
+  "clinic_id": "11111111-1111-1111-1111-111111111111",
+  "provider": "google",
+  "external_calendar_id": "local-test@group.calendar.google.com",
+  "event_type": "connection_upsert"
+}

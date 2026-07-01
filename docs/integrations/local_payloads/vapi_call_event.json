@@ -1,0 +1,6 @@
+{
+  "clinic_id": "11111111-1111-1111-1111-111111111111",
+  "call_id": "local-test-call-1",
+  "event_type": "call.ended",
+  "action_required": false
+}
