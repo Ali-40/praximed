@@ -1,27 +1,19 @@
-# Sprint 5 / Module 45 — Local PostgreSQL Docker + Migration Runner Smoke Test
+# Sprint 5 / Module 46 — Webhook Signature Verification Foundation
 
 Task scope:
-Create a safe local PostgreSQL Docker setup and migration runner smoke-test foundation.
+Create a shared webhook signature verification foundation.
 
 Purpose:
-PraxisMed now has an Alembic-style migration foundation, but it has not been prepared for real local
-PostgreSQL execution. Before real Vapi/n8n setup, external AI providers, frontend work, or pilots,
-the backend needs:
+PraxisMed currently protects machine routes with internal X-Service-* headers. This module creates
+reusable HMAC-based webhook signature verification helpers and FastAPI dependencies.
 
-* a local PostgreSQL Docker Compose file
-* a local environment example
-* a migration runner script
-* a database smoke-test script
-* static tests verifying the setup is safe and does not hard-code production secrets
+Route-by-route enforcement will be Module 47.
 
 Files created:
-
-* docker-compose.postgres.yml
-* backend/.env.example
-* backend/scripts/__init__.py
-* backend/scripts/run_migrations.py
-* backend/scripts/db_smoke_test.py
-* backend/tests/test_local_db_setup_contract.py
+- backend/app/core/webhook_signature.py
+- backend/app/api/dependencies/webhook_signature.py
+- backend/tests/test_webhook_signature.py
+- backend/tests/test_webhook_signature_dependencies.py
 
 Commit message:
-Sprint 5 / Module 45 — Local PostgreSQL Docker and migration smoke test
+Sprint 5 / Module 46 — Webhook signature verification foundation

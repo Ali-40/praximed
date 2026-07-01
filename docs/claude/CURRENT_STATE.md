@@ -388,7 +388,7 @@
 - Sprint 5 started: Local PostgreSQL Docker + Migration Runner Smoke Test (Module 45)
 
 43. Module 45 — Local PostgreSQL Docker and migration smoke test
-   - Commit: TBD
+   - Commit: 5566653
    - `docker-compose.postgres.yml` (new)
    - `backend/.env.example` (new)
    - `backend/scripts/__init__.py` (new)
@@ -397,6 +397,16 @@
    - `backend/tests/test_local_db_setup_contract.py` (new)
    - Module 45 tests: 24/24 passed
    - Full backend tests: 1217/1217 passed
+   - Manual local PostgreSQL smoke flow passed: Docker started, migration applied, key tables confirmed
+
+44. Module 46 — Webhook signature verification foundation
+   - Commit: TBD
+   - `backend/app/core/webhook_signature.py` (new)
+   - `backend/app/api/dependencies/webhook_signature.py` (new)
+   - `backend/tests/test_webhook_signature.py` (new)
+   - `backend/tests/test_webhook_signature_dependencies.py` (new)
+   - Module 46 tests: TBD
+   - Full backend tests: TBD
 
 ## Next module
-Sprint 5 / Module 45 — Local PostgreSQL Docker and migration smoke test (complete).
+Sprint 5 / Module 46 — Webhook signature verification foundation (in progress).
