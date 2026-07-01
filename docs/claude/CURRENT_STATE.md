@@ -441,6 +441,7 @@
 
 48. Module 50 — Local seed data and webhook smoke fixtures
    - Commit: dd8df3b
+   - Docs commit: 0f178f9
    - `backend/scripts/seed_local_data.py` (new)
    - `docs/integrations/local_payloads/vapi_call_event.json` (new)
    - `docs/integrations/local_payloads/n8n_calendar_sync.json` (new)
@@ -448,6 +449,16 @@
    - `backend/tests/test_local_seed_contract.py` (new)
    - Module 50 tests: 22/22 passed
    - Full backend tests: 1312/1312 passed
+   - Manual local signed Vapi webhook: HTTP 200 OK
+   - Manual bad Vapi signature: HTTP 401 Unauthorized
+   - Manual local signed n8n webhook: HTTP 200 OK
+   - Local integration smoke checkpoint created
+
+49. Module 51 — Local integration smoke result checkpoint (in progress)
+   - Commit: TBD
+   - `docs/integrations/LOCAL_SMOKE_RESULTS.md` (new)
+   - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (updated)
+   - No production code changes
 
 ## Next module
-Sprint 5 / Module 51 — TBD.
+Sprint 6 / Module 52 — External Integration Compatibility Plan for Vapi and n8n (pending review).

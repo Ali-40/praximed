@@ -229,7 +229,24 @@ docker compose -f docker-compose.postgres.yml down
 
 ---
 
-## L. Real Vapi / n8n Setup Is Not Done Yet
+## L. Confirmed Local Smoke Result
+
+The full local smoke test passed after Module 50. See:
+[`docs/integrations/LOCAL_SMOKE_RESULTS.md`](LOCAL_SMOKE_RESULTS.md)
+
+**Summary of confirmed results:**
+
+- `seed_local_data.py` — seeded 4 deterministic UUID rows successfully
+- `POST /webhooks/vapi/call-event` with valid HMAC + valid machine auth → **HTTP 200 OK**
+- `POST /webhooks/vapi/call-event` with bad signature (`sha256=wrong`) → **HTTP 401 Unauthorized**
+- `POST /webhooks/n8n/calendar-sync` with valid HMAC + valid machine auth → **HTTP 200 OK**
+
+The local signed Vapi and n8n webhook tests passed with seeded UUID data.
+Real DB writes, HMAC signature verification, and machine auth all work end-to-end in the local environment.
+
+---
+
+## M. Real Vapi / n8n Setup Is Not Done Yet
 
 This runbook covers **local testing only**.
 
