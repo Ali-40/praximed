@@ -380,11 +380,23 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 04 created: `docs/claude/ARCHITECTURE_CHECKPOINT_04.md`
+- Commit: 9fba526
 - Scope: Modules 41–44, Sprint 4 complete
 - Focus: migration foundation, audit logging foundation, PHI/machine audit integration, integration readiness, remaining risks before pilot
 - Full backend tests: 1193/1193 passed
 - Sprint 4 complete (Modules 41–44)
 - Sprint 5 started: Local PostgreSQL Docker + Migration Runner Smoke Test (Module 45)
 
+43. Module 45 — Local PostgreSQL Docker and migration smoke test
+   - Commit: TBD
+   - `docker-compose.postgres.yml` (new)
+   - `backend/.env.example` (new)
+   - `backend/scripts/__init__.py` (new)
+   - `backend/scripts/run_migrations.py` (new)
+   - `backend/scripts/db_smoke_test.py` (new)
+   - `backend/tests/test_local_db_setup_contract.py` (new)
+   - Module 45 tests: 24/24 passed
+   - Full backend tests: 1217/1217 passed
+
 ## Next module
-Sprint 5 / Module 45 — Local PostgreSQL Docker + Migration Runner Smoke Test (pending).
+Sprint 5 / Module 45 — Local PostgreSQL Docker and migration smoke test (complete).
