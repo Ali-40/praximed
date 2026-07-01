@@ -411,12 +411,21 @@
 
 45. Module 47 — Apply webhook signature enforcement
    - Commit: c161c16
+   - Docs commit: 718046f
    - `backend/app/api/routes/vapi_webhooks.py` (updated)
    - `backend/app/api/routes/calendar_webhooks.py` (updated)
    - `backend/tests/test_vapi_webhook_route.py` (updated)
    - `backend/tests/test_calendar_webhook_route.py` (updated)
-   - Module 47 tests: 12 new sig enforcement tests passed (6 Vapi + 6 n8n)
+   - Module 47 tests: 12 new signature enforcement tests passed
    - Full backend tests: 1256/1256 passed
 
+46. Module 48 — Local integration runbook and signed webhook helper (in progress)
+   - Commit: TBD
+   - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (new)
+   - `backend/scripts/sign_webhook_payload.py` (new)
+   - `backend/tests/test_signed_webhook_helper_contract.py` (new)
+   - Module 48 tests: TBD
+   - Full backend tests: TBD
+
 ## Next module
-Sprint 5 / Module 48 — TBD.
+Sprint 5 / Module 48 — Local integration runbook and signed webhook helper (in progress).

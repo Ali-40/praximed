@@ -1,24 +1,15 @@
-# Sprint 5 / Module 47 — Apply Webhook Signature Enforcement to Existing Routes
+# Sprint 5 / Module 48 — Local Integration Runbook and Signed Webhook Test Helper
 
 Task scope:
-Apply the webhook signature verification dependencies from Module 46 to existing Vapi and n8n webhook routes.
+Create local integration documentation and helper scripts for testing signed Vapi/n8n-style webhook requests.
 
 Purpose:
-PraxisMed already protects integration routes with MachineAuthContext. Module 46 added HMAC-based webhook signature verification. This module wires signature verification into real webhook routes so external webhook calls require both:
+PraxisMed now requires MachineAuthContext headers, HMAC-SHA256 webhook signatures, and local PostgreSQL migration/smoke setup before configuring real Vapi or n8n dashboards.
 
-1. valid machine access headers
-2. valid provider-specific webhook signature
-
-Routes protected in this module:
-
-1. POST /webhooks/vapi/call-event
-2. POST /webhooks/n8n/calendar-sync
-
-Files created/updated:
-- backend/app/api/routes/vapi_webhooks.py
-- backend/app/api/routes/calendar_webhooks.py
-- backend/tests/test_vapi_webhook_route.py
-- backend/tests/test_calendar_webhook_route.py
+Files created:
+- docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md
+- backend/scripts/sign_webhook_payload.py
+- backend/tests/test_signed_webhook_helper_contract.py
 
 Commit message:
-Sprint 5 / Module 47 — Apply webhook signature enforcement
+Sprint 5 / Module 48 — Local integration runbook and signed webhook helper
