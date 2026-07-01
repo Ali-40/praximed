@@ -34,6 +34,7 @@ from backend.app.api.dependencies.machine_auth import (
 )
 from backend.app.api.deps import get_db_pool
 from backend.app.core.machine_auth import MachineAuthContext
+from backend.app.modules.audit import audit_logger
 from backend.app.modules.calendar_sync.calendar_sync import (
     InvalidCalendarPayloadError,
     UnsupportedCalendarEventTypeError,
@@ -102,6 +103,21 @@ async def n8n_calendar_sync(
     )
     try:
         result = await process_calendar_sync_payload(pool, payload)
+        await audit_logger.safe_record_audit_event(
+            pool,
+            audit_logger.build_machine_audit_event(
+                machine_auth,
+                action="n8n.calendar_sync",
+                resource_type="calendar_sync",
+                clinic_id=payload.get("clinic_id"),
+                resource_id=result.get("sync_event_id"),
+                severity="info",
+                metadata={
+                    "route": "n8n_calendar_sync",
+                    "event_type": payload.get("event_type"),
+                },
+            ),
+        )
         return result
 
     except (InvalidCalendarPayloadError, UnsupportedCalendarEventTypeError) as exc:

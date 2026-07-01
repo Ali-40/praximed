@@ -18,6 +18,7 @@ from backend.app.api.dependencies.machine_auth import (
     get_machine_auth_context,
     require_vapi_tool_access,
 )
+from backend.app.modules.audit import audit_logger
 from backend.app.api.deps import get_config_loader, get_db_pool
 from backend.app.core.machine_auth import MachineAuthContext
 from backend.app.core.config_loader import ConfigNotFoundError, ConfigValidationError
@@ -221,6 +222,21 @@ async def vapi_capture_appointment_request(
             detail=f"Internal error capturing appointment request: {exc}",
         )
 
+    await audit_logger.safe_record_audit_event(
+        pool,
+        audit_logger.build_machine_audit_event(
+            machine_auth,
+            action="vapi.appointment_capture",
+            resource_type="appointment_requests",
+            clinic_id=result.get("clinic_id"),
+            resource_id=(result.get("request") or {}).get("id"),
+            severity="warning",
+            metadata={
+                "route": "vapi_capture_appointment_request",
+                "call_id": body.call_id,
+            },
+        ),
+    )
     return VapiAppointmentCaptureResponse(
         ok=result["ok"],
         message=result["message"],

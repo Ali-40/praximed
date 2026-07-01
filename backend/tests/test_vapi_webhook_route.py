@@ -59,6 +59,7 @@ SECRET_VALUE = "vapi-super-secret-999"
 SECRET_HEADER = "X-PraxisMed-Vapi-Secret"
 
 PROCESS_EVENT = "backend.app.api.routes.vapi_webhooks.process_vapi_call_event"
+AUDIT_SAFE    = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -324,3 +325,71 @@ def test_valid_machine_auth_returns_200(client_no_auth, monkeypatch):
             },
         )
     assert response.status_code == 200
+
+
+# ===========================================================================
+# Module 44 — Audit logging tests
+# ===========================================================================
+
+
+def test_call_event_records_audit_event(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "vapi.call_event"
+    assert event["resource_type"] == "clinic_call_logs"
+    assert event["actor_type"] == "machine"
+
+
+def test_call_event_audit_severity_warning_when_action_required(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    result_with_action = {**SUCCESS_RESULT, "action_required": True}
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=result_with_action)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["severity"] == "warning"
+
+
+def test_call_event_audit_severity_info_when_not_action_required(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    result_no_action = {**SUCCESS_RESULT, "action_required": False}
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=result_no_action)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["severity"] == "info"
+
+
+def test_call_event_audit_metadata_includes_event_type(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["metadata"]["event_type"] == "call.started"
+
+
+def test_call_event_audit_resource_id_from_call_id(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["resource_id"] == CALL_ID
+
+
+def test_call_event_audit_failure_does_not_break_route(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200

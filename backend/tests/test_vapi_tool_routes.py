@@ -336,6 +336,7 @@ FAKE_CAPTURE_RESULT = {
 CAPTURE_FUNC = (
     "backend.app.modules.vapi.vapi_appointment_capture.capture_vapi_appointment_request"
 )
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 
 # ---------------------------------------------------------------------------
@@ -568,3 +569,77 @@ def test_valid_machine_auth_returns_200(client_no_auth):
             },
         )
     assert response.status_code == 200
+
+
+# ===========================================================================
+# Module 44 — Audit logging tests
+# ===========================================================================
+
+
+def test_capture_records_audit_event(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "vapi.appointment_capture"
+    assert event["resource_type"] == "appointment_requests"
+    assert event["actor_type"] == "machine"
+
+
+def test_capture_audit_severity_is_warning(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["severity"] == "warning"
+
+
+def test_capture_audit_metadata_includes_call_id(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["metadata"]["call_id"] == "vapi-call-abc123"
+
+
+def test_capture_audit_resource_id_from_request(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["resource_id"] == FAKE_CAPTURE_RESULT["request"]["id"]
+
+
+def test_capture_audit_failure_does_not_break_route(client_full):
+    client, _loader, _cfg = client_full
+    with patch(CAPTURE_FUNC, new=AsyncMock(return_value=FAKE_CAPTURE_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client.post(CAPTURE_URL, json=CAPTURE_PAYLOAD)
+    assert resp.status_code == 200
+
+
+def test_check_availability_does_not_record_audit(client_full):
+    client, _loader, _cfg = client_full
+    with patch(IS_SLOT_BOOKABLE, new=AsyncMock(return_value=True)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(CHECK_URL, json=CHECK_PAYLOAD)
+    assert resp.status_code == 200
+    mock_audit.assert_not_awaited()
+
+
+def test_suggest_slots_does_not_record_audit(client_full):
+    client, _loader, _cfg = client_full
+    with patch(SUGGEST_SLOTS, new=AsyncMock(return_value=[])), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client.post(SUGGEST_URL, json=SUGGEST_PAYLOAD)
+    assert resp.status_code == 200
+    mock_audit.assert_not_awaited()

@@ -35,6 +35,7 @@ from backend.app.api.dependencies.machine_auth import (
 )
 from backend.app.api.deps import get_db_pool
 from backend.app.core.machine_auth import MachineAuthContext
+from backend.app.modules.audit import audit_logger
 from backend.app.modules.vapi.vapi_event_handler import (
     InvalidVapiEventPayloadError,
     UnsupportedVapiEventTypeError,
@@ -92,6 +93,21 @@ async def vapi_call_event(
     )
     try:
         result = await process_vapi_call_event(pool, payload)
+        await audit_logger.safe_record_audit_event(
+            pool,
+            audit_logger.build_machine_audit_event(
+                machine_auth,
+                action="vapi.call_event",
+                resource_type="clinic_call_logs",
+                clinic_id=payload.get("clinic_id"),
+                resource_id=result.get("call_id"),
+                severity="warning" if result.get("action_required") else "info",
+                metadata={
+                    "route": "vapi_call_event",
+                    "event_type": payload.get("event_type"),
+                },
+            ),
+        )
         return result
 
     except (InvalidVapiEventPayloadError, UnsupportedVapiEventTypeError) as exc:

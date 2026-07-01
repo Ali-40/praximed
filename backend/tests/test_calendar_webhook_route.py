@@ -58,6 +58,7 @@ def _machine_auth() -> MachineAuthContext:
 SYNC_SERVICE = (
     "backend.app.api.routes.calendar_webhooks.process_calendar_sync_payload"
 )
+AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 SUCCESS_RESULT = {
     "ok":         True,
@@ -375,3 +376,58 @@ def test_valid_machine_auth_returns_200(client_no_auth, monkeypatch):
             },
         )
     assert response.status_code == 200
+
+
+# ===========================================================================
+# Module 44 — Audit logging tests
+# ===========================================================================
+
+
+def test_calendar_sync_records_audit_event(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    mock_audit.assert_awaited_once()
+    event = mock_audit.call_args[0][1]
+    assert event["action"] == "n8n.calendar_sync"
+    assert event["resource_type"] == "calendar_sync"
+
+
+def test_calendar_sync_audit_actor_type_is_machine(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["actor_type"] == "machine"
+
+
+def test_calendar_sync_audit_metadata_includes_event_type(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["metadata"]["event_type"] == "connection_upsert"
+
+
+def test_calendar_sync_audit_clinic_id_from_payload(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": True})) as mock_audit:
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
+    event = mock_audit.call_args[0][1]
+    assert event["clinic_id"] == CLINIC_ID
+
+
+def test_calendar_sync_audit_failure_does_not_break_route(client_with_pool, monkeypatch):
+    monkeypatch.delenv(SECRET_ENV, raising=False)
+    with patch(SYNC_SERVICE, new=AsyncMock(return_value=SUCCESS_RESULT)), \
+         patch(AUDIT_SAFE, new=AsyncMock(return_value={"ok": False, "audit_log": None, "message": "failed", "error": "db"})):
+        resp = client_with_pool.post(URL, json=VALID_PAYLOAD)
+    assert resp.status_code == 200
