@@ -7,24 +7,24 @@ Exposes one endpoint:
 
 Vapi posts a JSON body whenever a call event occurs (call started, ended,
 transcript ready, human handoff required, etc.).  The route validates the
-optional webhook secret, delegates to the event handler, and returns the
-service result as JSON.
+HMAC-SHA256 webhook signature (Module 47) and the machine auth context, then
+delegates to the event handler and returns the service result as JSON.
 
 Webhook security
 ----------------
-Read the expected secret from the environment variable
-``PRAXIMED_VAPI_WEBHOOK_SECRET``.
+Signature verification:  HMAC-SHA256 over the raw request body using
+``VAPI_WEBHOOK_SECRET``.
 
-  • If the variable is set the request MUST carry a matching
-    ``X-PraxisMed-Vapi-Secret`` header, otherwise HTTP 401 is returned.
-  • If the variable is not set (local / CI environments) all requests
-    are accepted so that tests run without extra configuration.
+  • Missing or invalid ``X-Vapi-Signature`` → HTTP 401.
+  • ``VAPI_WEBHOOK_SECRET`` not configured → HTTP 503.
+
+Machine auth:  ``X-Service-Name``, ``X-Service-Clinic-Id``, ``X-Service-Scopes``
+headers are validated by the machine auth dependency.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -32,6 +32,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from backend.app.api.dependencies.machine_auth import (
     get_machine_auth_context,
     require_vapi_webhook_access,
+)
+from backend.app.api.dependencies.webhook_signature import (
+    verify_vapi_webhook_signature_dependency,
 )
 from backend.app.api.deps import get_db_pool
 from backend.app.core.machine_auth import MachineAuthContext
@@ -46,34 +49,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["vapi-webhooks"])
 
-_SECRET_ENV_VAR    = "PRAXIMED_VAPI_WEBHOOK_SECRET"
-_SECRET_HEADER_KEY = "x-praxismed-vapi-secret"   # lowercase of X-PraxisMed-Vapi-Secret
-
-
-def _verify_vapi_secret(request: Request) -> None:
-    """
-    FastAPI dependency that validates the Vapi webhook secret header.
-
-    No-op when the environment variable is not set (local / CI environments).
-    Raises HTTP 401 when the header is missing or does not match.
-    """
-    expected = os.environ.get(_SECRET_ENV_VAR)
-    if not expected:
-        return
-
-    provided = request.headers.get(_SECRET_HEADER_KEY)
-    if provided != expected:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or missing Vapi webhook secret.",
-        )
-
 
 @router.post("/vapi/call-event")
 async def vapi_call_event(
     payload: Dict[str, Any],
     pool: Any = Depends(get_db_pool),
-    _secret: None = Depends(_verify_vapi_secret),
+    _sig: bool = Depends(verify_vapi_webhook_signature_dependency),
     machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> Dict[str, Any]:
     """
@@ -82,10 +63,10 @@ async def vapi_call_event(
     Error mapping
     -------------
     400  Invalid or unsupported payload.
-    401  Webhook secret mismatch or missing machine auth.
+    401  Missing/invalid Vapi signature or missing machine auth.
     403  Machine service or scope not permitted.
     500  Unexpected error in the event handler.
-    503  Database pool not yet initialised.
+    503  VAPI_WEBHOOK_SECRET not configured or DB pool not initialised.
     """
     require_vapi_webhook_access(
         requested_clinic_id=payload.get("clinic_id"),

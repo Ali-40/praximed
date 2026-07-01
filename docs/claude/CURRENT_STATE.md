@@ -401,6 +401,7 @@
 
 44. Module 46 — Webhook signature verification foundation
    - Commit: 41d0a46
+   - Docs commit: c2c2dc8
    - `backend/app/core/webhook_signature.py` (new)
    - `backend/app/api/dependencies/webhook_signature.py` (new)
    - `backend/tests/test_webhook_signature.py` (new)
@@ -408,5 +409,14 @@
    - Module 46 tests: 33/33 passed (23 core + 10 dependencies)
    - Full backend tests: 1250/1250 passed
 
+45. Module 47 — Apply webhook signature enforcement (in progress)
+   - Commit: TBD
+   - `backend/app/api/routes/vapi_webhooks.py` (updated)
+   - `backend/app/api/routes/calendar_webhooks.py` (updated)
+   - `backend/tests/test_vapi_webhook_route.py` (updated)
+   - `backend/tests/test_calendar_webhook_route.py` (updated)
+   - Module 47 tests: TBD
+   - Full backend tests: TBD
+
 ## Next module
-Sprint 5 / Module 47 — Apply webhook signature enforcement to existing routes.
+Sprint 5 / Module 47 — Apply webhook signature enforcement to existing routes (in progress).

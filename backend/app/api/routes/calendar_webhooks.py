@@ -6,24 +6,25 @@ Exposes one endpoint:
     POST /webhooks/n8n/calendar-sync
 
 n8n calls this route whenever a clinic calendar changes.  The route
-delegates all business logic to the calendar sync service (Module 6) and
-contains no direct SQL.
+validates the HMAC-SHA256 webhook signature (Module 47) and the machine auth
+context, then delegates all business logic to the calendar sync service
+(Module 6) and contains no direct SQL.
 
 Webhook security
 ----------------
-Read the expected secret from the environment variable
-``PRAXIMED_N8N_WEBHOOK_SECRET``.
+Signature verification:  HMAC-SHA256 over the raw request body using
+``N8N_WEBHOOK_SECRET``.
 
-  • If the variable is set, the incoming request MUST carry a matching
-    ``X-PraxisMed-Webhook-Secret`` header, otherwise HTTP 401 is returned.
-  • If the variable is not set (local / CI environments), all requests are
-    accepted so that tests run without extra configuration.
+  • Missing or invalid ``X-N8N-Signature`` → HTTP 401.
+  • ``N8N_WEBHOOK_SECRET`` not configured → HTTP 503.
+
+Machine auth:  ``X-Service-Name``, ``X-Service-Clinic-Id``, ``X-Service-Scopes``
+headers are validated by the machine auth dependency.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -31,6 +32,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from backend.app.api.dependencies.machine_auth import (
     get_machine_auth_context,
     require_n8n_calendar_sync_access,
+)
+from backend.app.api.dependencies.webhook_signature import (
+    verify_n8n_webhook_signature_dependency,
 )
 from backend.app.api.deps import get_db_pool
 from backend.app.core.machine_auth import MachineAuthContext
@@ -45,40 +49,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["webhooks"])
 
-_SECRET_ENV_VAR    = "PRAXIMED_N8N_WEBHOOK_SECRET"
-_SECRET_HEADER_KEY = "x-praxismed-webhook-secret"   # ASGI lowercases all header names
-
-
-def _verify_webhook_secret(request: Request) -> None:
-    """
-    FastAPI dependency that validates the webhook secret header.
-
-    Reads the expected secret from ``PRAXIMED_N8N_WEBHOOK_SECRET``.
-    No-op when the variable is not set (local / CI environments).
-    Raises HTTP 401 when the header is missing or does not match.
-
-    We read the header directly from ``request.headers`` instead of using
-    FastAPI's ``Header()`` injection to avoid any ambiguity in how FastAPI
-    converts the mixed-case header name ``X-PraxisMed-Webhook-Secret`` to a
-    Python parameter name.
-    """
-    expected = os.environ.get(_SECRET_ENV_VAR)
-    if not expected:
-        return  # secret check disabled in this environment
-
-    provided = request.headers.get(_SECRET_HEADER_KEY)
-    if provided != expected:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or missing webhook secret.",
-        )
-
 
 @router.post("/n8n/calendar-sync")
 async def n8n_calendar_sync(
     payload: Dict[str, Any],
     pool: Any = Depends(get_db_pool),
-    _secret: None = Depends(_verify_webhook_secret),
+    _sig: bool = Depends(verify_n8n_webhook_signature_dependency),
     machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
 ) -> Dict[str, Any]:
     """
@@ -92,10 +68,10 @@ async def n8n_calendar_sync(
     Error mapping
     -------------
     400  Invalid or missing payload fields.
-    401  Webhook secret mismatch or missing machine auth.
+    401  Missing/invalid n8n signature or missing machine auth.
     403  Machine service or scope not permitted.
     500  Unexpected error in the sync service.
-    503  Database pool not yet initialised (returned by ``get_db_pool``).
+    503  N8N_WEBHOOK_SECRET not configured or DB pool not initialised.
     """
     require_n8n_calendar_sync_access(
         requested_clinic_id=payload.get("clinic_id"),
