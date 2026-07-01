@@ -419,13 +419,13 @@
    - Module 47 tests: 12 new signature enforcement tests passed
    - Full backend tests: 1256/1256 passed
 
-46. Module 48 — Local integration runbook and signed webhook helper (in progress)
-   - Commit: TBD
+46. Module 48 — Local integration runbook and signed webhook helper
+   - Commit: 60f61fa
    - `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` (new)
    - `backend/scripts/sign_webhook_payload.py` (new)
    - `backend/tests/test_signed_webhook_helper_contract.py` (new)
-   - Module 48 tests: TBD
-   - Full backend tests: TBD
+   - Module 48 tests: 25/25 passed
+   - Full backend tests: 1281/1281 passed
 
 ## Next module
-Sprint 5 / Module 48 — Local integration runbook and signed webhook helper (in progress).
+Sprint 5 / Module 49 — TBD.
