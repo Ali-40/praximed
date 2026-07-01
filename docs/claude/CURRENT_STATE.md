@@ -494,5 +494,19 @@
    - Full backend tests: 1338/1338 passed
    - Signature dependencies now accept controlled provider-specific header aliases while keeping HMAC verification required
 
+52. Module 54 — Provider machine header compatibility config
+   - Commit: 79220ca
+   - `backend/app/core/machine_provider_config.py` (new)
+   - `backend/app/api/dependencies/machine_auth.py` (updated — alias-aware extraction)
+   - `backend/tests/test_machine_provider_config.py` (new — 24 tests)
+   - `backend/tests/test_machine_auth_dependencies.py` (updated — 18 new alias tests)
+   - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (updated — Section M added)
+   - Module 54 tests: 42 new tests passed (24 config + 18 alias dependency)
+   - Full backend tests: 1380/1380 passed
+   - Machine auth accepts provider-specific aliases for service_name, clinic_id, scopes
+   - Original X-Service-* headers remain fully supported
+   - Conflicting duplicate aliases rejected with HTTP 401
+   - Required scope and tenant/clinic enforcement unchanged
+
 ## Next module
-Sprint 6 / Module 54 — Provider Machine Header Compatibility Config (pending).
+Sprint 6 / Module 55 — TBD (pending review).
