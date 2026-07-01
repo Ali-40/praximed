@@ -309,7 +309,7 @@
    - Full backend tests: 1063/1063 passed
 
 38. Module 40 — Apply machine guards to integration routes
-   - Commit: TBD
+   - Commit: 1c21ee5
    - `backend/app/api/routes/availability.py` (updated)
    - `backend/app/api/routes/vapi_tools.py` (updated)
    - `backend/app/api/routes/vapi_webhooks.py` (updated)
@@ -321,5 +321,14 @@
    - Module 40 tests: 20/20 passed (5 availability + 5 vapi_tools + 5 vapi_webhook + 5 calendar_webhook)
    - Full backend tests: 1083/1083 passed
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 03 created: `docs/claude/ARCHITECTURE_CHECKPOINT_03.md`
+- Scope: Modules 35–40, Sprint 3 complete
+- Focus: access control map, human/machine auth guards, integration readiness, remaining risks before pilot
+- Full backend tests: 1083/1083 passed
+- Sprint 3 complete (Modules 35–40)
+- Sprint 4 started: Database Migration Foundation (Module 41)
+
 ## Next module
-Sprint 3 / Module 40 — Apply machine guards to integration routes (complete, awaiting commit).
+Sprint 4 / Module 41 — Database Migration Foundation (pending).
