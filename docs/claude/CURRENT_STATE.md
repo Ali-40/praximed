@@ -568,7 +568,7 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 05 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_05_EXTERNAL_INTEGRATION_REVIEW.md`
-- Commit: TBD
+- Commit: 3a5a76d
 - Full backend tests: 1386/1386 passed
 - Sprint 6 complete (Modules 52–58)
 - Sprint 7 started: Production Auth and User Session Foundation (Module 59+)
