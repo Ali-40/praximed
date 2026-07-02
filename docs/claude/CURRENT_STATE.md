@@ -575,7 +575,7 @@
 - Sprint 7 started: Production Auth and User Session Foundation (Module 59+)
 
 57. Module 59 — Production auth and user session foundation
-   - Commit: TBD
+   - Commit: 97db66d
    - `backend/app/db/schema.sql` (updated — password_hash added to clinic_users)
    - `backend/migrations/versions/0002_add_password_hash_to_clinic_users.py` (new)
    - `backend/app/core/password_hashing.py` (new — bcrypt hash/verify)
