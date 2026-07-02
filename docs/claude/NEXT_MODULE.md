@@ -1,41 +1,48 @@
-# Architecture Checkpoint 07 — Frontend Dashboard Review
+# Sprint 9 / Module 72 — Frontend Local Runtime Smoke and Seed Login
 
-Status: pending Module 71 review.
+Status: pending Architecture Checkpoint 07 review.
 
 ## Context
 
-Sprint 8 is complete. All four dashboard sections are now live:
-- Module 66 — Frontend dashboard foundation (Next.js skeleton)
-- Module 67 — Login flow integration
-- Module 68 — Appointments section wired to `GET /appointment-requests`
-- Module 69 — Patients section wired to `GET /patients`
-- Module 70 — Notifications section wired to `GET /notifications`
-- Module 71 — Consultations section wired to `GET /consultations`
+Sprint 8 produced a complete Next.js frontend (Modules 66–71) — login flow and four
+live dashboard sections — but the frontend has never been run in a real browser.
+Architecture Checkpoint 07 identified this as the highest-priority risk before building
+additional features.
 
-Each section fetches its data after auth check using the stored JWT as a Bearer token.
-All four sections show loading / error / empty / list states.
-The dashboard has no placeholder cards remaining.
+## Goal
 
-## Scope (docs only — no code changes)
+Run the frontend in a real browser against the local backend. Prove that the code
+written in Sprint 8 works end-to-end and document the result.
 
-Create `docs/architecture/ARCHITECTURE_CHECKPOINT_07_FRONTEND_DASHBOARD_REVIEW.md`.
+## Scope
 
-Review and document:
-1. Dashboard data flow — auth check → JWT decode → parallel fetches → render states
-2. Frontend file structure — pages, lib helpers, CSS tokens
-3. Security posture — sessionStorage local-dev only warning, no secrets in frontend, generic error messages
-4. Known gaps and risks — no token refresh, no logout/revocation endpoint, no role-based section visibility, no pagination
-5. Recommended next path — Sprint 9 (e.g. role-based access on the frontend, or a refresh-token flow, or a dedicated module page with detail views)
+1. Run `npm install` in `frontend/` and resolve any dependency issues.
+2. Run `npx tsc --noEmit` to check for TypeScript compilation errors; fix any found.
+3. Run `npm run dev` — verify the dev server starts without errors.
+4. Start the backend (`uvicorn backend.app.main:app --reload`) and the local PostgreSQL
+   container (`docker-compose -f docker-compose.postgres.yml up -d`).
+5. Seed a local user via `backend/scripts/seed_local_data.py`.
+6. Open `http://localhost:3000`:
+   - Verify redirect to `/login`.
+   - Log in with seeded Clinic ID, email, password.
+   - Verify redirect to `/dashboard`.
+   - Verify all four sections show loading → data (or empty if no records).
+   - Log out and verify redirect back to `/login`.
+7. Document the result in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
+8. Fix any frontend runtime errors discovered; add a static contract test for each fix.
 
 ## What not to do
 
-- Do not change any frontend or backend code.
-- Do not add new frontend pages or routes.
-- Do not implement any of the recommended next steps.
+- Do not add new dashboard features or forms.
+- Do not implement token refresh or cookie-based auth.
+- Do not modify backend routes.
+- Do not run in production or deploy.
 
 ## Acceptance
 
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_07_FRONTEND_DASHBOARD_REVIEW.md` created.
-- CURRENT_STATE.md and NEXT_MODULE.md updated.
-- Full backend tests pass (unchanged).
-- Commit: `Architecture Checkpoint 07 — Frontend dashboard review`
+- `npm run dev` starts without error.
+- `npx tsc --noEmit` reports no errors (or all found errors are fixed).
+- Full login → dashboard → logout flow completes in a real browser.
+- Results documented in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
+- Full backend tests pass.
+- Commit: `Sprint 9 / Module 72 — Frontend local runtime smoke and seed login`

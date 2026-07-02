@@ -762,5 +762,13 @@
    - Consultations placeholder card removed; all four dashboard sections now live
    - No hardcoded tokens or real patient data
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 07 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_07_FRONTEND_DASHBOARD_REVIEW.md`
+- Commit: (pending)
+- Full backend tests: 1521/1521 passed
+- Sprint 8 complete (Modules 66–71)
+- Sprint 9 started: Frontend Local Runtime Smoke (Module 72+)
+
 ## Next module
-Architecture Checkpoint 07 — Frontend Dashboard Review (pending Module 71 review).
+Sprint 9 / Module 72 — Frontend Local Runtime Smoke and Seed Login (pending Architecture Checkpoint 07 review).
