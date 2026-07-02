@@ -1,43 +1,44 @@
-# Sprint 7 / Architecture Checkpoint 06 — Human Auth Wiring Review
+# Sprint 8 / Module 66 — Frontend Dashboard Foundation
 
-Status: pending Module 65 review.
+Status: pending Architecture Checkpoint 06 review.
 
 ## Context
 
-Modules 61–65 wired `get_current_user` (JWT Bearer) into all five PHI human-facing
-route groups:
-- `/patients` ✓ Module 61
-- `/consultations` ✓ Module 62
-- `/clinical-workflows` ✓ Module 63
-- `/appointment-requests` ✓ Module 64
-- `/notifications` ✓ Module 65
+Sprint 7 (Modules 59–65) completed the full human auth layer:
+- JWT login endpoint (`POST /auth/login`)
+- `get_current_user` dependency enforcing Bearer JWT on all PHI routes
+- All five PHI route groups now require JWT: `/patients`, `/consultations`,
+  `/clinical-workflows`, `/appointment-requests`, `/notifications`
 
-Machine routes (Vapi, n8n, availability, webhooks) continue using machine auth
-(`get_auth_context` with `X-Service-*` headers) and are unchanged.
+The backend is auth-complete for human users. Machine routes (Vapi, n8n, webhooks)
+remain on header-based machine auth and are unchanged.
+
+A frontend can now be built against real JWT-secured API endpoints.
 
 ## Scope
 
-Create Architecture Checkpoint 06 document covering:
-- Summary of what was wired (all 5 PHI route groups, which modules, which commits)
-- The wiring pattern used and why it's consistent
-- Current auth boundary: human routes JWT, machine routes header-based
-- Remaining risks: `get_auth_context` still present in codebase for machine callers;
-  no frontend yet consuming the JWT; session expiry/refresh not yet handled
-- Sprint 8 candidates
+Build a minimal Next.js frontend skeleton:
+- Login page: email + password form → `POST /auth/login` → store JWT
+- Session handling: secure JWT storage (httpOnly cookie preferred)
+- Clinic dashboard layout: sidebar, route guards for authenticated pages
+- Appointment request queue: list view fetching `GET /appointment-requests`
+- Notification feed: list view fetching `GET /notifications`
 
-Update `docs/security/AUTH_WIRING_PLAN.md` — note Sprint 7 JWT wiring complete.
-Update `docs/claude/CURRENT_STATE.md` and `docs/claude/NEXT_MODULE.md`.
+Do not build:
+- Doctor review / clinical workflow UI (deferred)
+- Patient record editing UI (deferred)
+- Full CRUD forms beyond minimal read views
 
 ## What not to do
 
-- Do not modify any route files.
-- Do not modify test files.
-- Do not remove `get_auth_context` — still used by machine auth stack.
+- Do not add auth hardening (refresh tokens, rate limiting) in this module.
+- Do not modify any backend routes.
+- Do not use real patient data.
+- Do not deploy to production.
 
 ## Acceptance
 
-- Architecture Checkpoint 06 document created.
-- CURRENT_STATE.md updated.
-- NEXT_MODULE.md updated to Sprint 8 first module.
-- Full suite still passes.
-- Commit: `Sprint 7 / Architecture Checkpoint 06 — Human auth wiring review`
+- Login page authenticates against the backend and stores the JWT.
+- Dashboard loads and displays appointment requests and notifications for the logged-in clinic.
+- Unauthenticated navigation redirects to login.
+- Commit: `Sprint 8 / Module 66 — Frontend dashboard foundation`

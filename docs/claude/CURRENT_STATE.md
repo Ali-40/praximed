@@ -661,6 +661,7 @@
 
 63. Module 65 — Wire JWT auth to notification routes
    - Commit: 4b36a66
+   - Docs commit: 5faa0ed
    - `backend/app/api/routes/notifications.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context) across all 5 routes)
    - `backend/tests/test_notification_routes.py` (updated — fixtures override get_current_user; 8 new JWT auth tests replacing 6 old header-based tests)
    - `docs/security/AUTH_WIRING_PLAN.md` (updated — /notifications marked wired ✓; Sprint 7 PHI JWT wiring complete)
@@ -671,5 +672,13 @@
    - All PHI route JWT wiring complete: /patients, /consultations, /clinical-workflows, /appointment-requests, /notifications
    - Machine routes (Vapi, n8n, availability, webhooks) unchanged
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 06 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_06_HUMAN_AUTH_WIRING_REVIEW.md`
+- Commit: pending
+- Full backend tests: 1461/1461 passed
+- Sprint 7 complete (Modules 59–65)
+- Sprint 8 started: Frontend Dashboard Foundation (Module 66+)
+
 ## Next module
-Sprint 7 / Architecture Checkpoint 06 — Human Auth Wiring Review (pending Module 65 review).
+Sprint 8 / Module 66 — Frontend Dashboard Foundation (pending Architecture Checkpoint 06 review).
