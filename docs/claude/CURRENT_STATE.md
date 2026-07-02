@@ -798,7 +798,7 @@
    - No backend routes modified; no frontend code changed
 
 72. Module 74 — Fix frontend browser login runtime issue (CORS)
-   - Commit: (pending)
+   - Commit: 04cba09
    - CORS blocker found during manual smoke (Module 73):
      - curl `POST /auth/login` returned HTTP 200 (backend auth works)
      - Browser login showed "Sign-in failed" — root cause: `OPTIONS /auth/login → 405 Method Not Allowed`
