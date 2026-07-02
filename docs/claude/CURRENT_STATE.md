@@ -713,7 +713,7 @@
    - Section data fetching wired in Module 68
 
 66. Module 68 — Frontend appointment requests dashboard integration
-   - Commit: pending
+   - Commit: e106dcf
    - `frontend/lib/api.ts` (updated — AppointmentRequest type + fetchAppointmentRequests helper with Bearer token)
    - `frontend/lib/auth.ts` (updated — getClinicId() decodes clinic_id from stored JWT payload via atob)
    - `frontend/app/dashboard/page.tsx` (updated — Appointments section wired to fetchAppointmentRequests; loading/error/empty/list states; Patients/Notifications/Consultations remain as placeholders)
