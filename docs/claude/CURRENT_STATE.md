@@ -593,5 +593,23 @@
    - No real DB in tests
    - Existing PHI route behavior unchanged — current_user dep not yet wired
 
+58. Module 60 — Login endpoint and auth wiring plan
+   - Commit: TBD
+   - `backend/app/schemas/auth.py` (new — LoginRequest, LoginUserInfo, LoginResponse)
+   - `backend/app/api/routes/auth.py` (new — POST /auth/login)
+   - `backend/app/api/router.py` (updated — auth router registered)
+   - `docs/security/AUTH_WIRING_PLAN.md` (new — future PHI route wiring order)
+   - `backend/tests/test_auth_login_route.py` (new — 10 tests)
+   - Module 60 tests: 10/10 passed
+   - Full backend tests: 1447/1447 passed
+   - POST /auth/login returns 200 + JWT on correct credentials
+   - Wrong password or unknown email → 401 "Invalid credentials" (no user enumeration)
+   - Inactive account → 401 "Account is not active"
+   - Missing password_hash → 401
+   - Missing JWT_SECRET_KEY → 503
+   - password_hash never returned or logged
+   - Email normalized to lowercase before lookup
+   - Existing PHI routes unchanged — current_user dep not yet wired
+
 ## Next module
-Sprint 7 / Module 60 — Login Endpoint and Auth Wiring Plan (pending).
+Sprint 7 / Module 61 — (TBD).

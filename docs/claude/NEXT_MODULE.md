@@ -1,38 +1,19 @@
-# Sprint 7 / Module 60 — Login Endpoint and Auth Wiring Plan
+# Sprint 7 / Module 61 — TBD
 
-Status: pending Module 59 review.
+Status: pending Module 60 review.
 
-## Goal
+## Context
 
-Add the login endpoint (`POST /auth/login`) and define where `get_current_user` will be wired into existing PHI routes.
+Module 60 completed the login endpoint (`POST /auth/login`). The `get_current_user` JWT
+dependency exists but is not yet wired to any PHI routes. The auth wiring plan is documented
+in `docs/security/AUTH_WIRING_PLAN.md`.
 
-## Scope
+## Likely candidates for Module 61
 
-### Login endpoint
-- Accept `email` and `password` in the request body (JSON, not form).
-- Look up the user by `(clinic_id, email)` — clinic_id from a request body field or a machine header.
-- Verify the password using `verify_password`.
-- Issue a JWT access token using `create_access_token`.
-- Return `{"access_token": "...", "token_type": "bearer", "expires_in": <seconds>}`.
-- Return HTTP 401 for wrong credentials.
-- Return HTTP 401 for inactive users.
-- No refresh token yet — keep it minimal.
+1. **Wire `get_current_user` into `/patients` routes** — lowest-risk PHI route, read-heavy.
+2. **User management routes** — `POST /auth/register` or admin user creation endpoint.
+3. **Token refresh** — if a short-lived token strategy is needed before PHI wiring.
 
-### Auth wiring plan
-- Define which existing PHI routes will require `get_current_user` in addition to (or instead of) the current header-based `get_auth_context`.
-- Do not wire yet — just document the plan as a comment or small doc section.
+## Decision point
 
-## What not to do
-
-- Do not refactor or remove existing `get_auth_context` — PHI routes still use it.
-- Do not add refresh tokens, OAuth, or RBAC in this module.
-- Do not build frontend.
-- Do not add email verification.
-
-## Acceptance
-
-- `POST /auth/login` with correct credentials → 200 + JWT token.
-- `POST /auth/login` with wrong password → 401.
-- `POST /auth/login` with inactive user → 401.
-- No plaintext passwords logged or returned.
-- All new tests pass. Full suite passes.
+Confirm direction before starting Module 61.
