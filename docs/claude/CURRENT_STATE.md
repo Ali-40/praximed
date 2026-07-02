@@ -594,7 +594,7 @@
    - Existing PHI route behavior unchanged — current_user dep not yet wired
 
 58. Module 60 — Login endpoint and auth wiring plan
-   - Commit: TBD
+   - Commit: a7866ae
    - `backend/app/schemas/auth.py` (new — LoginRequest, LoginUserInfo, LoginResponse)
    - `backend/app/api/routes/auth.py` (new — POST /auth/login)
    - `backend/app/api/router.py` (updated — auth router registered)
