@@ -1,10 +1,11 @@
 """
 Integration tests for notification routes — PraxisMed Sprint 1 / Module 23
 Updated: Sprint 3 / Module 38 — auth fixture overrides and tenant guard tests added.
+Updated: Sprint 7 / Module 65 — JWT current_user auth wired; header auth tests replaced.
 
 Strategy:
 - Use FastAPI TestClient; no real event loop or database.
-- Override get_db_pool and get_auth_context via app.dependency_overrides.
+- Override get_db_pool and get_current_user via app.dependency_overrides.
 - Patch notification_repo functions at their usage site in the route module.
 """
 
@@ -15,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.api.dependencies.auth import get_auth_context
+from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.main import app
@@ -66,39 +67,85 @@ AUDIT_SAFE = "backend.app.modules.audit.audit_logger.safe_record_audit_event"
 
 FAKE_POOL = MagicMock()
 
+JWT_SECRET = "test-secret-notification-routes-m65"
+
+
+# ---------------------------------------------------------------------------
+# Auth context factories
+# ---------------------------------------------------------------------------
+
+
+def _staff_auth() -> AuthContext:
+    return AuthContext(user_id="staff-1", clinic_id=CLINIC_ID, role="staff", auth_scheme="jwt_bearer")
+
+
+def _doctor_auth() -> AuthContext:
+    return AuthContext(user_id="doctor-1", clinic_id=CLINIC_ID, role="doctor", auth_scheme="jwt_bearer")
+
+
+def _viewer_auth() -> AuthContext:
+    return AuthContext(user_id="viewer-1", clinic_id=CLINIC_ID, role="viewer", auth_scheme="jwt_bearer")
+
+
+def _wrong_clinic_auth() -> AuthContext:
+    return AuthContext(user_id="staff-1", clinic_id=OTHER_CLINIC_ID, role="staff", auth_scheme="jwt_bearer")
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 
-def _staff_auth() -> AuthContext:
-    return AuthContext(user_id="staff-1", clinic_id=CLINIC_ID, role="staff")
-
-
 @pytest.fixture()
 def client():
     app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
-    app.dependency_overrides[get_auth_context] = _staff_auth
+    app.dependency_overrides[get_current_user] = _staff_auth
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
-    app.dependency_overrides.pop(get_auth_context, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture()
 def client_no_pool():
     app.dependency_overrides.pop(get_db_pool, None)
-    app.dependency_overrides[get_auth_context] = _staff_auth
+    app.dependency_overrides[get_current_user] = _staff_auth
     yield TestClient(app)
-    app.dependency_overrides.pop(get_auth_context, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture()
 def client_no_auth():
     app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
-    app.dependency_overrides.pop(get_auth_context, None)
+    app.dependency_overrides.pop(get_current_user, None)
+    yield TestClient(app, raise_server_exceptions=False)
+    app.dependency_overrides.pop(get_db_pool, None)
+
+
+@pytest.fixture()
+def client_wrong_clinic():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_current_user] = _wrong_clinic_auth
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture()
+def client_viewer():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_current_user] = _viewer_auth
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture()
+def client_doctor():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_current_user] = _doctor_auth
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +340,7 @@ def test_health_route_still_works(client):
 
 def test_appointment_requests_route_still_works(client):
     resp = client.get("/appointment-requests", params={"clinic_id": CLINIC_ID})
-    # Will fail at DB level (MagicMock pool), but route must be registered (not 404)
+    # Appointment requests route now requires JWT Bearer auth (Module 64); 401/500 confirms it's registered.
     assert resp.status_code != 404
 
 
@@ -303,81 +350,60 @@ def test_vapi_tools_route_still_registered(client):
 
 
 # ---------------------------------------------------------------------------
-# Auth enforcement tests (Module 38)
+# Auth enforcement tests (Module 65 — JWT)
 # ---------------------------------------------------------------------------
 
 
-def test_missing_user_id_header_returns_401(client_no_auth):
+def test_missing_authorization_header_returns_401(client_no_auth):
+    resp = client_no_auth.get(BASE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 401
+
+
+def test_invalid_bearer_token_returns_401(client_no_auth, monkeypatch):
+    monkeypatch.setenv("JWT_SECRET_KEY", JWT_SECRET)
     resp = client_no_auth.get(
         BASE_URL,
         params={"clinic_id": CLINIC_ID},
-        headers={"X-Clinic-Id": CLINIC_ID, "X-User-Role": "staff"},
+        headers={"Authorization": "Bearer not.a.valid.token"},
     )
     assert resp.status_code == 401
 
 
-def test_missing_clinic_id_header_returns_401(client_no_auth):
-    resp = client_no_auth.get(
-        BASE_URL,
-        params={"clinic_id": CLINIC_ID},
-        headers={"X-User-Id": "staff-1", "X-User-Role": "staff"},
-    )
-    assert resp.status_code == 401
-
-
-def test_wrong_clinic_returns_403(client_no_auth):
+def test_wrong_clinic_returns_403(client_wrong_clinic):
     with patch(f"{REPO}.list_notifications", new=AsyncMock(return_value=[])):
-        resp = client_no_auth.get(
-            BASE_URL,
-            params={"clinic_id": CLINIC_ID},
-            headers={
-                "X-User-Id": "staff-1",
-                "X-Clinic-Id": OTHER_CLINIC_ID,
-                "X-User-Role": "staff",
-            },
-        )
+        resp = client_wrong_clinic.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 403
 
 
-def test_viewer_role_denied_returns_403(client_no_auth):
-    resp = client_no_auth.get(
-        BASE_URL,
-        params={"clinic_id": CLINIC_ID},
-        headers={
-            "X-User-Id": "user-1",
-            "X-Clinic-Id": CLINIC_ID,
-            "X-User-Role": "viewer",
-        },
-    )
+def test_viewer_role_denied_returns_403(client_viewer):
+    resp = client_viewer.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 403
 
 
-def test_staff_role_allowed(client_no_auth):
+def test_staff_role_allowed_returns_200(client):
     with patch(f"{REPO}.list_notifications", new=AsyncMock(return_value=[])):
-        resp = client_no_auth.get(
-            BASE_URL,
-            params={"clinic_id": CLINIC_ID},
-            headers={
-                "X-User-Id": "staff-1",
-                "X-Clinic-Id": CLINIC_ID,
-                "X-User-Role": "staff",
-            },
-        )
+        resp = client.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 200
 
 
-def test_doctor_role_allowed(client_no_auth):
+def test_doctor_role_allowed_returns_200(client_doctor):
     with patch(f"{REPO}.list_notifications", new=AsyncMock(return_value=[])):
-        resp = client_no_auth.get(
-            BASE_URL,
-            params={"clinic_id": CLINIC_ID},
-            headers={
-                "X-User-Id": "doctor-1",
-                "X-Clinic-Id": CLINIC_ID,
-                "X-User-Role": "doctor",
-            },
-        )
+        resp = client_doctor.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 200
+
+
+def test_valid_jwt_can_create_notification(client):
+    with patch(f"{REPO}.create_notification", new=AsyncMock(return_value=FAKE_ROW)):
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+
+def test_valid_jwt_can_cancel_notification(client):
+    with patch(f"{REPO}.cancel_notification", new=AsyncMock(return_value={**FAKE_ROW, "status": "cancelled"})):
+        resp = client.post(CANCEL_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
 
 
 # ---------------------------------------------------------------------------

@@ -14,7 +14,7 @@
 | `/consultations` | `get_current_user` (JWT Bearer) | Module 62 ✓ |
 | `/clinical-workflows` | `get_current_user` (JWT Bearer) | Module 63 ✓ |
 | `/appointment-requests` | `get_current_user` (JWT Bearer) | Module 64 ✓ |
-| `/notifications` | `get_auth_context` (header) | pending |
+| `/notifications` | `get_current_user` (JWT Bearer) | Module 65 ✓ |
 
 ---
 
@@ -40,12 +40,12 @@ Wire `get_current_user` into PHI routes in this order (one module per route grou
 
 ### Phase 2 — Mutation routes
 3. **`/clinical-workflows`** ✓ Done (Module 63) — wired to `get_current_user`; clinical role guard preserved; staff/viewer denied.
-4. **`/appointment-requests`** — dual-path (machine callers from Vapi + human callers);
-   requires coordination with machine auth layer.
+4. **`/appointment-requests`** ✓ Done (Module 64) — wired to `get_current_user`; staff-level role guard preserved; viewer denied.
 
 ### Phase 3 — External-facing
-5. **`/notifications`** — may remain machine-only long-term (triggered by n8n/Vapi); evaluate
-   whether human JWT is ever needed here before wiring.
+5. **`/notifications`** ✓ Done (Module 65) — wired to `get_current_user`; staff-level role guard preserved; viewer denied.
+
+All PHI route JWT wiring complete (Modules 61–65).
 
 ---
 

@@ -2,6 +2,7 @@
 Notification API routes — PraxisMed Sprint 1 / Module 23
 Updated: Sprint 3 / Module 38 — tenant guards applied (staff-level access)
 Updated: Sprint 4 / Module 43 — audit logging for mutation routes
+Updated: Sprint 7 / Module 65 — JWT current_user auth wired
 
 Exposes five endpoints under /notifications for creating, listing, fetching,
 marking as read, and cancelling internal clinic notification records.
@@ -16,7 +17,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend.app.api.dependencies.auth import get_auth_context, require_staff_clinic_access
+from backend.app.api.dependencies.auth import require_staff_clinic_access
+from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import notification_repo
@@ -37,7 +39,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 async def create_notification(
     body: NotificationCreate,
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> NotificationResponse:
     require_staff_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
@@ -77,7 +79,7 @@ async def list_notifications(
     recipient_user_id: Optional[str] = Query(None),
     limit: int = Query(50),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> NotificationListResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -104,7 +106,7 @@ async def get_notification(
     notification_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> NotificationResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -130,7 +132,7 @@ async def mark_notification_read(
     notification_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> NotificationResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -160,7 +162,7 @@ async def cancel_notification(
     notification_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> NotificationResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
