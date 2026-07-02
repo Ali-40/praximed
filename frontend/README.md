@@ -81,6 +81,21 @@ To test the full login flow locally:
 3. Start the frontend (`npm run dev`) and open `http://localhost:3000`.
 4. Enter the seeded Clinic ID, email, and password.
 
+## Dashboard data (Module 68)
+
+After login, the **Appointments** section fetches `GET /appointment-requests?clinic_id=<id>`
+from the backend using the stored JWT as `Authorization: Bearer <token>`. The `clinic_id`
+is decoded from the JWT payload client-side (no extra library — plain `atob`).
+
+The section shows:
+- **Loading** — while the request is in flight
+- **Error** — generic message if the request fails
+- **Empty** — if the clinic has no appointment requests yet
+- **List** — patient name, status badge, and urgency level for each request
+
+Patients, Notifications, and Consultations sections remain as placeholders
+and will be wired in subsequent modules.
+
 ## Status
 
-Sprint 8 / Module 67 — login flow wired to backend. Section data fetching in Module 68.
+Sprint 8 / Module 68 — Appointments section wired to backend. Patients/Notifications/Consultations in Module 69+.

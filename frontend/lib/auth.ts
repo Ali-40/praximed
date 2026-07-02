@@ -63,3 +63,17 @@ export function clearToken(): void {
 export function isAuthenticated(): boolean {
   return getToken() !== null
 }
+
+// Decodes the clinic_id claim from the stored JWT payload without verifying
+// the signature (verification happens on the backend for every request).
+export function getClinicId(): string | null {
+  const token = getToken()
+  if (!token) return null
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const payload = JSON.parse(atob(b64)) as Record<string, unknown>
+    return typeof payload.clinic_id === 'string' ? payload.clinic_id : null
+  } catch {
+    return null
+  }
+}

@@ -1,39 +1,38 @@
-# Sprint 8 / Module 68 — Frontend Appointment List Integration
+# Sprint 8 / Module 69 — Frontend Patient List Integration
 
-Status: pending Module 67 review.
+Status: pending Module 68 review.
 
 ## Context
 
-Module 67 wired the login form to `POST /auth/login` and added a client-side auth
-guard to the dashboard. The token is now stored and available via `getToken()`.
+Module 68 wired the Appointments section of the dashboard to `GET /appointment-requests`
+using the stored JWT. The pattern is established:
+- `fetchAppointmentRequests(clinicId, token)` in `lib/api.ts`
+- `getClinicId()` decodes `clinic_id` from the stored JWT payload
+- Dashboard `useEffect` fetches after auth check
+- Loading / error / empty / list states rendered
 
-The dashboard currently shows four disabled placeholder cards. The backend already
-has `GET /appointment-requests` (requires Bearer JWT, Module 64). This module wires
-that endpoint to the Appointments card on the dashboard.
+The same pattern applies to Patients. The backend already has `GET /patients`
+(requires Bearer JWT, Module 61).
 
 ## Scope
 
-- In `frontend/app/dashboard/page.tsx`, fetch `GET /appointment-requests` using
-  `apiFetch` with the stored JWT and render the returned list under the Appointments
-  section.
-- Show a loading state while fetching and an error state on failure.
-- Do not build a full CRUD table — a simple read-only list of request IDs,
-  patient names, and status is sufficient.
-- Add static contract tests confirming:
-  - dashboard calls the appointments endpoint
-  - dashboard handles loading and error states
-  - dashboard renders appointment list data
+- Add a `fetchPatients(clinicId, token)` helper to `frontend/lib/api.ts`.
+- Wire the Patients section of the dashboard to fetch `GET /patients`.
+- Show loading, error, empty, and list states (patient name, status, created_at).
+- Keep Notifications and Consultations as placeholders.
+- Add static contract tests confirming the patient fetch is wired correctly.
 
 ## What not to do
 
-- Do not fetch patients, consultations, or notifications yet.
+- Do not fetch notifications or consultations yet.
+- Do not add search or filtering UI.
 - Do not add real patient data to tests.
 - Do not modify backend routes.
-- Do not remove the auth guard added in Module 67.
+- Do not remove the Appointments section wired in Module 68.
 
 ## Acceptance
 
-- Dashboard fetches appointment requests for the logged-in clinic and displays them.
+- Dashboard fetches patients for the logged-in clinic and displays them.
 - Loading and error states are handled gracefully.
 - Full backend tests pass.
-- Commit: `Sprint 8 / Module 68 — Frontend appointment list integration`
+- Commit: `Sprint 8 / Module 69 — Frontend patient list integration`

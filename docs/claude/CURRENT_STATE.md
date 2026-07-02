@@ -712,5 +712,18 @@
    - Generic error on login failure — does not reveal email vs password mismatch
    - Section data fetching wired in Module 68
 
+66. Module 68 — Frontend appointment requests dashboard integration
+   - Commit: pending
+   - `frontend/lib/api.ts` (updated — AppointmentRequest type + fetchAppointmentRequests helper with Bearer token)
+   - `frontend/lib/auth.ts` (updated — getClinicId() decodes clinic_id from stored JWT payload via atob)
+   - `frontend/app/dashboard/page.tsx` (updated — Appointments section wired to fetchAppointmentRequests; loading/error/empty/list states; Patients/Notifications/Consultations remain as placeholders)
+   - `frontend/README.md` (updated — dashboard data section: appointment fetch, Bearer token, states)
+   - `backend/tests/test_frontend_appointment_requests_contract.py` (new — 10 static contract tests)
+   - Module 68 contract tests: 10/10 passed
+   - Full backend tests: 1491/1491 passed
+   - No backend routes modified
+   - clinic_id decoded from JWT payload client-side (no extra library)
+   - No hardcoded tokens or real patient data
+
 ## Next module
-Sprint 8 / Module 68 — Frontend Patient List Placeholder Integration (pending Module 67 review).
+Sprint 8 / Module 69 — Frontend Patient List Integration (pending Module 68 review).

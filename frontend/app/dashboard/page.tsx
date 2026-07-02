@@ -1,20 +1,15 @@
 'use client'
 
-// Dashboard page — PraxisMed Sprint 8 / Module 67
-// Client-side auth guard: redirects to /login if no token is stored.
-// Logout button clears the token and returns to /login.
-// Data fetching for each section is wired in Module 68+.
+// Dashboard page — PraxisMed Sprint 8 / Module 68
+// Wires Appointments section to GET /appointment-requests.
+// Patients / Notifications / Consultations remain as placeholders (Module 69+).
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { clearToken, isAuthenticated } from '@/lib/auth'
+import { clearToken, getClinicId, getToken, isAuthenticated } from '@/lib/auth'
+import { fetchAppointmentRequests, AppointmentRequest } from '@/lib/api'
 
-const SECTIONS = [
-  {
-    key: 'appointments',
-    label: 'Appointments',
-    description: 'View and manage incoming appointment requests.',
-  },
+const PLACEHOLDER_SECTIONS = [
   {
     key: 'patients',
     label: 'Patients',
@@ -35,12 +30,28 @@ const SECTIONS = [
 export default function DashboardPage() {
   const router = useRouter()
 
-  // Local-dev auth guard: redirect to /login if no token in sessionStorage.
-  // Production guard should use server-side session verification (Module 68+).
+  const [appointments, setAppointments] = useState<AppointmentRequest[]>([])
+  const [apptLoading, setApptLoading] = useState(true)
+  const [apptError, setApptError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace('/login')
+      return
     }
+
+    const token = getToken()
+    const clinicId = getClinicId()
+
+    if (!token || !clinicId) {
+      router.replace('/login')
+      return
+    }
+
+    fetchAppointmentRequests(clinicId, token)
+      .then((rows) => setAppointments(rows))
+      .catch(() => setApptError('Could not load appointment requests. Please try again.'))
+      .finally(() => setApptLoading(false))
   }, [router])
 
   function handleLogout() {
@@ -83,13 +94,101 @@ export default function DashboardPage() {
         </button>
       </header>
 
-      {/* Content */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>
           Welcome to PraxisMed
         </h2>
 
-        {/* Placeholder section cards */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Appointments section (live data)                                  */}
+        {/* ---------------------------------------------------------------- */}
+        <section
+          data-section="appointments"
+          style={{
+            background: '#fff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
+            padding: '1.25rem',
+            boxShadow: 'var(--shadow-card)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Appointments</h3>
+
+          {/* Loading state */}
+          {apptLoading && (
+            <p
+              data-state="loading"
+              style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}
+            >
+              Loading appointment requests…
+            </p>
+          )}
+
+          {/* Error state */}
+          {!apptLoading && apptError && (
+            <p
+              data-state="error"
+              style={{ fontSize: '0.875rem', color: 'var(--color-danger)' }}
+            >
+              {apptError}
+            </p>
+          )}
+
+          {/* Empty state */}
+          {!apptLoading && !apptError && appointments.length === 0 && (
+            <p
+              data-state="empty"
+              style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}
+            >
+              No appointment requests found.
+            </p>
+          )}
+
+          {/* Appointment list */}
+          {!apptLoading && !apptError && appointments.length > 0 && (
+            <ul
+              data-state="list"
+              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+            >
+              {appointments.map((appt) => (
+                <li
+                  key={appt.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderBottom: '1px solid var(--color-border)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  <span style={{ flex: 1, fontWeight: 500 }}>
+                    {appt.patient_name ?? '—'}
+                  </span>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: '0.75rem',
+                      background: appt.status === 'new' ? '#dbeafe' : 'var(--color-border)',
+                      color: appt.status === 'new' ? '#1e40af' : 'var(--color-text-muted)',
+                    }}
+                  >
+                    {appt.status}
+                  </span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    {appt.urgency_level}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Placeholder cards for remaining sections                          */}
+        {/* ---------------------------------------------------------------- */}
         <div
           style={{
             display: 'grid',
@@ -97,7 +196,7 @@ export default function DashboardPage() {
             gap: '1rem',
           }}
         >
-          {SECTIONS.map((section) => (
+          {PLACEHOLDER_SECTIONS.map((section) => (
             <div
               key={section.key}
               data-section={section.key}
@@ -126,21 +225,11 @@ export default function DashboardPage() {
                   color: 'var(--color-text-muted)',
                 }}
               >
-                Data in Module 68
+                Coming soon
               </span>
             </div>
           ))}
         </div>
-
-        <p
-          style={{
-            marginTop: '2rem',
-            fontSize: '0.8rem',
-            color: 'var(--color-text-muted)',
-          }}
-        >
-          Section data fetching is wired in Sprint 8 / Module 68.
-        </p>
       </div>
     </main>
   )
