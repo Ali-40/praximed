@@ -738,7 +738,7 @@
    - No hardcoded tokens or real patient data
 
 68. Module 70 — Frontend notifications integration
-   - Commit: (pending)
+   - Commit: 07b7ad2
    - `frontend/lib/api.ts` (updated — Notification type + fetchNotifications helper)
    - `frontend/app/dashboard/page.tsx` (updated — Notifications section wired to fetchNotifications; loading/error/empty/list states; Appointments and Patients unchanged; Consultations remains as placeholder)
    - `frontend/README.md` (updated — notifications section: fetchNotifications, Bearer token, states)
