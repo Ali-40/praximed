@@ -956,16 +956,30 @@
 - Sprint 11 in progress (Modules 81–84 complete)
 
 82. Module 84 — Vapi intake harness runtime wiring and smoke evidence
-   - Commit: (see git log)
+   - Commit: 0959ccc
    - `backend/app/main.py` (updated — `ClinicConfigLoader` imported; `app.state.config_loader = ClinicConfigLoader(pool=app.state.db_pool)` in lifespan startup; `app.state.config_loader = None` in lifespan shutdown)
-   - `backend/tests/test_app_lifespan_config_loader.py` (new — 9 lifespan config_loader tests: set without DATABASE_URL, is ClinicConfigLoader instance, receives db_pool, has no pool without DATABASE_URL, shutdown sets to None, shutdown None with db_pool, db_pool still works alongside config_loader, health route still works, db_pool close still called)
-   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` (new — smoke result: 503 fixed, new HTTP 500 UUID validation blocker found and documented)
-   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — config_loader gap marked RESOLVED; UUID blocker documented; Module 85 recommended)
-   - Module 84 new tests: 9/9 lifespan config_loader tests passed
+   - `backend/tests/test_app_lifespan_config_loader.py` (new — 9 lifespan config_loader tests)
+   - Module 84 new tests: 9/9 passed
    - Full backend tests: 1589/1589 passed
-   - Smoke result: HTTP 503 → resolved; HTTP 500 new blocker — seed UUID `11111111-1111-1111-1111-111111111111` fails `_assert_valid_uuid()` variant byte check `[89ab]`
-   - Root cause: `_UUID_RE` in `config_loader.py` requires RFC 4122 variant byte but seed UUID has `1` in that position
-   - Fix scoped to Module 85: relax variant byte from `[89ab]` to `[0-9a-f]` in `config_loader.py`
+   - Smoke result: HTTP 503 → resolved; new HTTP 500 — seed UUID `11111111-1111-1111-1111-111111111111` failed `_assert_valid_uuid()` variant byte check `[89ab]`
+
+83. Module 85 — Config loader UUID compatibility and Vapi intake smoke completion
+   - Commit: (see git log)
+   - `backend/app/core/config_loader.py` (updated — replaced `_UUID_RE` regex with `uuid.UUID()` parser; added DB-error fallback in `_load_db_config`; updated docstrings)
+   - `backend/tests/test_config_loader.py` (updated — 5 new tests: accepts deterministic local UUID, accepts RFC 4122 UUID unchanged, rejects brace-wrapped UUID, rejects unhyphenated UUID, DB error falls back to disk)
+   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` (updated — verdict changed to PASS; smoke evidence recorded)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — UUID blocker RESOLVED; smoke command and result recorded; Module 86 recommended)
+   - Module 85 new tests: 5/5 passed (28 total in config_loader test file)
+   - Full backend tests: 1594/1594 passed
+   - Smoke result: **HTTP 200** — appointment ID `509211a7-784e-4e45-90f1-d9af6f8d7981`, `status: new`, `source: vapi`, `action_required: true`
+   - No real patient data; no secrets; appointment not auto-confirmed (staff review required)
+   - Browser dashboard confirm loop is Module 86
+
+## Architecture checkpoint
+
+- Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
+- Updated in Module 82: §3b follow-up added; §4.1 Confirm action marked delivered
+- Sprint 11 in progress (Modules 81–85 complete)
 
 ## Next module
-Sprint 11 / Module 85 — UUID Validation Fix and Smoke Completion.
+Sprint 11 / Module 86 — Vapi Intake to Dashboard Browser Smoke Evidence.

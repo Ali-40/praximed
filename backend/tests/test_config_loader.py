@@ -45,10 +45,15 @@ class FakePool:
 # Helpers
 # ---------------------------------------------------------------------------
 
-# These are canonical UUID v4 strings (version nibble = 4, variant bits = 8-b).
+# Canonical RFC 4122 v4 UUID strings (version nibble = 4, variant bits = 8–b).
 VALID_UUID   = "11111111-1111-4111-8111-111111111111"
 VALID_UUID_2 = "22222222-2222-4222-a222-222222222222"
 VALID_UUID_3 = "33333333-3333-4333-b333-333333333333"
+
+# Deterministic local-dev UUID used by seed_local_data.py.
+# Variant nibble is '1' (NCS variant), not RFC 4122 '[89ab]', but structurally
+# valid — uuid.UUID() accepts it without raising ValueError.
+SEED_UUID = "11111111-1111-1111-1111-111111111111"
 
 
 def _write_config(base: Path, tenant_id: str, data: Dict[str, Any]) -> None:
@@ -133,6 +138,55 @@ async def test_rejects_sql_injection(tenants_dir):
 
 
 # ---------------------------------------------------------------------------
+# Tests: UUID compatibility — non-RFC-4122 variant accepted (Module 85)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_accepts_deterministic_local_uuid(tenants_dir):
+    """Seed clinic UUID (NCS variant, not RFC 4122) must now be accepted."""
+    from backend.app.core.config_loader import ClinicConfig, ClinicConfigLoader
+
+    loader = ClinicConfigLoader(pool=None)
+    _write_config(tenants_dir, SEED_UUID, {**BASE_CONFIG, "tenant_id": SEED_UUID})
+
+    config = await loader.load(SEED_UUID)
+
+    assert isinstance(config, ClinicConfig)
+    assert config.tenant_id == SEED_UUID
+
+
+@pytest.mark.asyncio
+async def test_accepts_rfc4122_uuid_unchanged(tenants_dir):
+    """RFC 4122 UUIDs must still be accepted after switching to uuid.UUID() validation."""
+    from backend.app.core.config_loader import ClinicConfig, ClinicConfigLoader
+
+    loader = ClinicConfigLoader(pool=None)
+    _write_config(tenants_dir, VALID_UUID, {**BASE_CONFIG})
+
+    config = await loader.load(VALID_UUID)
+
+    assert isinstance(config, ClinicConfig)
+    assert config.tenant_id == VALID_UUID
+
+
+def test_rejects_brace_wrapped_uuid():
+    """Brace-wrapped UUID form must be rejected — canonical hyphenated form only."""
+    from backend.app.core.config_loader import InvalidTenantIDError, _assert_valid_uuid
+
+    with pytest.raises(InvalidTenantIDError):
+        _assert_valid_uuid("{11111111-1111-4111-8111-111111111111}")
+
+
+def test_rejects_unhyphenated_uuid():
+    """UUID without hyphens must be rejected — canonical form required."""
+    from backend.app.core.config_loader import InvalidTenantIDError, _assert_valid_uuid
+
+    with pytest.raises(InvalidTenantIDError):
+        _assert_valid_uuid("11111111111141118111111111111111")
+
+
+# ---------------------------------------------------------------------------
 # Tests: disk-only loading
 # ---------------------------------------------------------------------------
 
@@ -198,6 +252,22 @@ async def test_raises_when_db_returns_nothing(tenants_dir):
 
     with pytest.raises(ConfigNotFoundError):
         await loader.load(VALID_UUID_2)
+
+
+@pytest.mark.asyncio
+async def test_db_error_falls_back_to_disk(tenants_dir):
+    """If the DB query raises (e.g. tenants table not yet migrated), disk config is used."""
+    from backend.app.core.config_loader import ClinicConfigLoader
+
+    class ErrorPool:
+        async def fetchrow(self, sql, tenant_id):
+            raise RuntimeError("relation \"tenants\" does not exist")
+
+    _write_config(tenants_dir, VALID_UUID, {**BASE_CONFIG})
+    loader = ClinicConfigLoader(pool=ErrorPool())
+
+    config = await loader.load(VALID_UUID)
+    assert config.clinic_name == "Praxis Dr. Muster"
 
 
 # ---------------------------------------------------------------------------

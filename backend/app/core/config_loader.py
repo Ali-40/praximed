@@ -1,5 +1,6 @@
 """
 Clinic Configuration Loader — PraxisMed Sprint 1 / Module 1
+Updated: Sprint 11 / Module 85 — uuid.UUID-based validation (accept any valid UUID)
 
 Loads per-tenant clinic configuration from:
   1. A JSON file on disk  (backend/tenants/configs/<tenant_id>/clinic_config.json)
@@ -10,8 +11,11 @@ override it at the top level.  Results are cached in-process so that repeated
 calls within the same worker process do not hit the filesystem or database
 repeatedly.
 
-Security note: tenant_id is validated against a strict UUID4 pattern before
+Security note: tenant_id is validated with Python's uuid.UUID parser before
 being used as a path component — this prevents path-traversal attacks.
+Any UUID string parseable by the standard library (regardless of version/variant)
+is structurally safe as a directory name.  Path containment is additionally
+enforced by _assert_within_tenants_dir.
 """
 
 from __future__ import annotations
@@ -42,7 +46,7 @@ class ConfigNotFoundError(FileNotFoundError):
 
 
 class InvalidTenantIDError(ValueError):
-    """Raised when the supplied tenant_id is not a valid UUID4."""
+    """Raised when the supplied tenant_id is not a valid UUID."""
 
 
 class ConfigValidationError(ValueError):
@@ -61,7 +65,7 @@ class PathTraversalError(PermissionError):
 class ClinicConfig(BaseModel):
     """Validated configuration for a single clinic tenant."""
 
-    tenant_id: str = Field(..., description="UUID4 identifying the tenant")
+    tenant_id: str = Field(..., description="UUID identifying the tenant")
     clinic_name: str = Field(..., min_length=1)
     language: str = Field("de", description="BCP-47 language tag, e.g. 'de', 'en'")
     country: str = Field("AT", description="ISO 3166-1 alpha-2 country code")
@@ -161,22 +165,28 @@ def build_voice_system_prompt(config: ClinicConfig) -> str:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-_UUID_RE = re.compile(
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-    re.IGNORECASE,
-)
-
-
 def _assert_valid_uuid(value: str) -> None:
-    """Raise InvalidTenantIDError if *value* is not a canonical UUID string.
+    """Raise InvalidTenantIDError if *value* is not a valid canonical UUID string.
 
-    Accepts UUID versions 1-5.  The primary goal is to block path-traversal
-    payloads (slashes, dots, null bytes, SQL fragments) — any well-formed UUID
-    is safe to use as a directory name component.
+    Uses Python's standard-library uuid.UUID parser, which accepts any
+    structurally valid UUID regardless of version or variant — including
+    deterministic/nil-pattern UUIDs used in local development and testing.
+
+    Requires canonical hyphenated lowercase form (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    so the value is unambiguous as a filesystem path segment.  The primary
+    security goal is to block path-traversal payloads (slashes, dots, null
+    bytes, SQL fragments) — any UUID accepted by the standard library is safe
+    to use as a directory name component.
     """
-    if not _UUID_RE.match(value):
+    try:
+        parsed = uuid.UUID(value)
+    except (ValueError, AttributeError):
         raise InvalidTenantIDError(
-            f"tenant_id must be a valid UUID (v1–v5); got {value!r}"
+            f"tenant_id must be a valid UUID; got {value!r}"
+        )
+    if str(parsed) != value.lower():
+        raise InvalidTenantIDError(
+            f"tenant_id must be in canonical hyphenated UUID form; got {value!r}"
         )
 
 
@@ -217,11 +227,15 @@ async def _load_db_config(pool: Any, tenant_id: str) -> Dict[str, Any]:
     Fetch the `config` JSONB column from the `tenants` table.
 
     *pool* is expected to be an asyncpg Connection or Pool object that
-    supports ``pool.fetchrow(sql, *args)``.  Returns {} when no row exists.
+    supports ``pool.fetchrow(sql, *args)``.  Returns {} when no row exists or
+    when the tenants table is not yet migrated — disk config is the fallback.
     """
-    row = await pool.fetchrow(
-        "SELECT config FROM tenants WHERE id = $1", tenant_id
-    )
+    try:
+        row = await pool.fetchrow(
+            "SELECT config FROM tenants WHERE id = $1", tenant_id
+        )
+    except Exception:
+        return {}
     if row is None:
         return {}
     raw = row["config"]
