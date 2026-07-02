@@ -1,0 +1,44 @@
+{
+  "_note": "Captured nested Vapi tool-call payload shape — FAKE/LOCAL DATA ONLY. Captured via ngrok tunnel during Module 89 smoke test.",
+  "_context": {
+    "date": "2026-07-02",
+    "module": "Sprint 11 / Module 89",
+    "source": "Simulated nested Vapi tool-call body sent through ngrok to local backend",
+    "clinic_ref_from_header": "11111111-1111-1111-1111-111111111111",
+    "_header_note": "clinic_ref supplied via X-Vapi-Clinic-Id machine auth header, NOT in body"
+  },
+  "message": {
+    "type": "tool-calls",
+    "toolCallList": [
+      {
+        "id": "toolu_ngrok_test_001",
+        "type": "function",
+        "function": {
+          "name": "capture_appointment_request",
+          "arguments": {
+            "patient_name": "Local Ngrok Test Caller",
+            "reason": "Ngrok connectivity test — fake patient",
+            "urgency_level": "normal"
+          }
+        }
+      }
+    ],
+    "call": {
+      "id": "ngrok-test-call-001",
+      "customer": {
+        "number": "+43000000099"
+      }
+    }
+  },
+  "_result": {
+    "http_status": 200,
+    "ok": true,
+    "source": "vapi",
+    "status": "new",
+    "action_required": true,
+    "adapter_fired": true,
+    "clinic_ref_resolved_from_machine_auth": true,
+    "call_id_resolved_from_message_call_id": true,
+    "caller_phone_resolved_from_customer_number": true
+  }
+}

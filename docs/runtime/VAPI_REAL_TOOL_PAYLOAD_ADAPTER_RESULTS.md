@@ -154,3 +154,21 @@ argument key names (e.g. `name` instead of `patient_name`), add aliasing logic t
 | Production deployment | Local-dev only |
 | Calendar event creation on Confirm | Not implemented — future module |
 | Real patient data | All test data is deterministic fake (local-dev only) |
+
+---
+
+## 10. Module 89 — ngrok/Dashboard Evidence
+
+**Sprint 11 / Module 89** confirms the adapter remains compatible with the tested
+ngrok/Vapi-like intake path. Evidence:
+
+- Nested Vapi-shape POST through ngrok → HTTP 200 — adapter fired correctly
+- `clinic_ref` from `X-Vapi-Clinic-Id` header, `call_id` from `message.call.id`,
+  `caller_phone` from `message.call.customer.number` — all resolved correctly
+- Appointment rows created via ngrok path appeared in staff dashboard
+- Staff Confirm action succeeded — status new → confirmed
+- Machine auth scope confirmed: `X-Vapi-Scopes: vapi:tool` (singular)
+
+Direct real Vapi assistant call logs: **PENDING** — not captured in Module 89.
+
+See: `docs/runtime/VAPI_REAL_TOOL_CALL_LIVE_SMOKE_RESULTS.md`

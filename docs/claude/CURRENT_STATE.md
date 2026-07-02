@@ -997,24 +997,43 @@
    - Inspector correctly redacts patient values; verdicts NEEDS ADAPTER (nested) and COMPATIBLE (flat)
 
 86. Module 88 — Real Vapi tool call adapter
-   - Commit: (see git log)
+   - Commit: 479d509
    - `backend/app/modules/vapi/vapi_appointment_capture.py` (updated — `adapt_vapi_tool_call_body` function added; `import json` added)
    - `backend/app/api/routes/vapi_tools.py` (updated — route changed from `body: VapiAppointmentCaptureRequest` to `request: Request`; adapter wired before Pydantic validation; `Request`, `PydanticValidationError`, `adapt_vapi_tool_call_body` imported)
    - `backend/tests/test_vapi_appointment_capture.py` (updated — 9 new adapter tests 23–31; `adapt_vapi_tool_call_body` imported)
    - `backend/tests/test_vapi_real_tool_payload_prep_contract.py` (updated — 5 new contract tests 18–22 for adapter importability and sample payload mapping)
    - `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_ADAPTER_RESULTS.md` (new — adapter design, security boundaries, test results, smoke status)
-   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — shape gap marked RESOLVED; Section 9 adapter complete; Section 10 Module 89 recommended)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — shape gap marked RESOLVED; adapter complete; Module 89 recommended)
    - Module 88 new tests: 14/14 passed (9 unit + 5 contract)
    - Full backend tests: 1625/1625 passed
    - Flat (local harness) shape passes through adapter unchanged — existing smoke and tests unaffected
    - Nested (real Vapi) shape normalized: clinic_ref from machine auth, call_id from message.call.id, patient fields from function.arguments
    - Security boundary enforced: patient-supplied clinic_ref in arguments silently ignored; machine_clinic_id always used
 
+87. Module 89 — Vapi/ngrok appointment intake dashboard evidence
+   - Commit: (see git log)
+   - `docs/runtime/VAPI_REAL_TOOL_CALL_LIVE_SMOKE_RESULTS.md` (new — full evidence: ngrok intake, dashboard rows, staff Confirm, accuracy statement, what's proven vs pending)
+   - `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_ADAPTER_RESULTS.md` (updated — Module 89 ngrok/dashboard evidence note)
+   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_BROWSER_SMOKE_RESULTS.md` (updated — Module 89 dashboard confirmation note)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — unknowns table updated; scope `vapi:tool` confirmed; frontend opportunity note added)
+   - No production code changes
+   - Full backend tests: 1625/1625 passed (unchanged)
+   - Evidence: nested Vapi-shape through ngrok → HTTP 200; 4 appointment rows in dashboard; staff Confirm succeeded; status new → confirmed; button disappeared; other sections stable
+   - Machine auth scope confirmed: `X-Vapi-Scopes: vapi:tool` (singular)
+   - Direct real Vapi assistant call logs: PENDING — not captured in this module
+   - No real patient data; no auto-confirmation; staff confirmation boundary maintained
+
+## Frontend opportunity (noted Module 89)
+   - Evaluate Fabel 5 / Claude-related frontend generation tooling for premium doctor-facing UI polish
+   - Timing: after Architecture Checkpoint 10, in a dedicated frontend UX sprint
+   - Goal: make clinic dashboard more premium, user-friendly, and impressive while preserving security and integration quality
+   - Not part of Module 89 scope; recorded here for future sprint planning
+
 ## Architecture checkpoint
 
 - Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
 - Updated in Module 82: §3b follow-up added; §4.1 Confirm action marked delivered
-- Sprint 11 in progress (Modules 81–88 complete)
+- Sprint 11 in progress (Modules 81–89 complete)
 
 ## Next module
-Sprint 11 / Module 89 — Real Vapi Live Tool-Call Smoke Evidence.
+Architecture Checkpoint 10 — Vapi Appointment Intake Loop Review.

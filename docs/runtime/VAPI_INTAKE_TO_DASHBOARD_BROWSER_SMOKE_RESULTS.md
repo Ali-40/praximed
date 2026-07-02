@@ -158,6 +158,25 @@ is now locally demonstrated without a real Vapi connection or ngrok tunnel.
 
 ---
 
+## 8. Module 89 — ngrok/Dashboard Confirmation (Sprint 11)
+
+**Sprint 11 / Module 89** extended the intake loop proof to the ngrok/Vapi-like path.
+
+Evidence observed:
+- After running ngrok intake tests, the Appointments section showed 4 rows:
+  - "Local Ngrok Test Caller" (source: vapi, status: new)
+  - "Local Vapi Test Caller" ×2 (source: vapi, status: new)
+  - "Local Test Patient" (seed row)
+- Staff clicked Confirm on the newest Vapi/ngrok-created row
+- Status badge changed from "new" to "confirmed"
+- Confirm button disappeared after confirmation
+- Other dashboard sections (Patients, Notifications, Consultations) remained stable
+- Logout button and local-demo footer remained visible
+
+See full evidence: `docs/runtime/VAPI_REAL_TOOL_CALL_LIVE_SMOKE_RESULTS.md`
+
+---
+
 ## 8. Module 87 — Real Vapi Payload Prep
 
 **Sprint 11 / Module 87** prepares inspection tooling for testing against a live Vapi

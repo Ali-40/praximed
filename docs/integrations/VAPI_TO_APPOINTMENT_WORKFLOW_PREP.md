@@ -72,8 +72,11 @@ building blocks for the integration loop.
 | Is `app.state.config_loader` initialized so the endpoint can resolve clinic config? | **RESOLVED** — Module 84 wires `ClinicConfigLoader(pool=app.state.db_pool)` in lifespan startup. |
 | Does an appointment request appear in the dashboard without the manual seed? | **RESOLVED** — Module 86 browser smoke: Vapi-created row appeared in Appointments section without running seed script. |
 | Can staff confirm a Vapi-sourced appointment request from the dashboard? | **RESOLVED** — Module 86: Confirm clicked on Vapi row → status "confirmed" → button disappeared. Staff confirmation boundary maintained. |
-| Is a notification created when Vapi capture fires? | **PENDING** — `vapi_appointment_capture` calls `notification_router.create_appointment_request_notification`. Not surfaced in smoke output; can be confirmed via DB inspection in Module 87. |
-| Does the audit log record the integration path safely? | **PENDING** — audit logging is in place (Module 44); can be confirmed via DB audit log in Module 87. |
+| Is a notification created when Vapi capture fires? | **PENDING** — `vapi_appointment_capture` calls `notification_router.create_appointment_request_notification`. Not surfaced in smoke output; can be confirmed via DB inspection. |
+| Does the audit log record the integration path safely? | **PENDING** — audit logging is in place (Module 44); can be confirmed via DB audit log. |
+| Does the nested Vapi-shape body reach the backend through ngrok and produce a dashboard row? | **RESOLVED** — Module 89: nested shape via ngrok → HTTP 200, rows appeared in dashboard, staff Confirm succeeded. |
+| What is the exact required machine auth scope for the capture route? | **CONFIRMED** — `X-Vapi-Scopes: vapi:tool` (singular). `vapi:tools` (plural) is rejected with HTTP 403. |
+| Are direct real Vapi assistant call logs captured? | **PENDING** — ngrok/adapter path proven; real Vapi assistant logs not captured in Module 89. |
 
 ---
 
@@ -245,6 +248,21 @@ What was done:
 8. Full suite: 1625/1625 passed.
 
 See: `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_ADAPTER_RESULTS.md`
+
+## 11. Future Frontend Opportunity — Doctor-Facing UI Polish
+
+After Architecture Checkpoint 10, evaluate Fabel 5 / Claude-related frontend generation
+tooling for a dedicated frontend UX sprint to make the doctor-facing dashboard more
+premium, user-friendly, and impressive.
+
+Goals:
+- Higher-quality visual design for the clinic dashboard
+- Better appointment workflow UI (richer row display, action feedback)
+- Preserve all existing security, integration quality, and staff confirmation boundaries
+
+This is a future quality opportunity — not part of Module 89 or the current intake loop work.
+
+---
 
 ## 10. Recommended Next Module
 

@@ -1,81 +1,59 @@
-# Sprint 11 / Module 89 — Real Vapi Live Tool-Call Smoke Evidence
+# Architecture Checkpoint 10 — Vapi Appointment Intake Loop Review
 
-Status: pending Module 88 review.
+Status: pending Module 89 review.
 
 ## Context
 
-Module 88 added `adapt_vapi_tool_call_body` to the capture route so the endpoint now
-accepts both the flat local harness shape and the real Vapi nested tool-call shape
-(`message.toolCallList`). The flat harness smoke (Module 85) remains PASS. The nested
-shape is verified only by unit tests — no live Vapi assistant has yet called the
-adapted endpoint.
+Sprint 11 (Modules 81–89) has delivered the full local Vapi appointment intake loop:
 
-Module 89 closes this gap by running a real Vapi assistant tool call through an ngrok
-tunnel to the local backend and confirming the full end-to-end flow works.
+- Module 81 — Appointment request Confirm action in the staff dashboard
+- Module 82 — Appointment workflow browser smoke evidence
+- Module 83 — Vapi intake smoke harness and bug fix
+- Module 84 — `app.state.config_loader` wired in lifespan
+- Module 85 — Config loader UUID compatibility; live smoke HTTP 200
+- Module 86 — Vapi intake to dashboard browser smoke evidence (full loop)
+- Module 87 — Real Vapi tool payload shape analysis; inspector script
+- Module 88 — `adapt_vapi_tool_call_body` adapter for nested Vapi tool-call shape
+- Module 89 — ngrok/dashboard intake evidence; scope `vapi:tool` confirmed
+
+The Vapi intake loop is now locally demonstrated end-to-end. The remaining open item
+before moving to the next sprint is a formal architecture review of this sprint's work.
 
 ## Scope
 
-### 1. Prerequisites
+### 1. Create Architecture Checkpoint 10 document
 
-- A test Vapi assistant configured to call `capture_appointment_request` as a server-URL tool.
-- An ngrok tunnel exposing `http://127.0.0.1:8000`.
-- Backend running with `DATABASE_URL`, `JWT_SECRET_KEY`, and machine auth env vars set.
-- Seed data fresh (`python backend/scripts/seed_local_data.py`).
+File: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_INTAKE_LOOP_REVIEW.md`
 
-**CRITICAL**: Use a test Vapi assistant only. Never use a production assistant with real patients.
+Sections:
+1. **Sprint summary** — what was built in Modules 81–89
+2. **What is proven** — local/ngrok intake loop, adapter, staff confirm, browser
+3. **What is not yet proven** — real Vapi assistant logs, production deployment
+4. **Security review** — clinic_ref from machine auth, no auto-confirm, PHI handling
+5. **Machine auth scope note** — `vapi:tool` (singular); reject `vapi:tools`
+6. **Known gaps before production** — auth session storage, calendar, notification surfacing
+7. **Frontend opportunity** — evaluate Fabel 5 / Claude frontend tooling for UI polish sprint
+8. **Recommended next sprint** — Sprint 12 options: real Vapi assistant log capture, calendar integration, frontend UX sprint
 
-### 2. Run the live smoke
+### 2. Update docs
 
-1. Start PostgreSQL: `docker-compose -f docker-compose.postgres.yml up -d`
-2. Run seed: `python backend/scripts/seed_local_data.py`
-3. Start backend: `uvicorn backend.app.main:app --reload --port 8000`
-4. Start ngrok: `ngrok http 8000`
-5. Configure test Vapi assistant server URL to `https://<ngrok-id>.ngrok.io/vapi/tools/capture-appointment-request`
-6. Configure machine auth headers in Vapi: `X-Vapi-Service-Name: vapi`, `X-Vapi-Clinic-Id: 11111111-1111-1111-1111-111111111111`, `X-Vapi-Scopes: vapi:tool`
-7. Make a test call with fake patient: "I would like to book an appointment for Local Vapi Live Caller"
-8. Confirm backend returns HTTP 200 in ngrok inspector or backend logs
-9. Confirm appointment request appears in dashboard with `source=vapi`, `status=new`
-10. Capture the raw payload from ngrok inspector, sanitize it (remove all PII), save as `docs/integrations/local_payloads/vapi_real_tool_payload_captured.json`
-11. Run inspector: `python backend/scripts/inspect_vapi_tool_payload.py --payload-file docs/integrations/local_payloads/vapi_real_tool_payload_captured.json`
-12. Confirm verdict is COMPATIBLE (or adjust adapter if argument key names differ from sample)
-
-### 3. Document results
-
-Create `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_LIVE_SMOKE_RESULTS.md` with:
-- Environment (ngrok URL, backend version, Vapi assistant name/ID — sanitized)
-- Steps completed
-- Evidence table: HTTP status, response body, dashboard row, inspector verdict
-- What this proves / what it does not prove
-- Any adapter adjustments needed
-
-### 4. Update docs
-
-- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — mark live smoke COMPLETE
-- `docs/claude/CURRENT_STATE.md` — record Module 89
-- `docs/claude/NEXT_MODULE.md` — Module 90
-
-### 5. Update adapter if needed
-
-If the real captured payload uses different argument key names (e.g. `name` instead of
-`patient_name`, `phone` instead of `caller_phone`):
-- Add aliasing logic in `adapt_vapi_tool_call_body`
-- Add tests for the alias keys
-- Re-run live smoke to confirm
+- `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 10
+- `docs/claude/NEXT_MODULE.md` — Sprint 12 placeholder
 
 ## What not to do
 
-- Do not use real patient data or real patient names
-- Do not commit the captured payload without sanitizing PII first
-- Do not use a production Vapi assistant
-- Do not auto-confirm appointment requests in the adapter
-- Do not change machine auth, HMAC, or JWT logic
-- Do not break the flat harness path (local smoke must still pass)
+- Do not change production code
+- Do not run migrations or touch the DB schema
+- Do not claim production readiness
+- Do not document real patient data or secrets
+- Do not mark real Vapi assistant log evidence as proven if not captured
 
 ## Acceptance
 
-- Live Vapi assistant → ngrok → backend → HTTP 200
-- Appointment request created with `source=vapi`, `status=new`, `action_required=true`
-- Appointment request visible in dashboard
-- Inspector reports COMPATIBLE on captured payload (or adapter adjusted and re-tested)
-- All existing tests pass
-- Commit: `Sprint 11 / Module 89 — Real Vapi live tool-call smoke evidence`
+- Architecture Checkpoint 10 document created
+- Sprint 11 scope accurately summarised
+- Remaining gaps documented honestly
+- Frontend opportunity recorded as future-only
+- No code changes
+- Tests still pass (1625/1625)
+- Commit: `Architecture Checkpoint 10 — Vapi appointment intake loop review`
