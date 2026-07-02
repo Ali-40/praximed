@@ -55,15 +55,13 @@ sprint should focus on.
 
 ## 4. What Is Still Not Demo-Polished
 
-### 4.1 Patient Name Display (known issue from Module 77)
+### 4.1 Patient Name Display ~~(known issue from Module 77)~~ — Fixed in Module 78
 
-The Patients section renders patient rows with `"—"` for the name. The frontend
-`Patient` TypeScript interface exposes `first_name` and `last_name` separately, but the
-backend `patients` table stores a single `full_name` column. The row is visible and the
-status badge renders correctly — but the name display falls back to `"—"`.
-
-**Priority:** High — visible defect during any live demo. Fix is small: either map
-`full_name` into the display expression, or split it on the frontend.
+~~The Patients section renders patient rows with `"—"` for the name.~~ **Resolved in
+Sprint 10 / Module 78.** `full_name` was added to the `Patient` TypeScript interface in
+`frontend/lib/api.ts`, and the display expression in `dashboard/page.tsx` was updated to
+use `patient.full_name` first, falling back to `first_name + last_name`, then to
+`'Unnamed patient'`. The patient row now displays "Local Test Patient" after re-seeding.
 
 ### 4.2 No Create / Edit Flows
 

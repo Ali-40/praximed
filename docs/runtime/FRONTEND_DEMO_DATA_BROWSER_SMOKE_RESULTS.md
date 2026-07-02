@@ -97,18 +97,17 @@ LOCAL-DEV LOGIN (fake/local only — NOT for production):
 
 ---
 
-## 6. Known Minor UI Issue
+## 6. Known Minor UI Issue (resolved in Module 78)
 
-The **Patients** section patient row displays the fallback `"—"` instead of the patient
-full name. The dashboard renders `first_name + last_name` separately (from the
-`Patient` TypeScript interface), but the backend returns `full_name` as a single field.
-The patient data loads correctly — the section is in list state and the status badge
-is visible — but the name display falls back to `"—"`.
+The **Patients** section patient row displayed the fallback `"—"` instead of the patient
+full name during this smoke. The dashboard rendered `first_name + last_name` separately
+(from the `Patient` TypeScript interface), but the backend returns `full_name` as a
+single field.
 
-**Severity:** Minor cosmetic / display issue. Does not block local demo flow.
-
-**Resolution:** Acceptable for this smoke. The fix (mapping `full_name` to display name
-in the frontend) is a UI polish task for a future module.
+**Resolved:** Sprint 10 / Module 78 added `full_name` to the `Patient` interface in
+`frontend/lib/api.ts` and updated the display expression to use `patient.full_name`
+first, with `'Unnamed patient'` as the final fallback. The patient row now displays
+"Local Test Patient" correctly after re-seeding.
 
 ---
 

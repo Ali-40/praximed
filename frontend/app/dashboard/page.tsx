@@ -236,7 +236,9 @@ export default function DashboardPage() {
                   }}
                 >
                   <span style={{ flex: 1, fontWeight: 500 }}>
-                    {[patient.first_name, patient.last_name].filter(Boolean).join(' ') || '—'}
+                    {patient.full_name ||
+                      [patient.first_name, patient.last_name].filter(Boolean).join(' ') ||
+                      'Unnamed patient'}
                   </span>
                   <span
                     style={{

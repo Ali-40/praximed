@@ -65,8 +65,9 @@ export async function fetchAppointmentRequests(
 
 export interface Patient {
   id: string
-  first_name: string | null
-  last_name: string | null
+  full_name: string | null      // primary field — backend returns a single full_name column
+  first_name: string | null     // kept for defensive compatibility
+  last_name: string | null      // kept for defensive compatibility
   status: string
   created_at: string
   [key: string]: unknown

@@ -145,3 +145,42 @@ def test_no_hardcoded_tokens_or_real_patient_data():
         for pattern in ("DOB:", "1234567890", "SVNR", "sozialversicherung"):
             assert pattern not in content, \
                 f"{rel} must not contain real patient data marker: {pattern!r}"
+
+
+# ---------------------------------------------------------------------------
+# 11. Patient interface includes full_name (Sprint 10 / Module 78)
+# ---------------------------------------------------------------------------
+
+def test_patient_interface_includes_full_name():
+    content = _read("lib/api.ts")
+    assert "full_name" in content, (
+        "lib/api.ts Patient interface must include full_name "
+        "(backend patients table stores name as a single full_name column)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 12. Dashboard patient name display uses full_name first
+# ---------------------------------------------------------------------------
+
+def test_dashboard_patient_display_uses_full_name():
+    content = _read("app/dashboard/page.tsx")
+    assert "patient.full_name" in content, (
+        "dashboard/page.tsx must use patient.full_name in the patient name display expression"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 13. Dashboard patient name fallback is "Unnamed patient", not "—"
+# ---------------------------------------------------------------------------
+
+def test_dashboard_patient_fallback_is_unnamed_not_dash():
+    content = _read("app/dashboard/page.tsx")
+    assert "Unnamed patient" in content, (
+        "dashboard/page.tsx must use 'Unnamed patient' as the patient name fallback, not '—'"
+    )
+    # The old broken pattern was: join(' ') || '—'
+    # After the fix the expression uses 'Unnamed patient'; || '—' must not remain.
+    assert "|| '—'" not in content, (
+        "dashboard/page.tsx must not use \"|| '—'\" as the patient name fallback"
+    )
