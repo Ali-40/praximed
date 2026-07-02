@@ -445,3 +445,134 @@ def test_audit_records_after_valid_sig_and_processing(client_sig_tests, monkeypa
     event = mock_audit.call_args[0][1]
     assert event["action"] == "vapi.call_event"
     assert event["actor_type"] == "machine"
+
+
+# ===========================================================================
+# Module 56 — Real Vapi payload adapter tests (25–31)
+# ===========================================================================
+
+# Real Vapi server payload shapes — no clinic_id/event_type/call_id at root
+
+_REAL_VAPI_ASSISTANT_STARTED = {
+    "message": {
+        "type": "assistant-started",
+        "call": {"id": "real-vapi-call-abc"},
+    }
+}
+
+_REAL_VAPI_END_OF_CALL = {
+    "message": {
+        "type": "end-of-call-report",
+        "call": {"id": "real-vapi-call-def"},
+        "endedReason": "hangup",
+    }
+}
+
+# Adapted SUCCESS_RESULT for real Vapi assistant-started events
+_REAL_VAPI_STARTED_RESULT = {
+    "ok":         True,
+    "clinic_id":  CLINIC_ID,
+    "event_type": "call.started",
+    "call_id":    "real-vapi-call-abc",
+    "message":    "Event 'call.started' processed successfully.",
+}
+
+_REAL_VAPI_ENDED_RESULT = {
+    "ok":         True,
+    "clinic_id":  CLINIC_ID,
+    "event_type": "call.ended",
+    "call_id":    "real-vapi-call-def",
+    "message":    "Event 'call.ended' processed successfully.",
+}
+
+
+@pytest.fixture()
+def client_no_clinic():
+    """Pool + machine auth with no clinic_id + sig overridden — for missing clinic_id tests."""
+    def _no_clinic_auth():
+        return MachineAuthContext(service_name="vapi", clinic_id=None, scopes={"vapi:webhook"})
+    app.dependency_overrides[get_db_pool]                              = lambda: FAKE_POOL
+    app.dependency_overrides[get_machine_auth_context]                 = _no_clinic_auth
+    app.dependency_overrides[verify_vapi_webhook_signature_dependency] = lambda: True
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool,                              None)
+    app.dependency_overrides.pop(get_machine_auth_context,                 None)
+    app.dependency_overrides.pop(verify_vapi_webhook_signature_dependency, None)
+
+
+def test_real_vapi_assistant_started_uses_machine_auth_clinic_id(client_with_pool):
+    """M56-1 — Real Vapi assistant-started payload: missing clinic_id resolved via machine auth → 200."""
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=_REAL_VAPI_STARTED_RESULT)):
+        resp = client_with_pool.post(URL, json=_REAL_VAPI_ASSISTANT_STARTED)
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+
+def test_real_vapi_end_of_call_uses_machine_auth_clinic_id(client_with_pool):
+    """M56-2 — Real Vapi end-of-call-report payload: missing clinic_id resolved via machine auth → 200."""
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=_REAL_VAPI_ENDED_RESULT)):
+        resp = client_with_pool.post(URL, json=_REAL_VAPI_END_OF_CALL)
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is True
+
+
+def test_real_vapi_payload_event_type_mapped_from_message_type(client_with_pool):
+    """M56-3 — Real Vapi payload: event_type mapped from message.type before delegation."""
+    captured: list = []
+
+    async def capture(pool, adapted_payload):
+        captured.append(adapted_payload)
+        return _REAL_VAPI_STARTED_RESULT
+
+    with patch(PROCESS_EVENT, new=capture):
+        resp = client_with_pool.post(URL, json=_REAL_VAPI_ASSISTANT_STARTED)
+
+    assert resp.status_code == 200
+    assert captured[0]["event_type"] == "call.started"
+    assert captured[0]["clinic_id"] == CLINIC_ID
+
+
+def test_real_vapi_payload_call_id_from_x_call_id_header(client_with_pool):
+    """M56-4 — Real Vapi payload without call.id: call_id resolved from X-Call-Id header."""
+    payload_no_call_id = {"message": {"type": "assistant-started"}}
+    header_call_id = "from-header-call-xyz"
+
+    captured: list = []
+
+    async def capture(pool, adapted_payload):
+        captured.append(adapted_payload)
+        return {**_REAL_VAPI_STARTED_RESULT, "call_id": header_call_id}
+
+    with patch(PROCESS_EVENT, new=capture):
+        resp = client_with_pool.post(
+            URL,
+            json=payload_no_call_id,
+            headers={"X-Call-Id": header_call_id},
+        )
+
+    assert resp.status_code == 200
+    assert captured[0]["call_id"] == header_call_id
+
+
+def test_missing_machine_clinic_id_with_real_vapi_payload_returns_400(client_no_clinic):
+    """M56-5 — Real Vapi payload + machine auth with no clinic_id → 400 (clinic_id unresolvable)."""
+    payload_no_clinic = {"message": {"type": "assistant-started", "call": {"id": "call-abc"}}}
+    resp = client_no_clinic.post(URL, json=payload_no_clinic)
+    assert resp.status_code == 400
+    assert "clinic_id" in resp.json()["detail"]
+
+
+def test_invalid_sig_with_real_vapi_payload_returns_401(client_sig_tests, monkeypatch):
+    """M56-6 — Real Vapi payload with bad HMAC signature → 401 (sig check unchanged)."""
+    monkeypatch.setenv(VAPI_SIG_ENV, VAPI_SIG_SECRET)
+    real_payload_bytes = json.dumps(_REAL_VAPI_ASSISTANT_STARTED).encode()
+    with patch(PROCESS_EVENT, new=AsyncMock(return_value=_REAL_VAPI_STARTED_RESULT)):
+        resp = client_sig_tests.post(
+            URL,
+            content=real_payload_bytes,
+            headers={
+                "Content-Type": "application/json",
+                "X-Signature": "sha256=invalidsignature000",
+            },
+        )
+    assert resp.status_code == 401
