@@ -932,11 +932,28 @@
    - Appointment Confirm workflow proven end-to-end: login → Confirm → status "confirmed" → button gone → dashboard stable
    - Next integration target: Vapi intake → appointment request → dashboard confirm loop
 
+81. Module 83 — Vapi intake to appointment dashboard smoke harness
+   - Commit: (see below)
+   - **Inspection findings**: target endpoint is `POST /vapi/tools/capture-appointment-request` (machine auth, no HMAC); bug found: `config_loader.get()` / `config.clinic_id` should be `config_loader.load()` / `config.tenant_id`; `main.py` does not wire `app.state.config_loader` (pending Module 84)
+   - `backend/app/modules/vapi/vapi_appointment_capture.py` (bug fix — `config_loader.get` → `config_loader.load`; `config.clinic_id` → `config.tenant_id`)
+   - `backend/tests/test_vapi_appointment_capture.py` (updated — `loader.get` → `loader.load`; `cfg.clinic_id` → `cfg.tenant_id` in `_make_config`; all 23 tests still pass)
+   - `docs/integrations/local_payloads/vapi_appointment_intake.json` (new — fake Vapi capture payload: clinic_ref, call_id, patient_name, reason, urgency_level)
+   - `backend/scripts/smoke_vapi_appointment_intake.py` (new — sends POST with X-Vapi-* machine auth, prints result, handles 503 with config_loader guidance, exits non-zero on failure)
+   - `backend/tests/test_vapi_appointment_intake_harness_contract.py` (new — 10 static contract tests: payload valid, local clinic UUID, required fields, no real data, script exists, API_BASE_URL fallback, machine auth headers, no secret printing, non-zero exit, prep doc references harness)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — target flow corrected; Unknowns table updated; Module 83 harness section with inspection findings, harness components, manual flow commands, Module 84 next steps)
+   - `docs/runtime/APPOINTMENT_WORKFLOW_BROWSER_SMOKE_RESULTS.md` (updated — Module 83 note added)
+   - Module 83 new tests: 10 harness contract tests; all 10 passed
+   - Module 82 full test re-confirmation (timed out previously): 1570/1570 passed
+   - Full backend tests: 1580/1580 passed
+   - No frontend code changed
+   - No backend routes, auth, schema, or seed data modified
+   - Bug fix is covered by existing 23 capture tests (all still pass)
+
 ## Architecture checkpoint
 
 - Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
 - Updated in Module 82: §3b follow-up added (Modules 81–82 outcomes); §4.1 Confirm action marked delivered
-- Sprint 11 in progress (Modules 81–82 complete)
+- Sprint 11 in progress (Modules 81–83 complete)
 
 ## Next module
-Sprint 11 / Module 83 — Vapi Intake to Appointment Dashboard Smoke Harness.
+Sprint 11 / Module 84 — Vapi Intake to Dashboard Browser Smoke.

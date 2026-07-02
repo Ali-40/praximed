@@ -51,13 +51,13 @@ REPO_PATH = "backend.app.modules.vapi.vapi_appointment_capture.appointment_reque
 
 def _make_config(clinic_id: str = CLINIC_ID) -> MagicMock:
     cfg = MagicMock()
-    cfg.clinic_id = clinic_id
+    cfg.tenant_id = clinic_id
     return cfg
 
 
 def _make_loader(config=None) -> MagicMock:
     loader = MagicMock()
-    loader.get = AsyncMock(return_value=config or _make_config())
+    loader.load = AsyncMock(return_value=config or _make_config())
     return loader
 
 
@@ -73,7 +73,7 @@ async def test_loads_clinic_config():
     loader = _make_loader()
     with patch(f"{REPO_PATH}.create_appointment_request", new=AsyncMock(return_value=FAKE_ROW)):
         await capture_vapi_appointment_request(_make_pool(), loader, CLINIC_REF, CALL_ID, PATIENT)
-    loader.get.assert_awaited_once_with(CLINIC_REF)
+    loader.load.assert_awaited_once_with(CLINIC_REF)
 
 
 # ---------------------------------------------------------------------------

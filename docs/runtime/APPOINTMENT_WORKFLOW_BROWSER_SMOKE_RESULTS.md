@@ -115,6 +115,26 @@ This smoke builds on:
 
 ---
 
+## 8. Module 83 — Vapi Intake Smoke Harness Prepared
+
+Sprint 11 / Module 83 built the next integration step: a local smoke harness that can
+drive a Vapi-like appointment capture request without a real Vapi connection.
+
+**Findings from inspection:**
+- Target endpoint: `POST /vapi/tools/capture-appointment-request` (machine auth, no HMAC)
+- Bug fixed: `vapi_appointment_capture.py` used `config_loader.get()` / `config.clinic_id` — corrected to `config_loader.load()` / `config.tenant_id`
+- Gap identified: `main.py` does not wire `app.state.config_loader` → endpoint returns 503 until Module 84 fixes this
+
+**Harness components built:**
+- `docs/integrations/local_payloads/vapi_appointment_intake.json` — fake Vapi capture payload
+- `backend/scripts/smoke_vapi_appointment_intake.py` — smoke script (machine auth, no secrets)
+- `backend/tests/test_vapi_appointment_intake_harness_contract.py` — 10 static contract tests
+
+Full harness documented in `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md`.
+End-to-end smoke will be run once Module 84 wires the config_loader.
+
+---
+
 ## 7. Result
 
 **PASS** — The appointment Confirm workflow works end-to-end in a real browser:

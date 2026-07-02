@@ -1,8 +1,8 @@
 # Vapi to Appointment Workflow Integration Prep — PraxisMed Sprint 11
 
 **Date:** 2026-07-02
-**Sprint:** Sprint 11 (Module 82 prep)
-**Status:** Planning — no code changes in this document
+**Sprint:** Sprint 11 (Module 83 harness built)
+**Status:** Harness created — config_loader wiring pending (Module 84)
 
 ---
 
@@ -19,18 +19,23 @@ This is the core product loop: **AI intake → appointment request → staff rev
 ## 2. Target Flow
 
 ```
-Vapi call event / tool request
+Vapi phone session ends → Vapi calls backend tool
         ↓
-Backend: POST /webhooks/vapi/call-event
-         or POST /vapi/tools/suggest-slots / check-availability
+Backend: POST /vapi/tools/capture-appointment-request
+  (machine auth: X-Vapi-Service-Name=vapi, X-Vapi-Scopes=vapi:tool)
+  (body: clinic_ref, call_id, patient_name, reason, urgency_level)
         ↓
-Backend: appointment_requests INSERT (via vapi_appointment_capture module)
+Backend: vapi_appointment_capture.capture_vapi_appointment_request()
+  → ClinicConfigLoader.load(clinic_ref) → resolves clinic_id from config
+  → appointment_requests INSERT (source=vapi, status=new, action_required=True)
+  → clinic_notifications INSERT (via notification_router)
         ↓
 Frontend: GET /appointment-requests?clinic_id=… (dashboard fetch on load)
         ↓
-Staff: clicks Confirm → PATCH /appointment-requests/{id}/status
+Staff: sees row with status=new, clicks Confirm
+  → PATCH /appointment-requests/{id}/status {"status":"confirmed"}
         ↓
-Row status: new → confirmed
+Row status: new → confirmed; Confirm button disappears
 ```
 
 At the end of this loop, the dashboard shows a confirmed appointment request that
@@ -58,17 +63,15 @@ building blocks for the integration loop.
 
 ---
 
-## 4. Unknowns to Verify Next
+## 4. Unknowns — Status After Module 83 Inspection
 
-The following questions are unproven and block a confident end-to-end integration demo.
-
-| Unknown | Why it matters |
+| Unknown | Status after Module 83 |
 |---|---|
-| Does the current Vapi appointment capture route create `appointment_requests` rows from a real Vapi payload shape? | The backend adapter (Module 56) maps `message.type` → `event_type`, but the `vapi_appointment_capture` module may expect fields (`clinic_id`, `patient_name`, `reason`) that are not present in a real Vapi body |
-| Does the real Vapi tool-call payload shape differ from the local fixture? | `POST /vapi/tools/suggest-slots` and `check-availability` use machine auth + scope checks; real Vapi may omit headers the local smoke fixture included |
-| Does an appointment request appear in the dashboard without the manual seed? | Only the deterministic seed script has been used so far; no live appointment request has been created via Vapi and fetched from the dashboard |
-| Is a notification created as expected when Vapi capture fires? | `vapi_appointment_capture` was spec'd to create a `clinic_notification`; this has not been verified against a real Vapi call |
-| Does the audit log record the full Vapi integration path safely? | Audit logging for Vapi webhook and tool routes was added in Module 44; not yet verified with a real clinic_id |
+| Does the capture route create `appointment_requests` rows from a Vapi-shaped payload? | **RESOLVED** — the dedicated tool endpoint `POST /vapi/tools/capture-appointment-request` accepts the payload directly. Bug fixed: `config_loader.get`→`load`, `config.clinic_id`→`tenant_id`. |
+| Does the real Vapi tool-call payload shape differ from the local fixture? | **RESOLVED** — the tool endpoint uses `VapiAppointmentCaptureRequest` (structured body), not the webhook's raw Vapi message shape. Local fixture matches the schema. |
+| Does an appointment request appear in the dashboard without the manual seed? | **PENDING** — blocked by config_loader not wired in `main.py`. Once Module 84 wires it, `smoke_vapi_appointment_intake.py` will create a live row. |
+| Is a notification created when Vapi capture fires? | **PENDING** — `vapi_appointment_capture` does call `notification_router.create_appointment_request_notification`; will be verified in Module 84 smoke. |
+| Does the audit log record the integration path safely? | **PENDING** — audit logging for the tool route is in place (Module 44); will be confirmed in Module 84 smoke. |
 
 ---
 
@@ -87,38 +90,80 @@ The following constraints must be maintained throughout the integration loop wor
 
 ---
 
-## 6. Recommended Next Module
+## 6. Module 83 Harness — What Was Built
 
-**Sprint 11 / Module 83 — Vapi Intake to Appointment Dashboard Smoke Harness**
+**Sprint 11 / Module 83** built the smoke harness for the Vapi intake loop.
 
-Build a local/test harness or fixture-driven smoke path that proves a Vapi-like
-appointment capture creates a dashboard-visible appointment request without using real
-patient data or a live Vapi connection.
+### Inspection findings
 
-### Suggested approach
+| Finding | Detail |
+|---|---|
+| Target endpoint | `POST /vapi/tools/capture-appointment-request` |
+| Auth type | Machine auth only — `X-Vapi-Service-Name`, `X-Vapi-Clinic-Id`, `X-Vapi-Scopes: vapi:tool` |
+| HMAC required | No — HMAC is only required for `POST /webhooks/vapi/call-event` |
+| Bug found | `vapi_appointment_capture.py` called `config_loader.get()` and `config.clinic_id` — both wrong |
+| Bug fixed | Changed to `config_loader.load()` and `config.tenant_id` to match `ClinicConfigLoader` API |
+| Config gap | `main.py` does not initialize `app.state.config_loader` → endpoint returns HTTP 503 |
+| Local clinic config | `backend/tenants/configs/11111111-1111-1111-1111-111111111111/clinic_config.json` exists on disk |
 
-1. **Inspect `vapi_appointment_capture`** — read `backend/app/modules/vapi/vapi_appointment_capture.py`
-   and the route that calls it to understand what fields it expects from the Vapi payload.
+### Harness components
 
-2. **Add a static contract test** that asserts the capture module reads `patient_name`,
-   `reason`, and `clinic_id` from the adapted payload — and does not require real Vapi
-   credentials or a live call.
+| File | Purpose |
+|---|---|
+| `docs/integrations/local_payloads/vapi_appointment_intake.json` | Fake Vapi capture payload with local clinic UUID and fake caller |
+| `backend/scripts/smoke_vapi_appointment_intake.py` | Smoke script: sends POST with machine auth, prints result, handles 503 gracefully |
+| `backend/tests/test_vapi_appointment_intake_harness_contract.py` | 10 static contract tests for payload, script, capture service fix, prep doc |
 
-3. **Add a local fixture smoke script** (optional, not committed as a pytest test):
-   - Constructs a fake Vapi-shaped payload (using the same shape that Module 56 adapter produces)
-   - Signs it with the local HMAC secret
-   - POSTs to `POST /webhooks/vapi/call-event`
-   - Verifies the HTTP 200 response
-   - Queries `GET /appointment-requests?clinic_id=…` to confirm the new row appeared
+### Manual flow (once Module 84 wires config_loader)
 
-4. **Verify end-to-end**:
-   - New appointment request appears in dashboard without running seed script
-   - Staff can click Confirm on the new row
-   - Full loop proven without a real Vapi phone call
+```bash
+# 1. Ensure seed data is fresh
+python backend/scripts/seed_local_data.py
 
-### What Module 83 should not do
+# 2. Start backend (with config_loader wired — Module 84 step)
+uvicorn backend.app.main:app --reload --port 8000
 
-- Use real patient data, real phone numbers, or real clinic credentials
-- Modify Vapi configuration or n8n workflows
-- Auto-confirm or auto-create calendar events
-- Require a live Vapi connection or ngrok tunnel
+# 3. Run the intake smoke
+python backend/scripts/smoke_vapi_appointment_intake.py
+
+# 4. Open dashboard and confirm
+#    http://localhost:3000/dashboard → Appointments → Confirm
+```
+
+**This is LOCAL FAKE DATA ONLY.** Never use real patient data, real clinic IDs, or real secrets.
+
+### What the harness does NOT do
+
+- Does not auto-confirm appointment requests (staff action required)
+- Does not create calendar events
+- Does not require a real Vapi connection or ngrok tunnel
+- Does not modify Vapi configuration or n8n workflows
+
+---
+
+## 7. Recommended Next Module
+
+**Sprint 11 / Module 84 — Vapi Intake to Dashboard Browser Smoke**
+
+Wire `app.state.config_loader` in `main.py` so the capture endpoint can resolve
+the clinic config, then run `smoke_vapi_appointment_intake.py` against the live local
+backend and document evidence that:
+
+1. `POST /vapi/tools/capture-appointment-request` returns HTTP 200.
+2. An `appointment_requests` row with `status=new` is created.
+3. The row appears in the dashboard without running the seed script.
+4. Staff can click Confirm and see the status update to "confirmed".
+
+Config loader wiring (the missing step):
+
+```python
+# In backend/app/main.py lifespan startup:
+from backend.app.core.config_loader import ClinicConfigLoader
+app.state.config_loader = ClinicConfigLoader(pool=pool)
+```
+
+### What Module 84 should not do
+
+- Use real patient data, real clinic credentials, or live Vapi
+- Auto-confirm appointment requests or create calendar events
+- Require ngrok or an external tunnel

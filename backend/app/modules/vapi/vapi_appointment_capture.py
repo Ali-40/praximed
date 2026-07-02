@@ -81,8 +81,8 @@ async def capture_vapi_appointment_request(
                 "preferred_ends_at must be strictly after preferred_starts_at"
             )
 
-    config = await config_loader.get(clinic_ref)
-    clinic_id = config.clinic_id
+    config = await config_loader.load(clinic_ref)
+    clinic_id = config.tenant_id
 
     row = await appointment_request_repo.create_appointment_request(
         pool=pool,

@@ -1,0 +1,11 @@
+{
+  "clinic_ref": "11111111-1111-1111-1111-111111111111",
+  "call_id": "local-vapi-intake-call-1",
+  "patient_name": "Local Vapi Test Caller",
+  "caller_phone": "+43000000000",
+  "reason": "Local appointment request (fake/local only)",
+  "urgency_level": "normal",
+  "raw_payload": {
+    "_local_dev_note": "Fake data for local integration testing only — not a real patient or call"
+  }
+}
