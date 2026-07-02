@@ -623,5 +623,17 @@
    - Tenant/role checks (require_staff_clinic_access) unchanged — same clinic only, viewer denied
    - Other PHI routes (consultations, clinical-workflows, appointments, notifications) unchanged
 
+60. Module 62 — Wire JWT auth to consultation routes
+   - Commit: TBD
+   - `backend/app/api/routes/consultations.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context))
+   - `backend/tests/test_consultation_routes.py` (updated — fixtures override get_current_user; 9 new JWT auth tests)
+   - `backend/tests/test_clinical_workflow_routes.py` (updated — test_consultations_route_still_works assertion updated to != 404)
+   - `docs/security/AUTH_WIRING_PLAN.md` (updated — /consultations marked wired ✓)
+   - Module 62 tests: 38/38 consultation route tests passed (9 new JWT enforcement tests)
+   - Full backend tests: 1454/1454 passed
+   - Consultation routes now require Bearer JWT; header-based X-User-* auth no longer accepted
+   - Clinical role guard (require_clinical_clinic_access) unchanged — staff and viewer denied, doctor/owner/admin allowed
+   - Other PHI routes (clinical-workflows, appointments, notifications) unchanged
+
 ## Next module
-Sprint 7 / Module 62 — Wire JWT Auth to Consultation Routes (pending Module 61 review).
+Sprint 7 / Module 63 — Wire JWT Auth to Clinical Workflow Routes (pending Module 62 review).

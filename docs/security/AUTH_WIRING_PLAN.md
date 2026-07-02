@@ -11,7 +11,7 @@
 | Route group | Auth dependency | Wired in |
 |---|---|---|
 | `/patients` | `get_current_user` (JWT Bearer) | Module 61 ✓ |
-| `/consultations` | `get_auth_context` (header) | pending |
+| `/consultations` | `get_current_user` (JWT Bearer) | Module 62 ✓ |
 | `/clinical-workflows` | `get_auth_context` (header) | pending |
 | `/appointment-requests` | `get_auth_context` (header) | pending |
 | `/notifications` | `get_auth_context` (header) | pending |
@@ -36,7 +36,7 @@ Wire `get_current_user` into PHI routes in this order (one module per route grou
 
 ### Phase 1 — Lowest risk
 1. **`/patients`** ✓ Done (Module 61) — wired to `get_current_user`; tenant/role checks preserved.
-2. **`/consultations`** — closely tied to patients; wire together or immediately after.
+2. **`/consultations`** ✓ Done (Module 62) — wired to `get_current_user`; clinical role guard preserved (staff/viewer denied).
 
 ### Phase 2 — Mutation routes
 3. **`/clinical-workflows`** — write-heavy; wire after patient/consultation auth is stable.

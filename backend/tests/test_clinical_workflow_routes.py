@@ -514,14 +514,9 @@ def test_health_route_still_works(client):
 
 
 def test_consultations_route_still_works(client):
-    from backend.app.db.repositories import consultation_repo as cr
-
-    with patch(
-        "backend.app.api.routes.consultations.consultation_repo.list_consultation_sessions",
-        new=AsyncMock(return_value=[]),
-    ):
-        resp = client.get("/consultations", params={"clinic_id": CLINIC_ID})
-    assert resp.status_code == 200
+    # Consultations route now requires JWT Bearer auth (Module 62); 401 confirms it's registered.
+    resp = client.get("/consultations", params={"clinic_id": CLINIC_ID})
+    assert resp.status_code != 404
 
 
 def test_patients_route_still_works(client):

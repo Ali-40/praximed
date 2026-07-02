@@ -2,6 +2,7 @@
 Consultation session API routes — PraxisMed Sprint 2 / Module 29
 Updated: Sprint 3 / Module 37 — tenant guards applied (clinical-level access)
 Updated: Sprint 4 / Module 43 — audit logging for mutation routes
+Updated: Sprint 7 / Module 62 — JWT current_user auth wired
 
 Ten endpoints under /consultations covering the full session lifecycle:
 create, list, fetch, status update, audio attach, transcript, draft summary,
@@ -17,7 +18,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend.app.api.dependencies.auth import get_auth_context, require_clinical_clinic_access
+from backend.app.api.dependencies.auth import require_clinical_clinic_access
+from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import consultation_repo
@@ -44,7 +46,7 @@ router = APIRouter(prefix="/consultations", tags=["consultations"])
 async def create_consultation_session(
     body: ConsultationSessionCreate,
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
@@ -82,7 +84,7 @@ async def list_consultation_sessions(
     source: Optional[str] = Query(None),
     limit: int = Query(50),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationListResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -110,7 +112,7 @@ async def get_consultation_session(
     session_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -137,7 +139,7 @@ async def update_consultation_status(
     body: ConsultationStatusUpdate,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -170,7 +172,7 @@ async def attach_audio(
     body: ConsultationAudioAttach,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -202,7 +204,7 @@ async def save_transcript(
     body: ConsultationTranscriptSave,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -234,7 +236,7 @@ async def save_draft_summary(
     body: ConsultationDraftSummarySave,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -266,7 +268,7 @@ async def approve_consultation(
     body: ConsultationApprove,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -299,7 +301,7 @@ async def reject_consultation(
     body: ConsultationReject,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -331,7 +333,7 @@ async def archive_consultation(
     session_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> ConsultationResponse:
     require_clinical_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
