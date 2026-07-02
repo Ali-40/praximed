@@ -660,7 +660,7 @@
    - No cross-route test files required updating (all appointment smoke tests already used != 404 assertions)
 
 63. Module 65 — Wire JWT auth to notification routes
-   - Commit: pending
+   - Commit: 4b36a66
    - `backend/app/api/routes/notifications.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context) across all 5 routes)
    - `backend/tests/test_notification_routes.py` (updated — fixtures override get_current_user; 8 new JWT auth tests replacing 6 old header-based tests)
    - `docs/security/AUTH_WIRING_PLAN.md` (updated — /notifications marked wired ✓; Sprint 7 PHI JWT wiring complete)
