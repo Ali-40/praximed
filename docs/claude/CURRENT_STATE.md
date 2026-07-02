@@ -681,7 +681,7 @@
 - Sprint 8 started: Frontend Dashboard Foundation (Module 66+)
 
 64. Module 66 — Frontend dashboard foundation
-   - Commit: pending
+   - Commit: 201d504
    - `frontend/package.json` (new — Next.js 14, React 18, TypeScript 5)
    - `frontend/tsconfig.json` (new)
    - `frontend/next.config.js` (new)
