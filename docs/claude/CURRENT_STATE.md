@@ -552,7 +552,7 @@
    - Payload adapter resolved clinic_id and event_type from real Vapi body
 
 56. Module 58 — Real n8n tunnel smoke evidence
-   - Commit: TBD
+   - Commit: f70041f
    - `docs/integrations/REAL_N8N_TUNNEL_SMOKE_RESULTS.md` (new)
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 12 n8n smoke passed, Section 13 next recommendation)
    - `docs/claude/CURRENT_STATE.md` (updated)
