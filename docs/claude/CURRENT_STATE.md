@@ -837,5 +837,23 @@
    - Seed script creates: clinic, doctor user, patient, consultation session, appointment request (55555555), notification (66666666)
    - All four dashboard sections now show list state after re-seeding
 
+75. Module 77 — Rerun frontend demo data browser smoke evidence
+   - Commit: 1253b84
+   - `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` (new — full demo data smoke evidence: environment, steps, seed output, all four sections list state, what this proves, known patient name display issue, what this does not prove, Architecture Checkpoint 08 recommended)
+   - `docs/runtime/FRONTEND_BROWSER_SMOKE_RESULTS.md` (updated — Section 10 added: Module 77 PASS confirmation with section-by-section table, known issue note)
+   - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (updated — Module 77 update line; demo data smoke PASS note; link to new results doc; updated demo data note with name display caveat)
+   - `docs/claude/NEXT_MODULE.md` (updated — Architecture Checkpoint 08 spec)
+   - No production code changes
+   - Full backend tests: 1547/1547 passed
+   - Demo data browser smoke verdict: PASS (2026-07-02)
+   - All four dashboard sections rendered list state after re-seeding
+   - Known minor issue: patient row shows `"—"` for name (full_name vs first_name/last_name field mismatch — cosmetic, not blocking)
+
+## Architecture checkpoint
+
+- Sprint 9 complete (Modules 72–77)
+- Sprint 9 summary: local runtime smoke, CORS fix, browser smoke, demo data polish, demo re-smoke
+- Architecture Checkpoint 08 recommended: Local Demo Readiness Review
+
 ## Next module
-Sprint 9 / Module 77 — Rerun Frontend Demo Data Browser Smoke Evidence.
+Architecture Checkpoint 08 — Local Demo Readiness Review.
