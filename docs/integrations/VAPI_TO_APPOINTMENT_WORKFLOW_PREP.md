@@ -227,14 +227,42 @@ An adapter will be needed (similar to `_adapt_vapi_payload` in the webhook route
 - Do not auto-confirm appointment requests in the adapter
 - Do not modify machine auth or webhook signature verification
 
-## 9. Recommended Next Module
+## 9. Module 88 — Adapter Implementation (COMPLETE)
 
-**Sprint 11 / Module 88 — Real Vapi Tool Call Adapter**
+**Sprint 11 / Module 88 — Real Vapi Tool Call Adapter** — COMPLETE (2026-07-02)
 
-With the shape gap identified in Module 87:
-1. Add a `_adapt_vapi_tool_call_payload` function in the capture route.
-2. Detect nested `message.toolCallList` shape and extract arguments.
-3. Resolve `clinic_ref` from machine auth context (`X-Vapi-Clinic-Id`).
-4. Resolve `call_id` from `message.call.id`.
-5. Add tests for the adapter function.
-6. Re-run `inspect_vapi_tool_payload.py` on the real captured payload.
+Shape gap RESOLVED. Adapter `adapt_vapi_tool_call_body` added to
+`backend/app/modules/vapi/vapi_appointment_capture.py`.
+
+What was done:
+1. `adapt_vapi_tool_call_body(raw_body, machine_clinic_id)` added — detects nested shape and maps to flat fields.
+2. `clinic_ref` always from `machine_clinic_id` (machine auth context) — patient-supplied clinic IDs ignored.
+3. `call_id` from `message.call.id`, fallback to `toolCallList[0].id`.
+4. `caller_phone` from `message.call.customer.number`.
+5. Flat payloads (local harness) pass through unchanged.
+6. Route changed from `body: VapiAppointmentCaptureRequest` → `request: Request`; adapter runs before Pydantic validation.
+7. 14 new tests added — 9 adapter unit tests + 5 contract tests.
+8. Full suite: 1625/1625 passed.
+
+See: `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_ADAPTER_RESULTS.md`
+
+## 10. Recommended Next Module
+
+**Sprint 11 / Module 89 — Real Vapi Live Tool-Call Smoke Evidence**
+
+With the adapter in place, the next step is to confirm the nested shape works
+with a real live Vapi assistant:
+
+1. Set up a test Vapi assistant configured to call `capture_appointment_request` as a server-URL tool.
+2. Start an ngrok tunnel to expose the local backend.
+3. Make a test call with a fake patient name.
+4. Confirm the backend receives the nested payload, adapter fires, HTTP 200 returned.
+5. Confirm the appointment request appears in the dashboard with `source=vapi`, `status=new`.
+6. Run the inspector on the captured payload and verify COMPATIBLE or adjust adapter.
+7. Document smoke evidence.
+
+Safety constraints (unchanged):
+- Use a test Vapi assistant only — no production assistant with real patients.
+- Use fake patient data only.
+- Do not auto-confirm appointment requests.
+- Do not commit real secrets.

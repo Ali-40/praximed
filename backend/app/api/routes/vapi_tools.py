@@ -12,7 +12,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import ValidationError as PydanticValidationError
 
 from backend.app.api.dependencies.machine_auth import (
     get_machine_auth_context,
@@ -30,6 +31,7 @@ from backend.app.modules.calendar_sync.availability_engine import (
 from backend.app.modules.vapi import vapi_appointment_capture
 from backend.app.modules.vapi.vapi_appointment_capture import (
     InvalidVapiAppointmentCaptureError,
+    adapt_vapi_tool_call_body,
 )
 from backend.app.schemas.vapi import (
     VapiAppointmentCaptureRequest,
@@ -175,7 +177,7 @@ async def vapi_suggest_slots(
     response_model=VapiAppointmentCaptureResponse,
 )
 async def vapi_capture_appointment_request(
-    body: VapiAppointmentCaptureRequest,
+    request: Request,
     pool: Any = Depends(get_db_pool),
     config_loader: Any = Depends(get_config_loader),
     machine_auth: MachineAuthContext = Depends(get_machine_auth_context),
@@ -183,10 +185,26 @@ async def vapi_capture_appointment_request(
     """
     Capture an appointment request from a completed Vapi phone session.
 
+    Accepts both the local flat harness shape and the real Vapi nested
+    tool-call shape (message.toolCallList).  An adapter normalises nested
+    payloads before Pydantic validation.
+
     The appointment is NOT booked automatically.  A row is created with
     status='new' and action_required=True so clinic staff can review and
     confirm before the appointment is considered booked.
     """
+    try:
+        raw = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    adapted = adapt_vapi_tool_call_body(raw, machine_auth.clinic_id)
+
+    try:
+        body = VapiAppointmentCaptureRequest(**adapted)
+    except PydanticValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
     require_vapi_tool_access(requested_clinic_id=body.clinic_ref, machine_context=machine_auth)
     try:
         result = await vapi_appointment_capture.capture_vapi_appointment_request(

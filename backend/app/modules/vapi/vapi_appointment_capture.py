@@ -1,5 +1,6 @@
 """
 Vapi appointment capture service — PraxisMed Sprint 1 / Module 18
+Updated: Sprint 11 / Module 88 — adapt_vapi_tool_call_body for nested tool-call shape
 
 Translates a completed Vapi phone session into a structured appointment
 request for clinic staff review.
@@ -11,6 +12,7 @@ action_required=True so clinic staff can review before confirming.
 
 from __future__ import annotations
 
+import json
 from datetime import date, datetime
 from typing import Any, Dict, Optional
 
@@ -38,6 +40,79 @@ class InvalidVapiAppointmentCaptureError(VapiAppointmentCaptureError):
 def _assert_nonempty(value: str, name: str) -> None:
     if not value or not str(value).strip():
         raise InvalidVapiAppointmentCaptureError(f"{name!r} must not be empty")
+
+
+# ---------------------------------------------------------------------------
+# Adapter — nested Vapi tool-call body → flat VapiAppointmentCaptureRequest
+# ---------------------------------------------------------------------------
+
+
+def adapt_vapi_tool_call_body(
+    raw_body: Dict[str, Any],
+    machine_clinic_id: str,
+) -> Dict[str, Any]:
+    """
+    Normalize a Vapi tool-call body into VapiAppointmentCaptureRequest fields.
+
+    Supports two shapes:
+    - Nested (real Vapi server-URL): {"message": {"toolCallList": [...], "call": {...}}}
+    - Flat (local harness): {"clinic_ref": "...", "call_id": "...", "patient_name": "..."}
+
+    Security: for nested payloads, clinic_ref is ALWAYS taken from machine_clinic_id.
+    Any clinic_ref embedded in function.arguments is silently ignored.
+    Raw payload is stored for audit trail but never logged.
+    """
+    message = raw_body.get("message")
+    if not isinstance(message, dict):
+        return raw_body
+
+    tool_call_list = message.get("toolCallList")
+    if not isinstance(tool_call_list, list) or not tool_call_list:
+        return raw_body
+
+    first_call = tool_call_list[0] if isinstance(tool_call_list[0], dict) else {}
+    func = first_call.get("function", {}) if isinstance(first_call, dict) else {}
+    arguments = func.get("arguments", {})
+
+    if isinstance(arguments, str):
+        try:
+            arguments = json.loads(arguments)
+        except (json.JSONDecodeError, TypeError):
+            arguments = {}
+    if not isinstance(arguments, dict):
+        arguments = {}
+
+    call_obj = message.get("call")
+    call_id: Optional[str] = None
+    caller_phone: Optional[str] = None
+
+    if isinstance(call_obj, dict):
+        call_id = call_obj.get("id")
+        customer = call_obj.get("customer")
+        if isinstance(customer, dict):
+            caller_phone = customer.get("number")
+
+    if not call_id and isinstance(first_call, dict):
+        call_id = first_call.get("id") or ""
+
+    adapted: Dict[str, Any] = {
+        "clinic_ref":   machine_clinic_id,
+        "call_id":      call_id or "",
+        "patient_name": arguments.get("patient_name", ""),
+        "raw_payload":  raw_body,
+    }
+
+    for field in ("patient_email", "date_of_birth", "reason",
+                  "preferred_starts_at", "preferred_ends_at", "urgency_level"):
+        if field in arguments:
+            adapted[field] = arguments[field]
+
+    if caller_phone is not None:
+        adapted["caller_phone"] = caller_phone
+    elif "caller_phone" in arguments:
+        adapted["caller_phone"] = arguments["caller_phone"]
+
+    return adapted
 
 
 # ---------------------------------------------------------------------------

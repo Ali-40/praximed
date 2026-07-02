@@ -1,9 +1,9 @@
 """
-Contract tests for Sprint 11 / Module 87 — Real Vapi tool payload smoke prep.
+Contract tests for Sprint 11 / Modules 87–88 — Real Vapi tool payload smoke prep and adapter.
 
 Static tests only — no network, no DB, no running backend.
-Verifies the sanitized sample payload, the inspector script, and the
-prep documentation are correctly structured for real Vapi payload inspection.
+Verifies the sanitized sample payload, the inspector script, the
+prep documentation, and the Module 88 adapter are correctly structured.
 """
 
 from __future__ import annotations
@@ -171,3 +171,47 @@ def test_prep_doc_mentions_no_real_patient_data():
     assert "no real patient" in content or "fake" in content or "test assistant" in content, (
         "Prep doc must mention not using real patient data"
     )
+
+
+# ---------------------------------------------------------------------------
+# 6. Module 88 adapter — importable and correct structure
+# ---------------------------------------------------------------------------
+
+_CAPTURE_MODULE = _PROJECT_ROOT / "backend" / "app" / "modules" / "vapi" / "vapi_appointment_capture.py"
+
+
+def test_adapter_function_exists_in_capture_module():
+    content = _CAPTURE_MODULE.read_text(encoding="utf-8")
+    assert "def adapt_vapi_tool_call_body(" in content, (
+        "adapt_vapi_tool_call_body must be defined in vapi_appointment_capture.py"
+    )
+
+
+def test_adapter_accepts_machine_clinic_id_param():
+    content = _CAPTURE_MODULE.read_text(encoding="utf-8")
+    assert "machine_clinic_id" in content, (
+        "Adapter must accept machine_clinic_id to enforce security boundary"
+    )
+
+
+def test_adapter_does_not_trust_clinic_ref_from_arguments():
+    content = _CAPTURE_MODULE.read_text(encoding="utf-8")
+    assert "machine_clinic_id" in content, (
+        "clinic_ref must be derived from machine_clinic_id, not patient-supplied arguments"
+    )
+
+
+def test_adapter_maps_sample_payload_to_flat_fields():
+    data = json.loads(_SAMPLE_PAYLOAD.read_text(encoding="utf-8"))
+    from backend.app.modules.vapi.vapi_appointment_capture import adapt_vapi_tool_call_body
+    result = adapt_vapi_tool_call_body(data, "11111111-1111-1111-1111-111111111111")
+    assert result.get("clinic_ref") == "11111111-1111-1111-1111-111111111111"
+    assert result.get("call_id") == "local-real-vapi-call-1"
+    assert result.get("patient_name") == "Local Real Vapi Tool Caller"
+
+
+def test_adapter_flat_payload_unchanged():
+    flat = {"clinic_ref": "test-ref", "call_id": "call-1", "patient_name": "Flat Caller"}
+    from backend.app.modules.vapi.vapi_appointment_capture import adapt_vapi_tool_call_body
+    result = adapt_vapi_tool_call_body(flat, "ignored-clinic")
+    assert result is flat

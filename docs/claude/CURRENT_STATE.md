@@ -996,11 +996,25 @@
    - Shape gap identified: real Vapi tool call nests arguments in `message.toolCallList[0].function.arguments`; current capture endpoint expects flat root-level fields; adapter needed (Module 88)
    - Inspector correctly redacts patient values; verdicts NEEDS ADAPTER (nested) and COMPATIBLE (flat)
 
+86. Module 88 — Real Vapi tool call adapter
+   - Commit: (see git log)
+   - `backend/app/modules/vapi/vapi_appointment_capture.py` (updated — `adapt_vapi_tool_call_body` function added; `import json` added)
+   - `backend/app/api/routes/vapi_tools.py` (updated — route changed from `body: VapiAppointmentCaptureRequest` to `request: Request`; adapter wired before Pydantic validation; `Request`, `PydanticValidationError`, `adapt_vapi_tool_call_body` imported)
+   - `backend/tests/test_vapi_appointment_capture.py` (updated — 9 new adapter tests 23–31; `adapt_vapi_tool_call_body` imported)
+   - `backend/tests/test_vapi_real_tool_payload_prep_contract.py` (updated — 5 new contract tests 18–22 for adapter importability and sample payload mapping)
+   - `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_ADAPTER_RESULTS.md` (new — adapter design, security boundaries, test results, smoke status)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — shape gap marked RESOLVED; Section 9 adapter complete; Section 10 Module 89 recommended)
+   - Module 88 new tests: 14/14 passed (9 unit + 5 contract)
+   - Full backend tests: 1625/1625 passed
+   - Flat (local harness) shape passes through adapter unchanged — existing smoke and tests unaffected
+   - Nested (real Vapi) shape normalized: clinic_ref from machine auth, call_id from message.call.id, patient fields from function.arguments
+   - Security boundary enforced: patient-supplied clinic_ref in arguments silently ignored; machine_clinic_id always used
+
 ## Architecture checkpoint
 
 - Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
 - Updated in Module 82: §3b follow-up added; §4.1 Confirm action marked delivered
-- Sprint 11 in progress (Modules 81–87 complete)
+- Sprint 11 in progress (Modules 81–88 complete)
 
 ## Next module
-Sprint 11 / Module 88 — Real Vapi Tool Call Adapter.
+Sprint 11 / Module 89 — Real Vapi Live Tool-Call Smoke Evidence.

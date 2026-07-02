@@ -1,5 +1,6 @@
 """
 Unit tests for vapi_appointment_capture service — PraxisMed Sprint 1 / Module 18
+Updated: Sprint 11 / Module 88 — adapter tests for nested Vapi tool-call shape
 
 All tests use AsyncMock objects; no real database or config loader is used.
 """
@@ -14,6 +15,7 @@ import pytest
 from backend.app.modules.vapi.vapi_appointment_capture import (
     InvalidVapiAppointmentCaptureError,
     VapiAppointmentCaptureError,
+    adapt_vapi_tool_call_body,
     capture_vapi_appointment_request,
 )
 
@@ -353,3 +355,163 @@ async def test_response_message_does_not_say_confirmed():
     lower = result["message"].lower()
     assert "appointment is confirmed" not in lower
     assert "appointment has been confirmed" not in lower
+
+
+# ---------------------------------------------------------------------------
+# Module 88 — adapt_vapi_tool_call_body adapter tests
+# ---------------------------------------------------------------------------
+
+MACHINE_CLINIC = "11111111-1111-1111-1111-111111111111"
+
+_NESTED_BODY = {
+    "message": {
+        "type": "tool-calls",
+        "toolCallList": [
+            {
+                "id": "toolu_test_001",
+                "type": "function",
+                "function": {
+                    "name": "capture_appointment_request",
+                    "arguments": {
+                        "patient_name": "Local Vapi Test Caller",
+                        "reason": "Annual checkup",
+                        "urgency_level": "normal",
+                    },
+                },
+            }
+        ],
+        "call": {
+            "id": "vapi-call-real-001",
+            "customer": {"number": "+43000000002"},
+        },
+    }
+}
+
+_FLAT_BODY = {
+    "clinic_ref":   MACHINE_CLINIC,
+    "call_id":      "local-harness-call-1",
+    "patient_name": "Local Harness Caller",
+}
+
+
+# 23. Flat payload passes through unchanged
+
+def test_adapter_passes_flat_payload_through():
+    result = adapt_vapi_tool_call_body(_FLAT_BODY, MACHINE_CLINIC)
+    assert result is _FLAT_BODY
+
+
+# 24. Nested body: patient_name extracted from arguments
+
+def test_adapter_extracts_patient_name_from_nested():
+    result = adapt_vapi_tool_call_body(_NESTED_BODY, MACHINE_CLINIC)
+    assert result["patient_name"] == "Local Vapi Test Caller"
+
+
+# 25. Nested body: reason extracted from arguments
+
+def test_adapter_extracts_reason_from_nested():
+    result = adapt_vapi_tool_call_body(_NESTED_BODY, MACHINE_CLINIC)
+    assert result["reason"] == "Annual checkup"
+
+
+# 26. JSON-string arguments are parsed
+
+def test_adapter_parses_json_string_arguments():
+    body = {
+        "message": {
+            "toolCallList": [
+                {
+                    "id": "toolu_str",
+                    "function": {
+                        "name": "capture_appointment_request",
+                        "arguments": '{"patient_name": "String Args Caller", "urgency_level": "urgent"}',
+                    },
+                }
+            ],
+            "call": {"id": "call-str-001"},
+        }
+    }
+    result = adapt_vapi_tool_call_body(body, MACHINE_CLINIC)
+    assert result["patient_name"] == "String Args Caller"
+    assert result["urgency_level"] == "urgent"
+
+
+# 27. clinic_ref always comes from machine_clinic_id, not arguments
+
+def test_adapter_uses_machine_clinic_id_not_argument_clinic():
+    body = {
+        "message": {
+            "toolCallList": [
+                {
+                    "id": "toolu_x",
+                    "function": {
+                        "name": "capture_appointment_request",
+                        "arguments": {
+                            "patient_name": "Patient X",
+                            "clinic_ref": "attacker-controlled-clinic",
+                        },
+                    },
+                }
+            ],
+            "call": {"id": "call-x"},
+        }
+    }
+    result = adapt_vapi_tool_call_body(body, MACHINE_CLINIC)
+    assert result["clinic_ref"] == MACHINE_CLINIC
+    assert result["clinic_ref"] != "attacker-controlled-clinic"
+
+
+# 28. call_id resolved from message.call.id
+
+def test_adapter_call_id_from_message_call():
+    result = adapt_vapi_tool_call_body(_NESTED_BODY, MACHINE_CLINIC)
+    assert result["call_id"] == "vapi-call-real-001"
+
+
+# 29. call_id falls back to toolCallList[0].id when message.call absent
+
+def test_adapter_call_id_fallback_to_tool_id():
+    body = {
+        "message": {
+            "toolCallList": [
+                {
+                    "id": "toolu_fallback",
+                    "function": {
+                        "name": "capture_appointment_request",
+                        "arguments": {"patient_name": "Fallback Caller"},
+                    },
+                }
+            ],
+        }
+    }
+    result = adapt_vapi_tool_call_body(body, MACHINE_CLINIC)
+    assert result["call_id"] == "toolu_fallback"
+
+
+# 30. Missing patient_name in arguments → empty string (validation rejects later)
+
+def test_adapter_missing_patient_name_returns_empty():
+    body = {
+        "message": {
+            "toolCallList": [
+                {
+                    "id": "toolu_no_name",
+                    "function": {
+                        "name": "capture_appointment_request",
+                        "arguments": {"reason": "No name given"},
+                    },
+                }
+            ],
+            "call": {"id": "call-no-name"},
+        }
+    }
+    result = adapt_vapi_tool_call_body(body, MACHINE_CLINIC)
+    assert result["patient_name"] == ""
+
+
+# 31. caller_phone resolved from message.call.customer.number
+
+def test_adapter_caller_phone_from_customer_number():
+    result = adapt_vapi_tool_call_body(_NESTED_BODY, MACHINE_CLINIC)
+    assert result["caller_phone"] == "+43000000002"
