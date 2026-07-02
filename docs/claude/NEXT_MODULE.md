@@ -1,30 +1,38 @@
-# Sprint 7 / Module 59 — Production Auth and User Session Foundation
+# Sprint 7 / Module 60 — Login Endpoint and Auth Wiring Plan
 
-Status: pending Architecture Checkpoint 05 review.
+Status: pending Module 59 review.
 
 ## Goal
 
-Add human authentication as a parallel trust model alongside the existing machine auth layer. Doctors and admins must have production-grade login before the frontend can be built and before real patient data handling can begin.
+Add the login endpoint (`POST /auth/login`) and define where `get_current_user` will be wired into existing PHI routes.
 
 ## Scope
 
-- Add a `users` table to `schema.sql` and a corresponding Alembic migration.
-- Add `backend/app/db/repositories/user_repo.py` for user lookup and creation.
-- Add secure password hashing (bcrypt or argon2).
-- Add JWT access and refresh token issuance and validation.
-- Add a `get_current_user` FastAPI dependency that protects PHI routes.
-- Add tests covering login, token refresh, and unauthorized access rejection.
+### Login endpoint
+- Accept `email` and `password` in the request body (JSON, not form).
+- Look up the user by `(clinic_id, email)` — clinic_id from a request body field or a machine header.
+- Verify the password using `verify_password`.
+- Issue a JWT access token using `create_access_token`.
+- Return `{"access_token": "...", "token_type": "bearer", "expires_in": <seconds>}`.
+- Return HTTP 401 for wrong credentials.
+- Return HTTP 401 for inactive users.
+- No refresh token yet — keep it minimal.
+
+### Auth wiring plan
+- Define which existing PHI routes will require `get_current_user` in addition to (or instead of) the current header-based `get_auth_context`.
+- Do not wire yet — just document the plan as a comment or small doc section.
 
 ## What not to do
 
-- Do not build the frontend.
-- Do not implement OAuth (Google, Apple) yet — basic email/password first.
-- Do not add role-based access control (RBAC) beyond doctor/admin distinction — keep it minimal.
-- Do not touch machine auth, HMAC, or existing webhook routes.
-- Do not modify existing completed modules unless the import chain requires it.
+- Do not refactor or remove existing `get_auth_context` — PHI routes still use it.
+- Do not add refresh tokens, OAuth, or RBAC in this module.
+- Do not build frontend.
+- Do not add email verification.
 
 ## Acceptance
 
-- All new tests pass.
-- Full backend tests pass (no regression).
-- No existing machine auth or webhook behavior changed.
+- `POST /auth/login` with correct credentials → 200 + JWT token.
+- `POST /auth/login` with wrong password → 401.
+- `POST /auth/login` with inactive user → 401.
+- No plaintext passwords logged or returned.
+- All new tests pass. Full suite passes.

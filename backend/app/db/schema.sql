@@ -42,14 +42,15 @@ CREATE TABLE IF NOT EXISTS clinics (
 --    Staff / admin users belonging to a clinic.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS clinic_users (
-    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    clinic_id   UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-    email       TEXT        NOT NULL,
-    full_name   TEXT        NOT NULL,
-    role        TEXT        NOT NULL,
-    status      TEXT        NOT NULL DEFAULT 'active',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id     UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    email         TEXT        NOT NULL,
+    full_name     TEXT        NOT NULL,
+    role          TEXT        NOT NULL,
+    status        TEXT        NOT NULL DEFAULT 'active',
+    password_hash TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (clinic_id, email)
 );
 

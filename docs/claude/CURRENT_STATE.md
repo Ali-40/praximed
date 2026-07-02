@@ -569,9 +569,29 @@
 
 - Architecture Checkpoint 05 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_05_EXTERNAL_INTEGRATION_REVIEW.md`
 - Commit: 3a5a76d
+- Docs commit: 1c71f66
 - Full backend tests: 1386/1386 passed
 - Sprint 6 complete (Modules 52–58)
 - Sprint 7 started: Production Auth and User Session Foundation (Module 59+)
 
+57. Module 59 — Production auth and user session foundation
+   - Commit: TBD
+   - `backend/app/db/schema.sql` (updated — password_hash added to clinic_users)
+   - `backend/migrations/versions/0002_add_password_hash_to_clinic_users.py` (new)
+   - `backend/app/core/password_hashing.py` (new — bcrypt hash/verify)
+   - `backend/app/core/jwt_tokens.py` (new — JWT create/decode, MissingJWTSecretError, ExpiredJWTError)
+   - `backend/app/db/repositories/user_repo.py` (new — get_user_by_email, get_user_by_id, create_user)
+   - `backend/app/api/dependencies/current_user.py` (new — Bearer JWT → AuthContext, not yet wired to routes)
+   - `backend/tests/test_password_hashing.py` (new — 12 tests)
+   - `backend/tests/test_jwt_tokens.py` (new — 12 tests)
+   - `backend/tests/test_user_repository.py` (new — 14 tests)
+   - `backend/tests/test_current_user_dependency.py` (new — 10 tests)
+   - Module 59 tests: 51/51 passed (12 hashing + 12 JWT + 14 repo + 10 dep + 3 migration contract)
+   - Full backend tests: 1437/1437 passed
+   - No plaintext passwords stored or tested
+   - No real secrets committed
+   - No real DB in tests
+   - Existing PHI route behavior unchanged — current_user dep not yet wired
+
 ## Next module
-Sprint 7 / Module 59 — Production Auth and User Session Foundation (pending Architecture Checkpoint 05 review).
+Sprint 7 / Module 60 — Login Endpoint and Auth Wiring Plan (pending).
