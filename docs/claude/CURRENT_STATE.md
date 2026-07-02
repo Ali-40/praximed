@@ -522,7 +522,7 @@
 
 54. Module 56 — Real Vapi payload compatibility adapter
    - Commit: 53b6ddb
-   - Docs commit: TBD
+   - Docs commit: 0dc38fb
    - `backend/app/api/routes/vapi_webhooks.py` (updated — _adapt_vapi_payload, request: Request added)
    - `backend/tests/test_vapi_webhook_route.py` (updated — 6 new adapter tests, 30 total)
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 10 real result, Section 11 next module)
