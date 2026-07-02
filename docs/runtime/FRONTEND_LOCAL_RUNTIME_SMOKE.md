@@ -1,6 +1,9 @@
 # Frontend Local Runtime Smoke — PraxisMed Sprint 9 / Module 72
 Updated: Sprint 9 / Module 73 — runtime blockers fixed; runbook updated
 Updated: Sprint 9 / Module 74 — CORS support added; browser login unblocked
+Updated: Sprint 9 / Module 75 — full browser smoke executed; verdict PASS
+
+**Smoke result: PASS** (2026-07-02) — see `docs/runtime/FRONTEND_BROWSER_SMOKE_RESULTS.md` for full evidence.
 
 This runbook walks through a complete local browser smoke test: start the stack,
 seed a login-capable fake user, sign in at `/login`, and verify all four dashboard
