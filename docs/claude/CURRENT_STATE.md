@@ -624,7 +624,7 @@
    - Other PHI routes (consultations, clinical-workflows, appointments, notifications) unchanged
 
 60. Module 62 — Wire JWT auth to consultation routes
-   - Commit: TBD
+   - Commit: 0773bfa
    - `backend/app/api/routes/consultations.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context))
    - `backend/tests/test_consultation_routes.py` (updated — fixtures override get_current_user; 9 new JWT auth tests)
    - `backend/tests/test_clinical_workflow_routes.py` (updated — test_consultations_route_still_works assertion updated to != 404)
