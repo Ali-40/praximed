@@ -750,7 +750,7 @@
    - No hardcoded tokens or real patient data
 
 69. Module 71 — Frontend consultation list integration
-   - Commit: (pending)
+   - Commit: 6a4cff5
    - `frontend/lib/api.ts` (updated — ConsultationSession type + fetchConsultations helper)
    - `frontend/app/dashboard/page.tsx` (updated — Consultations section wired to fetchConsultations; loading/error/empty/list states; placeholder grid removed; all four sections live)
    - `frontend/README.md` (updated — consultations section: fetchConsultations, Bearer token, states)
