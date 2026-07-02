@@ -259,3 +259,49 @@ def test_migration_file_parses_cleanly():
     # ast.parse raises SyntaxError on failure
     tree = ast.parse(source)
     assert tree is not None
+
+
+# ---------------------------------------------------------------------------
+# 21-23  Revision ID length — alembic_version VARCHAR(32) constraint
+# ---------------------------------------------------------------------------
+
+def _all_migration_files() -> list[Path]:
+    return [p for p in VERSIONS.glob("*.py") if p.name != "__init__.py"]
+
+
+def _extract_revision(path: Path) -> str | None:
+    """Return the value of the `revision` variable from a migration file."""
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith('revision = "') or stripped.startswith("revision = '"):
+            # e.g.  revision = "0001_initial_schema"
+            return stripped.split("=", 1)[1].strip().strip('"\'')
+    return None
+
+
+def test_all_revision_ids_fit_in_32_chars():
+    """Test 21 — Every migration revision ID must be ≤32 characters (alembic_version constraint)."""
+    for path in _all_migration_files():
+        rev = _extract_revision(path)
+        if rev is None:
+            continue
+        assert len(rev) <= 32, (
+            f"{path.name}: revision {rev!r} is {len(rev)} chars — exceeds the 32-char "
+            f"alembic_version VARCHAR(32) limit"
+        )
+
+
+def test_migration_0002_exists():
+    """Test 22 — Migration 0002 (password_hash) file exists."""
+    assert (VERSIONS / "0002_add_password_hash_to_clinic_users.py").is_file()
+
+
+def test_migration_0002_revision_id_is_short():
+    """Test 23 — Migration 0002 revision ID is ≤32 chars and matches expected value."""
+    path = VERSIONS / "0002_add_password_hash_to_clinic_users.py"
+    rev = _extract_revision(path)
+    assert rev is not None, "Could not parse revision from 0002 migration file"
+    assert rev == "0002_password_hash", (
+        f"Expected revision '0002_password_hash', got {rev!r}"
+    )
+    assert len(rev) <= 32, f"revision {rev!r} is {len(rev)} chars — exceeds 32"

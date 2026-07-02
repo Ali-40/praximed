@@ -1,4 +1,5 @@
 # Frontend Local Runtime Smoke — PraxisMed Sprint 9 / Module 72
+Updated: Sprint 9 / Module 73 — runtime blockers fixed; runbook updated
 
 This runbook walks through a complete local browser smoke test: start the stack,
 seed a login-capable fake user, sign in at `/login`, and verify all four dashboard
@@ -9,11 +10,24 @@ production.**
 
 ---
 
+## Known Runtime Blockers (fixed in Module 73)
+
+Before running this runbook, ensure you have the Module 73 fixes applied:
+
+| Blocker | Cause | Fix |
+|---|---|---|
+| `value too long for type character varying(32)` during migration | Alembic revision ID `0002_add_password_hash_to_clinic_users` was 42 chars | Shortened to `0002_password_hash` (16 chars) in `0002_add_password_hash_to_clinic_users.py` |
+| `ModuleNotFoundError: No module named 'backend'` from seed script | Script lacked `sys.path` project-root insertion for direct execution | Added `_PROJECT_ROOT` path safety at top of `seed_local_data.py` |
+| `[Errno 48] Address already in use` on backend start | Previous Uvicorn process still running on port 8000 | Stop old process first (see Step 4 below) |
+
+---
+
 ## Prerequisites
 
 - Docker Desktop running (for PostgreSQL)
 - Python 3.11+ with `asyncpg` and `bcrypt` installed (`pip install -r backend/requirements.txt`)
 - Node.js 18+ with npm
+- No ngrok or external tunnel needed — all traffic is local
 
 ---
 
@@ -78,7 +92,16 @@ The script is idempotent — safe to run multiple times.
 
 ## Step 4 — Start the Backend
 
-In a new terminal:
+**If port 8000 is already in use** (e.g. from a previous session), stop the old
+Uvicorn process first:
+
+```bash
+# Option A — use Ctrl+C in the terminal where Uvicorn is running
+# Option B — find and kill the process
+lsof -ti:8000 | xargs kill -9
+```
+
+In a new terminal, start the backend with both required environment variables:
 
 ```bash
 export DATABASE_URL=postgresql://praxismed:praxismed_local_password@localhost:5433/praxismed_local
@@ -86,6 +109,9 @@ export JWT_SECRET_KEY=local-dev-jwt-secret-key-change-in-production
 
 uvicorn backend.app.main:app --reload --port 8000
 ```
+
+Both `DATABASE_URL` and `JWT_SECRET_KEY` must be set. If `JWT_SECRET_KEY` is missing,
+`POST /auth/login` returns HTTP 503.
 
 Expected: Uvicorn starts on `http://127.0.0.1:8000`. Check the health endpoint:
 

@@ -1,11 +1,12 @@
 """
 Local seed data script — PraxisMed Sprint 5 / Module 50
 Updated: Sprint 9 / Module 72 — added password_hash for local browser login
+Updated: Sprint 9 / Module 73 — added sys.path project-root safety for direct execution
 
 Inserts deterministic local-only test rows into the local PostgreSQL database.
 Run after migrations and before local integration testing.
 
-Usage:
+Usage (from project root):
     export DATABASE_URL=postgresql://praxismed:praxismed_local_password@localhost:5433/praxismed_local
     python backend/scripts/seed_local_data.py
 
@@ -21,7 +22,16 @@ import os
 import sys
 from typing import Any, Dict
 
-from backend.app.core.password_hashing import hash_password
+# Ensure the project root is on sys.path when this script is run directly
+# (e.g. `python backend/scripts/seed_local_data.py`). When run via pytest or
+# imported as a module, the project root is already on sys.path.
+_PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+from backend.app.core.password_hashing import hash_password  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Deterministic local-only UUIDs — NEVER used in production

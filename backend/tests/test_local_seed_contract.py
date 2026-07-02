@@ -272,3 +272,15 @@ def test_seed_script_does_not_print_password_hash():
             pytest.fail(
                 f"seed_local_data.py prints the raw password hash: {stripped!r}"
             )
+
+
+def test_seed_script_has_sys_path_project_root_safety():
+    """Test 29 — Script contains sys.path project-root insertion for direct execution."""
+    content = SEED_SCRIPT_PATH.read_text()
+    # Must reference sys.path so that `python backend/scripts/seed_local_data.py`
+    # can find the backend package without the caller setting PYTHONPATH.
+    assert "sys.path" in content, \
+        "seed_local_data.py must add the project root to sys.path for direct execution"
+    assert "_PROJECT_ROOT" in content or "project_root" in content.lower() or \
+           "dirname" in content, \
+        "seed_local_data.py must compute the project root path dynamically"

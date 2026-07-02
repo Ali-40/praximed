@@ -1,27 +1,29 @@
-# Sprint 9 / Module 73 — Run Frontend Browser Smoke and Fix Runtime Issues
+# Sprint 9 / Module 74 — Run Frontend Browser Smoke Evidence
 
-Status: pending Module 72 review.
+Status: pending Module 73 review.
 
 ## Context
 
-Module 72 prepared the local runtime smoke:
-- `seed_local_data.py` now creates a login-capable user with a bcrypt password_hash.
-- `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` documents the full 9-step runbook.
-- Local login credentials: `doctor.local@praximed.test` / `local-dev-password`.
+Module 72 prepared the local runtime smoke runbook and seed login user.
+Module 73 fixed the three blockers found during the first manual run:
+1. Alembic revision ID shortened to ≤32 chars (`0002_password_hash`).
+2. Seed script `sys.path` safety added for direct execution.
+3. Runtime doc updated with port-conflict resolution and JWT_SECRET_KEY requirement.
 
-The frontend code has never been run in a real browser. Module 73 executes the runbook
-and fixes any TypeScript compilation errors or Next.js runtime errors discovered.
+The stack should now run without blockers. Module 74 executes the full smoke and
+records evidence.
 
 ## Scope
 
-1. Run `npm install` in `frontend/` — resolve any dependency issues.
-2. Run `npx tsc --noEmit` — fix all TypeScript compilation errors found.
-3. Run `npm run dev` — verify the dev server starts without errors.
-4. Start the local stack (PostgreSQL + backend) and seed the login user.
-5. Open `http://localhost:3000`, log in, verify dashboard data loads, log out.
-6. Fix any frontend runtime errors discovered; add a static contract test for each fix.
-7. Document results in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
-8. Update `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` with actual test results.
+1. Follow `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` from Step 1 to Step 9.
+2. Capture the result of each step (success / failure / output).
+3. Fix any remaining runtime issues discovered; add a test for each fix.
+4. Create `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md` documenting:
+   - Date of smoke run
+   - Each step: command run, expected output, actual output, pass/fail
+   - Any issues found and their fixes
+   - Final verdict: PASS or FAIL
+5. Update `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` with any step corrections.
 
 ## What not to do
 
@@ -32,9 +34,7 @@ and fixes any TypeScript compilation errors or Next.js runtime errors discovered
 
 ## Acceptance
 
-- `npm run dev` starts without error.
-- `npx tsc --noEmit` reports no errors.
-- Full login → dashboard (all four sections) → logout flow confirmed in browser.
-- Results documented in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
+- All 9 runbook steps complete without error.
+- `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md` created with PASS verdict.
 - Full backend tests pass.
-- Commit: `Sprint 9 / Module 73 — Frontend browser smoke results`
+- Commit: `Sprint 9 / Module 74 — Frontend browser smoke evidence`

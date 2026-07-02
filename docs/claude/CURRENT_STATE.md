@@ -782,5 +782,20 @@
    - Local login credentials: doctor.local@praximed.test / local-dev-password (fake/local only)
    - password_hash never printed; hash_password called at runtime inside async function
 
+71. Module 73 — Fix frontend runtime smoke blockers
+   - Commit: (pending)
+   - Runtime blockers found during manual smoke (Module 72):
+     1. Alembic revision ID `0002_add_password_hash_to_clinic_users` (42 chars) exceeded `alembic_version VARCHAR(32)` — migration failed
+     2. `seed_local_data.py` raised `ModuleNotFoundError: No module named 'backend'` when run directly — missing sys.path safety
+     3. Backend failed to start with `[Errno 48] Address already in use` — runbook needed port-conflict guidance
+   - `backend/migrations/versions/0002_add_password_hash_to_clinic_users.py` (updated — revision shortened to `0002_password_hash`, 16 chars)
+   - `backend/scripts/seed_local_data.py` (updated — `_PROJECT_ROOT` sys.path insertion at top for direct execution; hash_password import preserved)
+   - `backend/tests/test_migration_contract.py` (updated — 3 new tests 21–23: all revision IDs ≤32 chars, 0002 file exists, 0002 revision value correct)
+   - `backend/tests/test_local_seed_contract.py` (updated — 1 new test 29: sys.path project-root safety present)
+   - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (updated — blocker table added, port-conflict stop instructions, no-ngrok note, JWT_SECRET_KEY required note)
+   - Module 73 new tests: 4 new tests (3 migration + 1 seed); all 52 seed+migration tests pass
+   - Full backend tests: 1531/1531 passed
+   - No backend routes modified; no frontend code changed
+
 ## Next module
-Sprint 9 / Module 73 — Run Frontend Browser Smoke and Fix Runtime Issues (pending Module 72 review).
+Sprint 9 / Module 74 — Run Frontend Browser Smoke Evidence (pending Module 73 review).
