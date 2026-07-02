@@ -2,6 +2,7 @@
 Local seed data script — PraxisMed Sprint 5 / Module 50
 Updated: Sprint 9 / Module 72 — added password_hash for local browser login
 Updated: Sprint 9 / Module 73 — added sys.path project-root safety for direct execution
+Updated: Sprint 9 / Module 76 — added fake appointment request and notification for demo data
 
 Inserts deterministic local-only test rows into the local PostgreSQL database.
 Run after migrations and before local integration testing.
@@ -41,6 +42,8 @@ LOCAL_CLINIC_ID               = "11111111-1111-1111-1111-111111111111"
 LOCAL_DOCTOR_USER_ID          = "22222222-2222-2222-2222-222222222222"
 LOCAL_PATIENT_ID              = "33333333-3333-3333-3333-333333333333"
 LOCAL_CONSULTATION_SESSION_ID = "44444444-4444-4444-4444-444444444444"
+LOCAL_APPOINTMENT_REQUEST_ID  = "55555555-5555-5555-5555-555555555555"
+LOCAL_NOTIFICATION_ID         = "66666666-6666-6666-6666-666666666666"
 
 # ---------------------------------------------------------------------------
 # Local-dev login credentials — fake/local only, NEVER used in production
@@ -139,14 +142,58 @@ async def seed_local_data(database_url: str) -> Dict[str, Any]:
             "Local Test Consultation Session",
             "not_ready",
         )
+
+        # 5. appointment_requests — one fake/local demo appointment request
+        await conn.execute(
+            """
+            INSERT INTO appointment_requests (
+                id, clinic_id, source, patient_name, reason, status, urgency_level, action_required
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (id) DO UPDATE SET
+                patient_name = EXCLUDED.patient_name,
+                updated_at   = now()
+            """,
+            LOCAL_APPOINTMENT_REQUEST_ID,
+            LOCAL_CLINIC_ID,
+            "staff",
+            "Local Test Patient",
+            "Local test appointment request (fake/local only)",
+            "new",
+            "normal",
+            True,
+        )
+
+        # 6. clinic_notifications — one fake/local demo notification
+        await conn.execute(
+            """
+            INSERT INTO clinic_notifications (
+                id, clinic_id, channel, notification_type, priority, title, message, status
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (id) DO UPDATE SET
+                title      = EXCLUDED.title,
+                updated_at = now()
+            """,
+            LOCAL_NOTIFICATION_ID,
+            LOCAL_CLINIC_ID,
+            "internal",
+            "appointment_request",
+            "normal",
+            "Local Test Notification",
+            "Local test notification (fake/local only)",
+            "pending",
+        )
     finally:
         await conn.close()
 
     return {
-        "clinic_id":               LOCAL_CLINIC_ID,
-        "doctor_user_id":          LOCAL_DOCTOR_USER_ID,
-        "patient_id":              LOCAL_PATIENT_ID,
-        "consultation_session_id": LOCAL_CONSULTATION_SESSION_ID,
+        "clinic_id":                LOCAL_CLINIC_ID,
+        "doctor_user_id":           LOCAL_DOCTOR_USER_ID,
+        "patient_id":               LOCAL_PATIENT_ID,
+        "consultation_session_id":  LOCAL_CONSULTATION_SESSION_ID,
+        "appointment_request_id":   LOCAL_APPOINTMENT_REQUEST_ID,
+        "notification_id":          LOCAL_NOTIFICATION_ID,
     }
 
 
@@ -164,10 +211,12 @@ def main() -> int:
     result = asyncio.run(seed_local_data(database_url))
 
     print("Local seed data inserted successfully (fake/local only — not production data):")
-    print(f"  clinic_id:               {result['clinic_id']}")
-    print(f"  doctor_user_id:          {result['doctor_user_id']}")
-    print(f"  patient_id:              {result['patient_id']}")
-    print(f"  consultation_session_id: {result['consultation_session_id']}")
+    print(f"  clinic_id:                {result['clinic_id']}")
+    print(f"  doctor_user_id:           {result['doctor_user_id']}")
+    print(f"  patient_id:               {result['patient_id']}")
+    print(f"  consultation_session_id:  {result['consultation_session_id']}")
+    print(f"  appointment_request_id:   {result['appointment_request_id']}")
+    print(f"  notification_id:          {result['notification_id']}")
     print()
     print("LOCAL-DEV LOGIN (fake/local only — NOT for production):")
     print(f"  clinic_id: {LOCAL_CLINIC_ID}")

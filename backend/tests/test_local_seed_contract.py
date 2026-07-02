@@ -284,3 +284,84 @@ def test_seed_script_has_sys_path_project_root_safety():
     assert "_PROJECT_ROOT" in content or "project_root" in content.lower() or \
            "dirname" in content, \
         "seed_local_data.py must compute the project root path dynamically"
+
+
+# ===========================================================================
+# Demo data — appointment request and notification seeds (tests 30–37)
+# ===========================================================================
+
+
+def test_seed_script_defines_local_appointment_request_id():
+    """Test 30 — Seed script defines LOCAL_APPOINTMENT_REQUEST_ID with correct value."""
+    mod = _load_seed()
+    assert hasattr(mod, "LOCAL_APPOINTMENT_REQUEST_ID"), \
+        "seed_local_data module must define LOCAL_APPOINTMENT_REQUEST_ID"
+    assert mod.LOCAL_APPOINTMENT_REQUEST_ID == "55555555-5555-5555-5555-555555555555"
+
+
+def test_seed_script_defines_local_notification_id():
+    """Test 31 — Seed script defines LOCAL_NOTIFICATION_ID with correct value."""
+    mod = _load_seed()
+    assert hasattr(mod, "LOCAL_NOTIFICATION_ID"), \
+        "seed_local_data module must define LOCAL_NOTIFICATION_ID"
+    assert mod.LOCAL_NOTIFICATION_ID == "66666666-6666-6666-6666-666666666666"
+
+
+def test_demo_seed_ids_are_valid_uuids():
+    """Test 32 — LOCAL_APPOINTMENT_REQUEST_ID and LOCAL_NOTIFICATION_ID are valid UUIDs."""
+    mod = _load_seed()
+    for attr in ("LOCAL_APPOINTMENT_REQUEST_ID", "LOCAL_NOTIFICATION_ID"):
+        value = getattr(mod, attr)
+        try:
+            uuid.UUID(value)
+        except ValueError:
+            pytest.fail(f"{attr} = {value!r} is not a valid UUID")
+
+
+def test_seed_script_inserts_appointment_request():
+    """Test 33 — Seed script INSERT targets appointment_requests and uses its ID constant."""
+    content = SEED_SCRIPT_PATH.read_text()
+    assert "appointment_requests" in content, \
+        "seed_local_data.py must INSERT into appointment_requests"
+    assert "LOCAL_APPOINTMENT_REQUEST_ID" in content, \
+        "seed_local_data.py must reference LOCAL_APPOINTMENT_REQUEST_ID in the INSERT"
+
+
+def test_seed_script_inserts_notification():
+    """Test 34 — Seed script INSERT targets clinic_notifications and uses its ID constant."""
+    content = SEED_SCRIPT_PATH.read_text()
+    assert "clinic_notifications" in content, \
+        "seed_local_data.py must INSERT into clinic_notifications"
+    assert "LOCAL_NOTIFICATION_ID" in content, \
+        "seed_local_data.py must reference LOCAL_NOTIFICATION_ID in the INSERT"
+
+
+def test_local_appointment_request_id_used_in_execute_call():
+    """Test 35 — LOCAL_APPOINTMENT_REQUEST_ID appears at least twice (definition + usage)."""
+    content = SEED_SCRIPT_PATH.read_text()
+    count = content.count("LOCAL_APPOINTMENT_REQUEST_ID")
+    assert count >= 2, (
+        f"LOCAL_APPOINTMENT_REQUEST_ID should appear at least twice "
+        f"(constant definition + conn.execute argument), found {count}"
+    )
+
+
+def test_local_notification_id_used_in_execute_call():
+    """Test 36 — LOCAL_NOTIFICATION_ID appears at least twice (definition + usage)."""
+    content = SEED_SCRIPT_PATH.read_text()
+    count = content.count("LOCAL_NOTIFICATION_ID")
+    assert count >= 2, (
+        f"LOCAL_NOTIFICATION_ID should appear at least twice "
+        f"(constant definition + conn.execute argument), found {count}"
+    )
+
+
+def test_seed_script_has_six_on_conflict_clauses():
+    """Test 37 — Seed script has ON CONFLICT for all six seeded tables."""
+    content = SEED_SCRIPT_PATH.read_text().upper()
+    count = content.count("ON CONFLICT")
+    assert count >= 6, (
+        f"seed_local_data.py must have at least 6 ON CONFLICT clauses "
+        f"(clinics, clinic_users, patients, consultation_sessions, "
+        f"appointment_requests, clinic_notifications), found {count}"
+    )

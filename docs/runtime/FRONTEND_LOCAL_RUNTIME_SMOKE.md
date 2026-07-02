@@ -2,8 +2,16 @@
 Updated: Sprint 9 / Module 73 — runtime blockers fixed; runbook updated
 Updated: Sprint 9 / Module 74 — CORS support added; browser login unblocked
 Updated: Sprint 9 / Module 75 — full browser smoke executed; verdict PASS
+Updated: Sprint 9 / Module 76 — fake appointment request and notification added to seed
 
 **Smoke result: PASS** (2026-07-02) — see `docs/runtime/FRONTEND_BROWSER_SMOKE_RESULTS.md` for full evidence.
+
+**Module 76 demo data note:** After re-running `python backend/scripts/seed_local_data.py`,
+all four dashboard sections render list state:
+- Appointments — "Local Test Patient" (status: new, urgency: normal)
+- Patients — "Local Test Patient" (status: active)
+- Notifications — "Local Test Notification" (priority: normal, type: appointment_request)
+- Consultations — "Local Test Consultation Session" (approval_status: not_ready)
 
 This runbook walks through a complete local browser smoke test: start the stack,
 seed a login-capable fake user, sign in at `/login`, and verify all four dashboard
@@ -80,10 +88,12 @@ Expected output (example — password_hash is never printed):
 ```
 Seeding local test data...
 Local seed data inserted successfully (fake/local only — not production data):
-  clinic_id:               11111111-1111-1111-1111-111111111111
-  doctor_user_id:          22222222-2222-2222-2222-222222222222
-  patient_id:              33333333-3333-3333-3333-333333333333
-  consultation_session_id: 44444444-4444-4444-4444-444444444444
+  clinic_id:                11111111-1111-1111-1111-111111111111
+  doctor_user_id:           22222222-2222-2222-2222-222222222222
+  patient_id:               33333333-3333-3333-3333-333333333333
+  consultation_session_id:  44444444-4444-4444-4444-444444444444
+  appointment_request_id:   55555555-5555-5555-5555-555555555555
+  notification_id:          66666666-6666-6666-6666-666666666666
 
 LOCAL-DEV LOGIN (fake/local only — NOT for production):
   clinic_id: 11111111-1111-1111-1111-111111111111
@@ -202,9 +212,9 @@ After login the dashboard should show four sections. Each section goes through:
 
 | Section | Expected minimum |
 |---|---|
-| **Appointments** | Loading state, then either empty or the seed appointment request |
-| **Patients** | Loading state, then "Local Test Patient" (seeded in Step 3) |
-| **Notifications** | Loading state, then empty (no notifications seeded) |
+| **Appointments** | Loading state, then "Local Test Patient" (status: new — seeded in Step 3) |
+| **Patients** | Loading state, then "Local Test Patient" (status: active — seeded in Step 3) |
+| **Notifications** | Loading state, then "Local Test Notification" (seeded in Step 3 — Module 76+) |
 | **Consultations** | Loading state, then "Local Test Consultation Session" (seeded in Step 3) |
 
 Open the browser developer tools → Network tab to confirm:

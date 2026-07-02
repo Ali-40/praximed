@@ -149,19 +149,19 @@ proper locale infrastructure, translation tooling, and content review.
 
 ---
 
-## 9. Recommended Next Module
+## 9. Module 76 — Demo Data Added (seed polish)
 
 **Sprint 9 / Module 76 — Dashboard Empty-State and Local Demo Data Polish**
 
-The Appointments and Notifications sections showed empty state during the smoke because
-the seed script does not create appointment requests or notifications. Before a demo,
-these sections should show realistic (but still fake) data to demonstrate the full
-dashboard flow.
+The Appointments and Notifications sections showed empty state during the Module 75 smoke.
+Module 76 adds two deterministic fake rows to `seed_local_data.py`:
 
-Scope for Module 76:
-- Add deterministic fake appointment request(s) to `seed_local_data.py`.
-- Add a deterministic fake notification to `seed_local_data.py`.
-- Keep all data clearly labeled fake/local only.
-- Verify the dashboard renders list state (not empty state) for all four sections.
-- No backend route changes.
-- No frontend code changes.
+| New row | Table | ID |
+|---|---|---|
+| Fake appointment request | `appointment_requests` | `55555555-5555-5555-5555-555555555555` |
+| Fake notification | `clinic_notifications` | `66666666-6666-6666-6666-666666666666` |
+
+After re-running `python backend/scripts/seed_local_data.py` all four dashboard
+sections should render list state (not empty state).
+
+See `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` for updated runbook notes.

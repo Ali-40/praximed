@@ -174,9 +174,19 @@ Open `http://localhost:3000` and log in with:
 
 **These are fake local-dev credentials only. Never use in production.**
 
+The seed script (`backend/scripts/seed_local_data.py`) creates six deterministic
+fake/local rows so all four dashboard sections show list state after login:
+
+| Dashboard section | Seeded row |
+|---|---|
+| Appointments | One fake appointment request — "Local Test Patient", status: new |
+| Patients | One fake patient — "Local Test Patient", status: active |
+| Notifications | One fake notification — "Local Test Notification", priority: normal |
+| Consultations | One fake consultation — "Local Test Consultation Session" |
+
 See `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` for the full step-by-step runbook
 including expected responses, known limitations, and tear-down instructions.
 
 ## Status
 
-Sprint 9 / Module 72 — Local runtime smoke runbook complete. All four dashboard sections wired to backend.
+Sprint 9 / Module 76 — Local demo data polished. All four dashboard sections show list state after seed.
