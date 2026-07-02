@@ -974,23 +974,33 @@
    - Live smoke: HTTP 200 — appointment ID `509211a7-784e-4e45-90f1-d9af6f8d7981`, `status: new`, `source: vapi`, `action_required: true`
 
 84. Module 86 — Vapi intake to dashboard browser smoke evidence
-   - Commit: (see git log)
+   - Commit: 4c31a9f
    - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_BROWSER_SMOKE_RESULTS.md` (new — full browser smoke evidence: harness output, row verification, Confirm action, verdict PASS)
    - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` (updated — Module 86 browser confirm note added)
    - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — all local unknowns RESOLVED; next unknown is real Vapi payload from live assistant; Module 87 recommended)
    - No production code changes
-   - Full backend tests: 1594/1594 passed (re-confirmed)
-   - Browser smoke verdict: **PASS** (2026-07-02)
+   - Full backend tests: 1594/1594 passed
+   - Browser smoke verdict: PASS (2026-07-02)
    - Vapi-created row appeared in dashboard without seed script
    - Staff Confirm: status "new" → "confirmed"; button disappeared
-   - Staff confirmation boundary maintained: no auto-confirmation by AI
-   - Other dashboard sections unaffected
+
+85. Module 87 — Real Vapi appointment tool payload smoke prep
+   - Commit: (see git log)
+   - `docs/integrations/local_payloads/vapi_real_tool_payload_sample.json` (new — sanitized fake sample of real Vapi tool-call body shape with nested message.toolCallList)
+   - `backend/scripts/inspect_vapi_tool_payload.py` (new — structural inspector: redacts patient values, detects flat vs nested shape, assesses compatibility with VapiAppointmentCaptureRequest)
+   - `backend/tests/test_vapi_real_tool_payload_prep_contract.py` (new — 17 static contract tests for sample, inspector, prep docs)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — shape gap analysis; real Vapi payload capture plan; Module 88 adapter recommended)
+   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_BROWSER_SMOKE_RESULTS.md` (updated — Module 87 prep note added)
+   - No production code changes
+   - Full backend tests: 1611/1611 passed
+   - Shape gap identified: real Vapi tool call nests arguments in `message.toolCallList[0].function.arguments`; current capture endpoint expects flat root-level fields; adapter needed (Module 88)
+   - Inspector correctly redacts patient values; verdicts NEEDS ADAPTER (nested) and COMPATIBLE (flat)
 
 ## Architecture checkpoint
 
 - Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
 - Updated in Module 82: §3b follow-up added; §4.1 Confirm action marked delivered
-- Sprint 11 in progress (Modules 81–86 complete)
+- Sprint 11 in progress (Modules 81–87 complete)
 
 ## Next module
-Sprint 11 / Module 87 — Real Vapi Appointment Tool Payload Smoke.
+Sprint 11 / Module 88 — Real Vapi Tool Call Adapter.

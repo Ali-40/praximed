@@ -155,3 +155,20 @@ Response:
 
 The core product loop — **AI intake → appointment request → staff review → confirmed** —
 is now locally demonstrated without a real Vapi connection or ngrok tunnel.
+
+---
+
+## 8. Module 87 — Real Vapi Payload Prep
+
+**Sprint 11 / Module 87** prepares inspection tooling for testing against a live Vapi
+assistant tool-call payload. The local harness result above remains PASS and is unchanged.
+
+Module 87 deliverables:
+- Sanitized sample of the real Vapi tool-call body shape (`vapi_real_tool_payload_sample.json`)
+- Inspector script (`inspect_vapi_tool_payload.py`) — structural summary, redacts patient values
+- 17 static contract tests for sample, inspector, and prep docs
+- Prep doc updated with shape gap analysis and manual capture steps
+
+Shape gap identified: a real Vapi tool call nests arguments in
+`message.toolCallList[0].function.arguments` while the current capture endpoint expects
+flat fields at root level. An adapter will be needed (Module 88).

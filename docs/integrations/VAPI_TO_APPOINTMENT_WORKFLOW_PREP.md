@@ -164,22 +164,77 @@ python backend/scripts/smoke_vapi_appointment_intake.py
 **Result:** HTTP 200, appointment ID `509211a7-784e-4e45-90f1-d9af6f8d7981`, `status: new`, `source: vapi`.
 **This is LOCAL FAKE DATA ONLY.** Never use real patient data, real clinic IDs, or real secrets.
 
-## 8. Recommended Next Module
+## 8. Module 87 — Real Vapi Tool Payload Capture Plan
 
-**Sprint 11 / Module 87 — Real Vapi Appointment Tool Payload Smoke**
+**Sprint 11 / Module 87** prepares the backend for testing against a real live Vapi
+assistant tool-call payload.
 
-The local loop is proven. The remaining gap is validating that a real Vapi assistant's
-tool-call payload shape is handled correctly by the capture endpoint — or identifying
-any field mapping needed.
+### Shape gap identified (Module 87)
 
-Module 87 should:
-1. Inspect the real Vapi tool-call payload format (from Vapi docs or a recorded call).
-2. Compare against `VapiAppointmentCaptureRequest` schema.
-3. Identify any adapter or field-mapping needed.
-4. Document findings and next steps.
+The current capture endpoint expects a **flat** body at the root level:
+```json
+{ "clinic_ref": "...", "call_id": "...", "patient_name": "..." }
+```
 
-### What Module 87 should not do
+A real Vapi server-URL tool-call sends a **nested** body:
+```json
+{
+  "message": {
+    "type": "tool-calls",
+    "toolCallList": [{ "function": { "name": "...", "arguments": {...} } }],
+    "call": { "id": "...", "customer": { "number": "..." } }
+  }
+}
+```
 
-- Use real patient data
-- Auto-confirm appointment requests or create calendar events
-- Modify auth, JWT, or machine auth
+Key differences:
+- `clinic_ref` comes from `X-Vapi-Clinic-Id` header (machine auth), NOT in body
+- `call_id` comes from `message.call.id`, NOT in arguments
+- `patient_name` and other patient fields come from `function.arguments`
+
+An adapter will be needed (similar to `_adapt_vapi_payload` in the webhook route, Module 56).
+
+### Sample and inspector (Module 87 deliverables)
+
+| File | Purpose |
+|---|---|
+| `docs/integrations/local_payloads/vapi_real_tool_payload_sample.json` | Sanitized fake sample of the real Vapi tool-call body shape |
+| `backend/scripts/inspect_vapi_tool_payload.py` | Structural inspector — redacts patient values, detects shape, assesses compatibility |
+| `backend/tests/test_vapi_real_tool_payload_prep_contract.py` | 17 static contract tests for sample, inspector, and prep docs |
+
+### Manual real Vapi payload capture steps
+
+1. Use a **test Vapi assistant only** — never a production assistant with real patients.
+2. Configure the test assistant to call the `capture_appointment_request` tool with a fake patient.
+3. Ask the assistant to book a fake appointment using a test phone call.
+4. Capture the raw request body from backend access logs, ngrok inspector, or Vapi call logs.
+5. Sanitize the captured payload — replace all patient names, phone numbers, transcript text
+   with fake/local values. Remove any PII.
+6. Save the sanitized payload as `docs/integrations/local_payloads/vapi_real_tool_payload_captured.json`.
+7. Run the inspector:
+   ```bash
+   python backend/scripts/inspect_vapi_tool_payload.py \
+     --payload-file docs/integrations/local_payloads/vapi_real_tool_payload_captured.json
+   ```
+8. Compare the shape against `VapiAppointmentCaptureRequest` schema.
+9. If the shape matches the sample (nested `message.toolCallList`), implement an adapter.
+10. **Staff confirmation boundary remains required** — no auto-confirm after any adapter changes.
+
+### What not to do
+
+- Never use real patient data, real patient names, or real phone numbers in any test payload
+- Do not commit sanitized payloads with any residual PII
+- Do not auto-confirm appointment requests in the adapter
+- Do not modify machine auth or webhook signature verification
+
+## 9. Recommended Next Module
+
+**Sprint 11 / Module 88 — Real Vapi Tool Call Adapter**
+
+With the shape gap identified in Module 87:
+1. Add a `_adapt_vapi_tool_call_payload` function in the capture route.
+2. Detect nested `message.toolCallList` shape and extract arguments.
+3. Resolve `clinic_ref` from machine auth context (`X-Vapi-Clinic-Id`).
+4. Resolve `call_id` from `message.call.id`.
+5. Add tests for the adapter function.
+6. Re-run `inspect_vapi_tool_payload.py` on the real captured payload.

@@ -1,69 +1,92 @@
-# Sprint 11 / Module 87 — Real Vapi Appointment Tool Payload Smoke
+# Sprint 11 / Module 88 — Real Vapi Tool Call Adapter
 
-Status: pending Module 86 review.
+Status: pending Module 87 review.
 
 ## Context
 
-Module 86 proved the local Vapi intake loop end-to-end:
-- `smoke_vapi_appointment_intake.py` → HTTP 200 → appointment row → dashboard → staff Confirm → "confirmed"
-- Staff confirmation boundary maintained: AI does not auto-confirm
+Module 87 identified the shape gap between a real Vapi tool-call body and the current
+`VapiAppointmentCaptureRequest` schema:
 
-The local harness uses a hand-crafted JSON payload that matches `VapiAppointmentCaptureRequest`.
-The remaining gap is whether a real Vapi assistant's tool-call payload will match this schema,
-or whether an adapter is needed (similar to the `_adapt_vapi_payload` added for the webhook
-in Module 56).
+**Real Vapi tool-call body (nested):**
+```json
+{
+  "message": {
+    "type": "tool-calls",
+    "toolCallList": [{ "function": { "name": "...", "arguments": {...} } }],
+    "call": { "id": "...", "customer": { "number": "..." } }
+  }
+}
+```
+
+**Current schema (flat):**
+```json
+{ "clinic_ref": "...", "call_id": "...", "patient_name": "..." }
+```
+
+The current capture route only accepts the flat shape (used by the local harness).
+A real Vapi assistant calling the tool will send the nested shape. An adapter is needed,
+similar to `_adapt_vapi_payload` added for the webhook route in Module 56.
+
+Mapping:
+- `clinic_ref` → from `X-Vapi-Clinic-Id` header (machine auth context)
+- `call_id` → from `message.call.id`
+- `patient_name` → from `message.toolCallList[0].function.arguments.patient_name`
+- `caller_phone` → from `message.call.customer.number`
+- `reason`, `urgency_level` → from `function.arguments`
 
 ## Scope
 
-### 1. Inspect real Vapi tool-call payload format
+### 1. Add `_adapt_vapi_tool_call_body` to the capture route
 
-Investigate what Vapi sends when a tool call fires during a phone session:
-- Tool call body shape (field names, nesting, types)
-- Whether `clinic_ref`, `call_id`, `patient_name` match exactly or need mapping
-- Whether Vapi wraps the body in a `message` envelope (as the webhook does)
+In `backend/app/api/routes/vapi_tools.py`, add a helper that:
+- Detects nested `message.toolCallList` shape
+- Extracts arguments, `call_id` from `message.call.id`, `caller_phone` from customer
+- Passes `clinic_ref` from machine auth context (`machine_auth.clinic_id`)
+- Returns a dict matching `VapiAppointmentCaptureRequest` fields
+- Falls through unchanged if body is already flat (preserves local harness compatibility)
 
-Sources to inspect:
-- Vapi documentation on tool call payloads
-- `backend/app/schemas/vapi.py` — `VapiAppointmentCaptureRequest` field names
-- `backend/app/api/routes/vapi_tools.py` — the capture route handler
-- Module 56 notes in `docs/claude/CURRENT_STATE.md` — how webhook adapter was built
+### 2. Wire the adapter in `vapi_capture_appointment_request`
 
-### 2. Compare against VapiAppointmentCaptureRequest schema
+Accept `Request` alongside the Pydantic body (as done in Module 56 for the webhook).
+Or: change the route to accept `body: dict` and run adaptation before Pydantic validation.
 
-| VapiAppointmentCaptureRequest field | Required? | Real Vapi tool payload equivalent |
-|---|---|---|
-| `clinic_ref` | Yes | TBD |
-| `call_id` | Yes | TBD |
-| `patient_name` | Yes | TBD |
-| `caller_phone` | No | TBD |
-| `reason` | No | TBD |
-| `urgency_level` | No | TBD |
-| `raw_payload` | No | TBD |
+### 3. Add tests
 
-### 3. Identify any adapter needed
+Extend `backend/tests/test_vapi_tool_routes.py`:
+- Adapter maps nested payload to flat `VapiAppointmentCaptureRequest` fields
+- Adapter leaves flat payload unchanged
+- Missing `patient_name` in arguments → 422
+- `call_id` resolved from `message.call.id`
+- `clinic_ref` resolved from machine auth, not body
 
-If the real payload shape differs, plan a minimal field-mapping adapter in the capture route
-(similar to `_adapt_vapi_payload` in the webhook route). If the schema matches exactly,
-document that no adapter is needed.
+### 4. Run the inspector on any real captured payload
 
-### 4. Update docs
+If a real Vapi payload has been captured manually:
+```bash
+python backend/scripts/inspect_vapi_tool_payload.py \
+  --payload-file docs/integrations/local_payloads/vapi_real_tool_payload_captured.json
+```
 
-- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — record findings; mark real payload gap RESOLVED or document required adapter
-- `docs/claude/CURRENT_STATE.md` — record Module 87
-- `docs/claude/NEXT_MODULE.md` — Module 88 (adapter implementation if needed, or next workflow action)
+Compare against the adapter logic and adjust if the real shape differs from the sample.
+
+### 5. Update docs
+
+- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — mark shape gap RESOLVED
+- `docs/claude/CURRENT_STATE.md` — record Module 88
+- `docs/claude/NEXT_MODULE.md` — Module 89
 
 ## What not to do
 
-- Do not use real patient data or real Vapi credentials for testing
-- Do not auto-confirm appointment requests or create calendar events
-- Do not modify auth, JWT, machine auth, or webhook signature
-- Do not implement the adapter without inspecting the real payload first
+- Do not use real patient data or real Vapi credentials
+- Do not auto-confirm appointment requests in the adapter
+- Do not change auth, JWT, machine auth, webhook signature, or seed data
+- Do not break the existing flat-payload path (local harness must still work)
 
 ## Acceptance
 
-- Real Vapi tool-call payload shape documented
-- Gap between real payload and `VapiAppointmentCaptureRequest` identified or ruled out
-- If adapter needed: design documented; implementation scoped to Module 88
-- If no adapter needed: documented explicitly
-- No code changes required for this module (docs + inspection only)
-- Commit: `Sprint 11 / Module 87 — Real Vapi appointment tool payload smoke`
+- Nested Vapi tool-call body shape is handled by the capture route
+- Flat local harness body shape continues to work
+- All existing tests pass
+- New adapter tests cover both shapes
+- `inspect_vapi_tool_payload.py` reports COMPATIBLE on the captured payload
+- Commit: `Sprint 11 / Module 88 — Real Vapi tool call adapter`

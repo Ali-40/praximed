@@ -1,0 +1,31 @@
+{
+  "_note": "Sanitized sample of the Vapi server-URL tool-call body shape. FAKE/LOCAL DATA ONLY.",
+  "_local_test_context": {
+    "clinic_ref_from_header": "11111111-1111-1111-1111-111111111111",
+    "_header_note": "clinic_ref is supplied via X-Vapi-Clinic-Id header, NOT in the body arguments"
+  },
+  "message": {
+    "type": "tool-calls",
+    "toolCallList": [
+      {
+        "id": "toolu_fake_local_test_001",
+        "type": "function",
+        "function": {
+          "name": "capture_appointment_request",
+          "arguments": {
+            "patient_name": "Local Real Vapi Tool Caller",
+            "reason": "Fake appointment request for local payload inspection only",
+            "urgency_level": "normal"
+          }
+        }
+      }
+    ],
+    "call": {
+      "id": "local-real-vapi-call-1",
+      "customer": {
+        "number": "+43000000001"
+      }
+    }
+  },
+  "_compatibility_note": "clinic_ref is NOT in arguments — Vapi passes it via X-Vapi-Clinic-Id header. call_id is NOT in arguments — resolved from message.call.id. An adapter is required to map this shape to VapiAppointmentCaptureRequest."
+}
