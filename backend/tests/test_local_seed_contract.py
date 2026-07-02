@@ -221,3 +221,54 @@ def test_runbook_states_seed_data_is_fake_local_only():
     """Test 22 — Runbook explicitly states seed data is fake/local only."""
     content = _runbook().lower()
     assert "fake" in content or "not production" in content or "local only" in content
+
+
+# ===========================================================================
+# Password hash / login credentials (tests 23–28)
+# ===========================================================================
+
+
+def test_seed_script_references_password_hash():
+    """Test 23 — seed_local_data.py sets password_hash on the user row."""
+    content = SEED_SCRIPT_PATH.read_text()
+    assert "password_hash" in content, \
+        "seed_local_data.py must include password_hash in the clinic_users INSERT"
+
+
+def test_seed_script_uses_hash_password():
+    """Test 24 — seed_local_data.py calls the hash_password helper."""
+    content = SEED_SCRIPT_PATH.read_text()
+    assert "hash_password" in content, \
+        "seed_local_data.py must call hash_password to produce the bcrypt hash"
+
+
+def test_seed_script_includes_local_login_email():
+    """Test 25 — seed_local_data.py defines the deterministic local login email."""
+    content = SEED_SCRIPT_PATH.read_text()
+    assert "doctor.local@praximed.test" in content, \
+        "seed_local_data.py must contain the local login email"
+
+
+def test_seed_script_local_login_email_constant_defined():
+    """Test 26 — Module exports LOCAL_LOGIN_EMAIL with the correct value."""
+    mod = _load_seed()
+    assert hasattr(mod, "LOCAL_LOGIN_EMAIL"), \
+        "seed_local_data module must define LOCAL_LOGIN_EMAIL"
+    assert mod.LOCAL_LOGIN_EMAIL == "doctor.local@praximed.test"
+
+
+def test_seed_script_includes_local_dev_password_label():
+    """Test 27 — seed_local_data.py references the local-dev password label."""
+    content = SEED_SCRIPT_PATH.read_text()
+    assert "local-dev-password" in content, \
+        "seed_local_data.py must include the local-dev password label"
+
+
+def test_seed_script_does_not_print_password_hash():
+    """Test 28 — No print() call in the script outputs the raw password_hash variable."""
+    for line in SEED_SCRIPT_PATH.read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith("print") and "pwd_hash" in stripped:
+            pytest.fail(
+                f"seed_local_data.py prints the raw password hash: {stripped!r}"
+            )

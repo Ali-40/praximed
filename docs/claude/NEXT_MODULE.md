@@ -1,48 +1,40 @@
-# Sprint 9 / Module 72 — Frontend Local Runtime Smoke and Seed Login
+# Sprint 9 / Module 73 — Run Frontend Browser Smoke and Fix Runtime Issues
 
-Status: pending Architecture Checkpoint 07 review.
+Status: pending Module 72 review.
 
 ## Context
 
-Sprint 8 produced a complete Next.js frontend (Modules 66–71) — login flow and four
-live dashboard sections — but the frontend has never been run in a real browser.
-Architecture Checkpoint 07 identified this as the highest-priority risk before building
-additional features.
+Module 72 prepared the local runtime smoke:
+- `seed_local_data.py` now creates a login-capable user with a bcrypt password_hash.
+- `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` documents the full 9-step runbook.
+- Local login credentials: `doctor.local@praximed.test` / `local-dev-password`.
 
-## Goal
-
-Run the frontend in a real browser against the local backend. Prove that the code
-written in Sprint 8 works end-to-end and document the result.
+The frontend code has never been run in a real browser. Module 73 executes the runbook
+and fixes any TypeScript compilation errors or Next.js runtime errors discovered.
 
 ## Scope
 
-1. Run `npm install` in `frontend/` and resolve any dependency issues.
-2. Run `npx tsc --noEmit` to check for TypeScript compilation errors; fix any found.
+1. Run `npm install` in `frontend/` — resolve any dependency issues.
+2. Run `npx tsc --noEmit` — fix all TypeScript compilation errors found.
 3. Run `npm run dev` — verify the dev server starts without errors.
-4. Start the backend (`uvicorn backend.app.main:app --reload`) and the local PostgreSQL
-   container (`docker-compose -f docker-compose.postgres.yml up -d`).
-5. Seed a local user via `backend/scripts/seed_local_data.py`.
-6. Open `http://localhost:3000`:
-   - Verify redirect to `/login`.
-   - Log in with seeded Clinic ID, email, password.
-   - Verify redirect to `/dashboard`.
-   - Verify all four sections show loading → data (or empty if no records).
-   - Log out and verify redirect back to `/login`.
-7. Document the result in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
-8. Fix any frontend runtime errors discovered; add a static contract test for each fix.
+4. Start the local stack (PostgreSQL + backend) and seed the login user.
+5. Open `http://localhost:3000`, log in, verify dashboard data loads, log out.
+6. Fix any frontend runtime errors discovered; add a static contract test for each fix.
+7. Document results in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
+8. Update `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` with actual test results.
 
 ## What not to do
 
-- Do not add new dashboard features or forms.
+- Do not add new dashboard sections or features.
 - Do not implement token refresh or cookie-based auth.
 - Do not modify backend routes.
-- Do not run in production or deploy.
+- Do not deploy or build for production.
 
 ## Acceptance
 
 - `npm run dev` starts without error.
-- `npx tsc --noEmit` reports no errors (or all found errors are fixed).
-- Full login → dashboard → logout flow completes in a real browser.
+- `npx tsc --noEmit` reports no errors.
+- Full login → dashboard (all four sections) → logout flow confirmed in browser.
 - Results documented in `docs/integrations/FRONTEND_LOCAL_SMOKE_RESULTS.md`.
 - Full backend tests pass.
-- Commit: `Sprint 9 / Module 72 — Frontend local runtime smoke and seed login`
+- Commit: `Sprint 9 / Module 73 — Frontend browser smoke results`

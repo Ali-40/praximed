@@ -135,6 +135,42 @@ The section shows:
 
 All four dashboard sections (Appointments, Patients, Notifications, Consultations) are now live.
 
+## Local browser smoke (Module 72)
+
+To run a full login → dashboard → logout test in a real browser:
+
+```bash
+# 1. Start PostgreSQL
+docker-compose -f docker-compose.postgres.yml up -d
+
+# 2. Run migrations
+export DATABASE_URL=postgresql://praxismed:praxismed_local_password@localhost:5433/praxismed_local
+cd backend && alembic upgrade head && cd ..
+
+# 3. Seed local login user
+python backend/scripts/seed_local_data.py
+
+# 4. Start backend (separate terminal)
+export JWT_SECRET_KEY=local-dev-jwt-secret-key-change-in-production
+uvicorn backend.app.main:app --reload --port 8000
+
+# 5. Start frontend (separate terminal)
+cd frontend && npm install && npm run dev
+```
+
+Open `http://localhost:3000` and log in with:
+
+| Field | Value |
+|---|---|
+| Clinic ID | `11111111-1111-1111-1111-111111111111` |
+| Email | `doctor.local@praximed.test` |
+| Password | `local-dev-password` |
+
+**These are fake local-dev credentials only. Never use in production.**
+
+See `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` for the full step-by-step runbook
+including expected responses, known limitations, and tear-down instructions.
+
 ## Status
 
-Sprint 8 / Module 71 — All dashboard sections wired to backend.
+Sprint 9 / Module 72 — Local runtime smoke runbook complete. All four dashboard sections wired to backend.

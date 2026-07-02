@@ -1,5 +1,6 @@
 """
 Local seed data script — PraxisMed Sprint 5 / Module 50
+Updated: Sprint 9 / Module 72 — added password_hash for local browser login
 
 Inserts deterministic local-only test rows into the local PostgreSQL database.
 Run after migrations and before local integration testing.
@@ -20,6 +21,8 @@ import os
 import sys
 from typing import Any, Dict
 
+from backend.app.core.password_hashing import hash_password
+
 # ---------------------------------------------------------------------------
 # Deterministic local-only UUIDs — NEVER used in production
 # ---------------------------------------------------------------------------
@@ -29,6 +32,13 @@ LOCAL_DOCTOR_USER_ID          = "22222222-2222-2222-2222-222222222222"
 LOCAL_PATIENT_ID              = "33333333-3333-3333-3333-333333333333"
 LOCAL_CONSULTATION_SESSION_ID = "44444444-4444-4444-4444-444444444444"
 
+# ---------------------------------------------------------------------------
+# Local-dev login credentials — fake/local only, NEVER used in production
+# ---------------------------------------------------------------------------
+
+LOCAL_LOGIN_EMAIL          = "doctor.local@praximed.test"
+LOCAL_LOGIN_PASSWORD_LABEL = "local-dev-password"   # label only — hash computed at runtime
+
 
 async def seed_local_data(database_url: str) -> Dict[str, Any]:
     """Insert (or update) deterministic local seed rows using asyncpg.
@@ -37,6 +47,9 @@ async def seed_local_data(database_url: str) -> Dict[str, Any]:
     Does not print secrets.
     """
     import asyncpg  # imported here — no connection at module import time
+
+    # Compute bcrypt hash at call time, not at import time
+    pwd_hash = hash_password(LOCAL_LOGIN_PASSWORD_LABEL)
 
     conn = await asyncpg.connect(database_url)
     try:
@@ -57,21 +70,24 @@ async def seed_local_data(database_url: str) -> Dict[str, Any]:
             "de-AT",
         )
 
-        # 2. clinic_users — doctor user for the test clinic
+        # 2. clinic_users — doctor user with login-capable password_hash
         await conn.execute(
             """
-            INSERT INTO clinic_users (id, clinic_id, email, full_name, role, status)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO clinic_users (id, clinic_id, email, full_name, role, status, password_hash)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT (id) DO UPDATE SET
-                full_name  = EXCLUDED.full_name,
-                updated_at = now()
+                email         = EXCLUDED.email,
+                full_name     = EXCLUDED.full_name,
+                password_hash = EXCLUDED.password_hash,
+                updated_at    = now()
             """,
             LOCAL_DOCTOR_USER_ID,
             LOCAL_CLINIC_ID,
-            "doctor@local-test.example",
+            LOCAL_LOGIN_EMAIL,
             "Dr. Local Test",
             "doctor",
             "active",
+            pwd_hash,
         )
 
         # 3. patients — one test patient
@@ -142,6 +158,11 @@ def main() -> int:
     print(f"  doctor_user_id:          {result['doctor_user_id']}")
     print(f"  patient_id:              {result['patient_id']}")
     print(f"  consultation_session_id: {result['consultation_session_id']}")
+    print()
+    print("LOCAL-DEV LOGIN (fake/local only — NOT for production):")
+    print(f"  clinic_id: {LOCAL_CLINIC_ID}")
+    print(f"  email:     {LOCAL_LOGIN_EMAIL}")
+    print(f"  password:  {LOCAL_LOGIN_PASSWORD_LABEL}")
     return 0
 
 

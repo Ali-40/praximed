@@ -770,5 +770,17 @@
 - Sprint 8 complete (Modules 66–71)
 - Sprint 9 started: Frontend Local Runtime Smoke (Module 72+)
 
+70. Module 72 — Frontend local runtime smoke and seed login
+   - Commit: (pending)
+   - `backend/scripts/seed_local_data.py` (updated — LOCAL_LOGIN_EMAIL + LOCAL_LOGIN_PASSWORD_LABEL constants; hash_password imported; password_hash included in clinic_users INSERT; ON CONFLICT updates email + password_hash; main() prints email/password label but NOT hash)
+   - `backend/tests/test_local_seed_contract.py` (updated — 6 new tests 23–28: password_hash reference, hash_password usage, local login email, email constant value, password label, no print of raw hash)
+   - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (new — 9-step local browser smoke runbook: PostgreSQL, migrations, seed, backend, frontend, login, dashboard verification, logout, known limitations)
+   - `frontend/README.md` (updated — local browser smoke quick-start and link to runbook)
+   - Module 72 contract tests: 28/28 passed (6 new + 22 existing)
+   - Full backend tests: 1527/1527 passed
+   - No backend routes modified
+   - Local login credentials: doctor.local@praximed.test / local-dev-password (fake/local only)
+   - password_hash never printed; hash_password called at runtime inside async function
+
 ## Next module
-Sprint 9 / Module 72 — Frontend Local Runtime Smoke and Seed Login (pending Architecture Checkpoint 07 review).
+Sprint 9 / Module 73 — Run Frontend Browser Smoke and Fix Runtime Issues (pending Module 72 review).
