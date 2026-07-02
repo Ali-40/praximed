@@ -1,6 +1,7 @@
 """
 PraxisMed API — FastAPI application entry point (Sprint 1 / Module 7)
 Updated: Sprint 9 / Module 74 — local frontend CORS support
+Updated: Sprint 11 / Module 84 — wire app.state.config_loader in lifespan
 
 Start the server with:
     python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
@@ -33,6 +34,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.router import api_router
+from backend.app.core.config_loader import ClinicConfigLoader
 from backend.app.db.pool import close_db_pool, create_db_pool
 
 # ---------------------------------------------------------------------------
@@ -78,6 +80,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
         app.state.db_pool = None
 
+    # Config loader — available even without a DB pool (disk-only config fallback).
+    # Routes that call get_config_loader() rely on this being set.
+    app.state.config_loader = ClinicConfigLoader(pool=app.state.db_pool)
+
     yield
 
     # --------------- shutdown ---------------
@@ -85,6 +91,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if pool is not None:
         await close_db_pool(pool)
         app.state.db_pool = None
+    app.state.config_loader = None
 
 
 app = FastAPI(

@@ -1,54 +1,66 @@
-# Sprint 11 / Module 84 — Vapi Intake to Dashboard Browser Smoke
+# Sprint 11 / Module 85 — UUID Validation Fix and Smoke Completion
 
-Status: pending Module 83 review.
+Status: ready — blocked only by UUID regex in config_loader.py
 
 ## Context
 
-Module 83 built the Vapi appointment intake smoke harness and fixed two bugs in the
-capture service (`config_loader.get` → `config_loader.load`; `config.clinic_id` →
-`config.tenant_id`). One gap remains before the smoke script can exercise the live
-backend: `main.py` does not initialize `app.state.config_loader`. Without this,
-`POST /vapi/tools/capture-appointment-request` returns HTTP 503.
+Module 84 wired `app.state.config_loader` in `main.py` lifespan, eliminating the HTTP 503
+that blocked `POST /vapi/tools/capture-appointment-request`. Running
+`smoke_vapi_appointment_intake.py` revealed a new HTTP 500 blocker:
 
-The config_loader gap is the only blocker. Everything else is in place:
-- Capture endpoint exists and accepts the correct payload shape
-- Machine auth (`X-Vapi-*` headers, `vapi:tool` scope) is proven to work
-- Smoke script (`backend/scripts/smoke_vapi_appointment_intake.py`) is ready
-- Local tenant config file exists on disk for the seed clinic UUID
+```
+{"detail": "Internal error capturing appointment request: tenant_id must be a valid UUID (v1–v5); got '11111111-1111-1111-1111-111111111111'"}
+```
+
+Root cause: `_assert_valid_uuid()` in `backend/app/core/config_loader.py` uses a regex
+that requires the clock-seq high nibble to be `[89ab]` (RFC 4122 variant-1). The seed
+clinic UUID `11111111-1111-1111-1111-111111111111` has `1` in that position.
+
+The UUID check's security purpose is to prevent path traversal — blocking input that
+contains `..`, `/`, or non-hex characters from being used as a filesystem path segment.
+The variant byte constraint (`[89ab]`) is incidental to that goal and is not needed for
+path safety. Relaxing it does not weaken the protection.
+
+Everything else is in place:
+- `app.state.config_loader` is wired (Module 84) — 503 fixed
+- Smoke script, payload, and machine auth are ready (Module 83)
+- Capture service bugs are fixed (Module 83)
+- Dashboard Confirm action works (Module 81)
+- Seed clinic UUID exists in DB with FK-valid row
 
 ## Scope
 
-### 1. Wire app.state.config_loader in main.py
+### 1. Fix UUID validation in config_loader.py
 
-In `backend/app/main.py`, inside the lifespan startup block (after `app.state.db_pool`
-is set), add:
+In `backend/app/core/config_loader.py`, relax `_UUID_RE` to accept any hex digit in the
+variant byte position instead of requiring `[89ab]`:
 
 ```python
-from backend.app.core.config_loader import ClinicConfigLoader
-app.state.config_loader = ClinicConfigLoader(pool=pool)
+# Before (too strict — rejects structurally valid local-dev UUIDs):
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
+
+# After (relaxed variant byte — still blocks path traversal):
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$"
+)
 ```
 
-This gives the capture route a working config loader that can resolve the local seed
-clinic UUID from the disk config file.
+Also update the error message in `_assert_valid_uuid()` from `"must be a valid UUID (v1–v5)"` to
+`"must be a valid UUID (v1–v5, any variant)"` so the error text accurately reflects what
+is accepted.
 
-Add a corresponding teardown in the shutdown block:
-```python
-app.state.config_loader = None
-```
+### 2. Update config_loader tests
 
-### 2. Add a contract test for the config_loader wiring
-
-Create or extend a contract test to assert:
-- `main.py` imports `ClinicConfigLoader` or references it
-- `app.state.config_loader` is set during lifespan startup
-- `app.state.config_loader` is reset on shutdown
-
-Place new tests in `backend/tests/test_app_lifespan_db_pool.py` (existing file) or
-`backend/tests/test_app_config_loader_wiring.py` (new file).
+In `backend/tests/test_config_loader.py` (or wherever `_assert_valid_uuid` is tested):
+- Confirm the seed UUID `11111111-1111-1111-1111-111111111111` now passes
+- Confirm that standard RFC 4122 UUIDs with `[89ab]` variant still pass
+- Confirm that path-traversal and malformed inputs still fail (these must not regress)
 
 ### 3. Run the smoke script against the live backend
 
-With the config_loader wired:
+With the UUID fix applied:
 
 ```bash
 # 1. Start PostgreSQL
@@ -61,7 +73,7 @@ cd backend && alembic upgrade head && cd ..
 # 3. Seed data
 python backend/scripts/seed_local_data.py
 
-# 4. Start backend (with config_loader wired)
+# 4. Start backend
 export JWT_SECRET_KEY=local-dev-jwt-secret-key-change-in-production
 uvicorn backend.app.main:app --reload --port 8000
 
@@ -78,21 +90,19 @@ After the smoke succeeds:
 - Confirm the new Vapi-intake appointment row appears (distinct from the seed row)
 - Click Confirm — status updates to "confirmed"
 
-### 5. Create smoke evidence doc
+### 5. Update smoke evidence doc
 
-`docs/runtime/VAPI_INTAKE_DASHBOARD_SMOKE_RESULTS.md`:
-- Steps completed
-- Evidence: smoke script output (HTTP 200, appointment request ID)
-- Evidence: dashboard row appeared without seed script
-- Evidence: Confirm action worked on the new row
-- What this proves
-- What remains
+Update `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md`:
+- Mark verdict as PASS
+- Add smoke script output (HTTP 200, appointment request ID)
+- Add dashboard row evidence (appeared without seed script)
+- Add Confirm action evidence
 
 ### 6. Update docs
 
-- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — mark all unknowns RESOLVED
-- `docs/claude/CURRENT_STATE.md` — record Module 84
-- `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 85 — Reject Action
+- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — mark UUID blocker RESOLVED
+- `docs/claude/CURRENT_STATE.md` — record Module 85
+- `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 86 — Reject Action
 
 ## What not to do
 
@@ -100,13 +110,15 @@ After the smoke succeeds:
 - Do not auto-confirm appointment requests or create calendar events
 - Do not change auth, JWT, machine auth, webhook signature, or seed data
 - Do not require ngrok or a live Vapi connection
+- Do not change the seed clinic UUID (it must stay `11111111-1111-1111-1111-111111111111` to match existing FK rows)
 
 ## Acceptance
 
-- `main.py` wires `app.state.config_loader` in lifespan startup
+- `_UUID_RE` in `config_loader.py` accepts `11111111-1111-1111-1111-111111111111`
+- Path traversal and malformed UUID tests still pass (no regression)
 - `POST /vapi/tools/capture-appointment-request` returns HTTP 200 with local fake payload
 - New appointment request row appears in dashboard without the seed script
 - Staff can Confirm the row in the browser
-- Smoke evidence documented
+- Smoke evidence updated in `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md`
 - Full backend tests pass: `pytest -v backend/tests`
-- Commit: `Sprint 11 / Module 84 — Vapi intake to dashboard browser smoke`
+- Commit: `Sprint 11 / Module 85 — UUID validation fix and smoke completion`

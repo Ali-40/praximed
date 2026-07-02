@@ -1,8 +1,8 @@
 # Vapi to Appointment Workflow Integration Prep — PraxisMed Sprint 11
 
 **Date:** 2026-07-02
-**Sprint:** Sprint 11 (Module 83 harness built)
-**Status:** Harness created — config_loader wiring pending (Module 84)
+**Sprint:** Sprint 11 (Module 84 — config_loader wired; UUID validation blocker pending Module 85)
+**Status:** Harness ready — UUID regex fix needed before smoke can reach HTTP 200
 
 ---
 
@@ -63,15 +63,16 @@ building blocks for the integration loop.
 
 ---
 
-## 4. Unknowns — Status After Module 83 Inspection
+## 4. Unknowns — Status After Module 84
 
-| Unknown | Status after Module 83 |
+| Unknown | Status |
 |---|---|
-| Does the capture route create `appointment_requests` rows from a Vapi-shaped payload? | **RESOLVED** — the dedicated tool endpoint `POST /vapi/tools/capture-appointment-request` accepts the payload directly. Bug fixed: `config_loader.get`→`load`, `config.clinic_id`→`tenant_id`. |
-| Does the real Vapi tool-call payload shape differ from the local fixture? | **RESOLVED** — the tool endpoint uses `VapiAppointmentCaptureRequest` (structured body), not the webhook's raw Vapi message shape. Local fixture matches the schema. |
-| Does an appointment request appear in the dashboard without the manual seed? | **PENDING** — blocked by config_loader not wired in `main.py`. Once Module 84 wires it, `smoke_vapi_appointment_intake.py` will create a live row. |
-| Is a notification created when Vapi capture fires? | **PENDING** — `vapi_appointment_capture` does call `notification_router.create_appointment_request_notification`; will be verified in Module 84 smoke. |
-| Does the audit log record the integration path safely? | **PENDING** — audit logging for the tool route is in place (Module 44); will be confirmed in Module 84 smoke. |
+| Does the capture route create `appointment_requests` rows from a Vapi-shaped payload? | **RESOLVED** — dedicated tool endpoint `POST /vapi/tools/capture-appointment-request` accepts payload directly. Bug fixed in Module 83: `config_loader.get`→`load`, `config.clinic_id`→`tenant_id`. |
+| Does the real Vapi tool-call payload shape differ from the local fixture? | **RESOLVED** — tool endpoint uses `VapiAppointmentCaptureRequest` (structured body). Local fixture matches the schema. |
+| Is `app.state.config_loader` initialized so the endpoint can resolve clinic config? | **RESOLVED** — Module 84 wires `ClinicConfigLoader(pool=app.state.db_pool)` in lifespan startup; teardown on shutdown. HTTP 503 eliminated. |
+| Does an appointment request appear in the dashboard without the manual seed? | **PENDING** — blocked by UUID validation rejecting seed clinic UUID `11111111-1111-1111-1111-111111111111`. Module 85 fix: relax `_UUID_RE` variant byte. |
+| Is a notification created when Vapi capture fires? | **PENDING** — blocked by same UUID issue. Will be confirmed in Module 85 smoke. |
+| Does the audit log record the integration path safely? | **PENDING** — audit logging is in place (Module 44); will be confirmed in Module 85 smoke. |
 
 ---
 
@@ -141,29 +142,44 @@ python backend/scripts/smoke_vapi_appointment_intake.py
 
 ---
 
-## 7. Recommended Next Module
+## 7. Module 84 Smoke — Run Command
 
-**Sprint 11 / Module 84 — Vapi Intake to Dashboard Browser Smoke**
+Once Module 85 fixes the UUID validation, the smoke can be run with:
 
-Wire `app.state.config_loader` in `main.py` so the capture endpoint can resolve
-the clinic config, then run `smoke_vapi_appointment_intake.py` against the live local
-backend and document evidence that:
+```bash
+# 1. Ensure seed data is fresh
+python backend/scripts/seed_local_data.py
+
+# 2. Start backend
+export DATABASE_URL=postgresql://praxismed:praxismed_local_password@localhost:5433/praxismed_local
+export JWT_SECRET_KEY=local-dev-jwt-secret-key-change-in-production
+uvicorn backend.app.main:app --reload --port 8000
+
+# 3. Run the intake smoke
+python backend/scripts/smoke_vapi_appointment_intake.py
+
+# 4. Open dashboard and confirm
+#    http://localhost:3000/dashboard → Appointments → Confirm
+```
+
+**This is LOCAL FAKE DATA ONLY.** Never use real patient data, real clinic IDs, or real secrets.
+
+## 8. Recommended Next Module
+
+**Sprint 11 / Module 85 — UUID Validation Fix and Smoke Completion**
+
+Relax `_UUID_RE` variant byte in `backend/app/core/config_loader.py` from `[89ab]`
+to `[0-9a-f]` so the local seed clinic UUID passes validation. Then re-run
+`smoke_vapi_appointment_intake.py` and document:
 
 1. `POST /vapi/tools/capture-appointment-request` returns HTTP 200.
 2. An `appointment_requests` row with `status=new` is created.
 3. The row appears in the dashboard without running the seed script.
 4. Staff can click Confirm and see the status update to "confirmed".
 
-Config loader wiring (the missing step):
-
-```python
-# In backend/app/main.py lifespan startup:
-from backend.app.core.config_loader import ClinicConfigLoader
-app.state.config_loader = ClinicConfigLoader(pool=pool)
-```
-
-### What Module 84 should not do
+### What Module 85 should not do
 
 - Use real patient data, real clinic credentials, or live Vapi
 - Auto-confirm appointment requests or create calendar events
 - Require ngrok or an external tunnel
+- Change auth, JWT, machine auth, webhook signature, or seed clinic UUID
