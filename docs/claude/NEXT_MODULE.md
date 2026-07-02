@@ -1,22 +1,27 @@
-# Sprint 6 / Module 58 — Real n8n Tunnel Smoke Test Evidence
+# Architecture Checkpoint 05 — External Integration Review
 
-Status: pending manual n8n setup.
+Status: pending.
 
-Follow the n8n test plan from `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` Section 7.
+## Scope
 
-Steps:
+Sprint 6 external integration work (Modules 52–58):
 
-1. Start the full local stack (Docker PostgreSQL, Alembic migrations, seed data, FastAPI).
-2. Start ngrok to expose `http://127.0.0.1:8000`.
-3. In n8n, create a test workflow with an HTTP Request node pointing at `https://<tunnel-base>/webhooks/n8n/calendar-sync`.
-4. Add a Code node to compute HMAC-SHA256 over the request body and set `X-Signature` header.
-5. Set machine auth headers: `X-N8N-Service-Name`, `X-N8N-Clinic-Id`, `X-N8N-Scopes`.
-6. Trigger the workflow and inspect the response.
+- Module 52 — External integration compatibility plan
+- Module 53 — Provider webhook signature header alias config
+- Module 54 — Provider machine auth header alias config
+- Module 55 — Local tunnel provider test runbook
+- Module 56 — Real Vapi payload compatibility adapter
+- Module 57 — Real Vapi tunnel smoke evidence (HTTP 200 OK confirmed)
+- Module 58 — Real n8n tunnel smoke evidence (success confirmed)
 
-Record:
+## What to document
 
-- HTTP response status.
-- Whether n8n can produce HMAC-SHA256 via a Code node.
-- Whether machine auth headers are correctly configured and accepted.
-- Whether any payload or header adapter changes are needed.
-- Full evidence in `docs/integrations/REAL_N8N_TUNNEL_SMOKE_RESULTS.md` (to be created).
+- Summary of what the external integration layer now supports.
+- Confirmed working: Vapi webhook delivery end-to-end, n8n calendar sync delivery end-to-end.
+- Remaining gaps before production: production secrets, real hostname, TLS, real patient data, production n8n workflows.
+- Recommended next sprint focus (e.g. production deployment foundation, frontend integration, or additional Vapi/n8n workflow features).
+
+## What not to do
+
+- Do not change code.
+- Do not start the next sprint until this checkpoint is written and reviewed.

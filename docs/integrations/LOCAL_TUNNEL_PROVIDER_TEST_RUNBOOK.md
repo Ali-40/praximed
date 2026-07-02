@@ -305,10 +305,26 @@ Summary:
 
 ---
 
-## 12. Next Module Recommendation
+## 12. n8n Tunnel Smoke — Passed (Module 58)
 
-**Sprint 6 / Module 58 — Real n8n Tunnel Smoke Test Evidence**
+A real n8n HTTP Request node reached the backend through ngrok and the calendar sync route returned a successful response.
 
-Status: pending manual n8n setup.
+Full evidence is in `docs/integrations/REAL_N8N_TUNNEL_SMOKE_RESULTS.md`.
 
-Follow the n8n test plan in Section 7. Configure a real n8n HTTP Request node pointed at the tunnel URL with HMAC signing and machine auth headers. Record the response and any payload or header changes needed.
+Summary:
+
+- Real n8n → ngrok → FastAPI: confirmed.
+- HMAC via `X-Signature: sha256=...` over raw compact JSON body: accepted.
+- Machine auth via `X-N8N-Service-Name`, `X-N8N-Clinic-Id`, `X-N8N-Scopes`: accepted.
+- Key fix: compute HMAC over the exact raw bytes sent by the HTTP Request node.
+- Final status: **success**.
+
+---
+
+## 13. Next Recommendation
+
+**Architecture Checkpoint 05 — External Integration Review**
+
+Status: pending.
+
+Both Vapi and n8n real tunnel smokes are now complete. The next step is a Sprint 6 architecture checkpoint reviewing the external integration work before defining the next sprint.

@@ -539,6 +539,7 @@
 
 55. Module 57 — Real Vapi tunnel smoke evidence
    - Commit: 9733710
+   - Docs commit: 1903c54
    - `docs/integrations/REAL_VAPI_TUNNEL_SMOKE_RESULTS.md` (new)
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 11 Vapi smoke passed, Section 12 next module)
    - `docs/claude/CURRENT_STATE.md` (updated)
@@ -550,5 +551,18 @@
    - Machine auth via X-Vapi-* aliases accepted
    - Payload adapter resolved clinic_id and event_type from real Vapi body
 
+56. Module 58 — Real n8n tunnel smoke evidence
+   - Commit: TBD
+   - `docs/integrations/REAL_N8N_TUNNEL_SMOKE_RESULTS.md` (new)
+   - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 12 n8n smoke passed, Section 13 next recommendation)
+   - `docs/claude/CURRENT_STATE.md` (updated)
+   - `docs/claude/NEXT_MODULE.md` (updated — Architecture Checkpoint 05 placeholder)
+   - No production code changes
+   - Full backend tests: 1386/1386 passed
+   - Real n8n → ngrok → FastAPI end-to-end confirmed: success
+   - HMAC via X-Signature: sha256=... over raw compact JSON body accepted
+   - Machine auth via X-N8N-* aliases accepted
+   - Key fix: HMAC must be computed over the exact raw bytes transmitted by n8n
+
 ## Next module
-Sprint 6 / Module 58 — Real n8n Tunnel Smoke Test Evidence (pending manual n8n setup).
+Architecture Checkpoint 05 — External Integration Review (pending).
