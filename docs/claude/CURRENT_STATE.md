@@ -648,7 +648,7 @@
    - Other PHI routes (appointments, notifications) unchanged
 
 62. Module 64 — Wire JWT auth to appointment request routes
-   - Commit: pending
+   - Commit: 3bacac0
    - `backend/app/api/routes/appointment_requests.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context) across all 7 routes)
    - `backend/tests/test_appointment_request_routes.py` (updated — fixtures override get_current_user; 8 new JWT auth tests replacing 6 old header-based tests)
    - `docs/security/AUTH_WIRING_PLAN.md` (updated — /appointment-requests marked wired ✓)
