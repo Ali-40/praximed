@@ -289,10 +289,26 @@ The following was confirmed during a real Vapi tunnel test session:
 
 ---
 
-## 11. Next Module Recommendation
+## 11. Vapi Tunnel Smoke — Passed (Module 57)
 
-**Sprint 6 / Module 57 — Real Vapi Tunnel Retest Evidence**
+After the Module 56 payload adapter was applied, a real Vapi webhook delivery reached the backend and returned **HTTP 200 OK**.
 
-Status: pending Module 56 review.
+Full evidence is in `docs/integrations/REAL_VAPI_TUNNEL_SMOKE_RESULTS.md`.
 
-Repeat the Vapi test plan from Section 6 with the adapter in place. Verify that the real Vapi payload no longer causes HTTP 400 and that HTTP 200 is returned for both `assistant-started` and `end-of-call-report` events.
+Summary:
+
+- Real Vapi → ngrok → FastAPI: confirmed.
+- HMAC via `x-signature` / `{body}` / hex: accepted.
+- Machine auth via `X-Vapi-Service-Name`, `X-Vapi-Clinic-Id`, `X-Vapi-Scopes`: accepted.
+- Real Vapi payload adapter: resolved `clinic_id` from machine auth, `event_type` from `message.type`.
+- Final status: **HTTP 200 OK**.
+
+---
+
+## 12. Next Module Recommendation
+
+**Sprint 6 / Module 58 — Real n8n Tunnel Smoke Test Evidence**
+
+Status: pending manual n8n setup.
+
+Follow the n8n test plan in Section 7. Configure a real n8n HTTP Request node pointed at the tunnel URL with HMAC signing and machine auth headers. Record the response and any payload or header changes needed.

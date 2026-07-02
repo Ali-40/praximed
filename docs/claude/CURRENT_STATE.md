@@ -522,7 +522,7 @@
 
 54. Module 56 — Real Vapi payload compatibility adapter
    - Commit: 53b6ddb
-   - Docs commit: 0dc38fb
+   - Docs commit: 57f37f8
    - `backend/app/api/routes/vapi_webhooks.py` (updated — _adapt_vapi_payload, request: Request added)
    - `backend/tests/test_vapi_webhook_route.py` (updated — 6 new adapter tests, 30 total)
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 10 real result, Section 11 next module)
@@ -535,6 +535,20 @@
    - event_type mapped from message.type (assistant-started → call.started, end-of-call-report → call.ended)
    - call_id resolved from message.call.id → message.callId → X-Call-Id header → fallback
    - HMAC and machine auth enforcement unchanged
+   - Real Vapi tunnel retest after Module 56: HTTP 200 OK confirmed
+
+55. Module 57 — Real Vapi tunnel smoke evidence
+   - Commit: TBD
+   - `docs/integrations/REAL_VAPI_TUNNEL_SMOKE_RESULTS.md` (new)
+   - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 11 Vapi smoke passed, Section 12 next module)
+   - `docs/claude/CURRENT_STATE.md` (updated)
+   - `docs/claude/NEXT_MODULE.md` (updated — Module 58 placeholder)
+   - No production code changes
+   - Full backend tests: 1386/1386 passed
+   - Real Vapi → ngrok → FastAPI end-to-end confirmed: HTTP 200 OK
+   - HMAC via x-signature / {body} / hex accepted
+   - Machine auth via X-Vapi-* aliases accepted
+   - Payload adapter resolved clinic_id and event_type from real Vapi body
 
 ## Next module
-Sprint 6 / Module 57 — Real Vapi Tunnel Retest Evidence (pending Module 56 review).
+Sprint 6 / Module 58 — Real n8n Tunnel Smoke Test Evidence (pending manual n8n setup).
