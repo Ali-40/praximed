@@ -1,10 +1,11 @@
 """
 Integration tests for patient routes — PraxisMed Sprint 2 / Module 26
 Updated: Sprint 3 / Module 37 — auth fixture overrides and tenant guard tests added.
+Updated: Sprint 7 / Module 61 — JWT current_user auth wired; auth tests use Bearer tokens.
 
 Strategy:
 - Use FastAPI TestClient; no real event loop or database.
-- Override get_db_pool and get_auth_context via app.dependency_overrides.
+- Override get_db_pool and get_current_user via app.dependency_overrides.
 - Patch patient_repo functions at their usage site in the route module.
 """
 
@@ -15,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.api.dependencies.auth import get_auth_context
+from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.main import app
@@ -28,6 +29,7 @@ CLINIC_ID       = "11111111-1111-4111-8111-111111111111"
 OTHER_CLINIC_ID = "99999999-9999-4999-8999-999999999999"
 PATIENT_ID      = "22222222-2222-4222-8222-222222222222"
 EXT_ID          = "EXT-001"
+JWT_SECRET      = "test-secret-patient-routes-m61"
 
 BASE_URL      = "/patients"
 UPSERT_URL    = "/patients/upsert-by-external-id"
@@ -70,37 +72,86 @@ FAKE_POOL = MagicMock()
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# Auth context factories
 # ---------------------------------------------------------------------------
 
 
 def _staff_auth() -> AuthContext:
-    return AuthContext(user_id="user-1", clinic_id=CLINIC_ID, role="staff")
+    return AuthContext(user_id="user-1", clinic_id=CLINIC_ID, role="staff",
+                       auth_scheme="jwt_bearer")
+
+
+def _doctor_auth() -> AuthContext:
+    return AuthContext(user_id="doc-1", clinic_id=CLINIC_ID, role="doctor",
+                       auth_scheme="jwt_bearer")
+
+
+def _viewer_auth() -> AuthContext:
+    return AuthContext(user_id="user-1", clinic_id=CLINIC_ID, role="viewer",
+                       auth_scheme="jwt_bearer")
+
+
+def _wrong_clinic_auth() -> AuthContext:
+    return AuthContext(user_id="user-1", clinic_id=OTHER_CLINIC_ID, role="staff",
+                       auth_scheme="jwt_bearer")
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture()
 def client():
     app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
-    app.dependency_overrides[get_auth_context] = _staff_auth
+    app.dependency_overrides[get_current_user] = _staff_auth
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
-    app.dependency_overrides.pop(get_auth_context, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture()
 def client_no_pool():
     app.dependency_overrides.pop(get_db_pool, None)
-    app.dependency_overrides[get_auth_context] = _staff_auth
+    app.dependency_overrides[get_current_user] = _staff_auth
     yield TestClient(app)
-    app.dependency_overrides.pop(get_auth_context, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture()
 def client_no_auth():
+    """No get_current_user override — real JWT dependency runs."""
     app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
-    app.dependency_overrides.pop(get_auth_context, None)
+    app.dependency_overrides.pop(get_current_user, None)
+    yield TestClient(app, raise_server_exceptions=False)
+    app.dependency_overrides.pop(get_db_pool, None)
+
+
+@pytest.fixture()
+def client_wrong_clinic():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_current_user] = _wrong_clinic_auth
     yield TestClient(app)
     app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture()
+def client_viewer():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_current_user] = _viewer_auth
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture()
+def client_doctor():
+    app.dependency_overrides[get_db_pool] = lambda: FAKE_POOL
+    app.dependency_overrides[get_current_user] = _doctor_auth
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_db_pool, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 # ---------------------------------------------------------------------------
@@ -369,67 +420,82 @@ def test_vapi_tools_route_still_registered(client):
 
 
 # ---------------------------------------------------------------------------
-# Auth enforcement tests (Module 37)
+# JWT auth enforcement tests (Module 61)
 # ---------------------------------------------------------------------------
 
 
-def test_missing_user_id_header_returns_401(client_no_auth):
+def test_missing_authorization_header_returns_401(client_no_auth):
+    """No Authorization header → 401 from get_current_user."""
+    resp = client_no_auth.get(BASE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 401
+
+
+def test_invalid_bearer_token_returns_401(client_no_auth, monkeypatch):
+    """Malformed Bearer token → 401 from get_current_user."""
+    monkeypatch.setenv("JWT_SECRET_KEY", JWT_SECRET)
     resp = client_no_auth.get(
         BASE_URL,
         params={"clinic_id": CLINIC_ID},
-        headers={"X-Clinic-Id": CLINIC_ID, "X-User-Role": "staff"},
+        headers={"Authorization": "Bearer not.a.real.jwt"},
     )
     assert resp.status_code == 401
 
 
-def test_missing_clinic_id_header_returns_401(client_no_auth):
-    resp = client_no_auth.get(
-        BASE_URL,
-        params={"clinic_id": CLINIC_ID},
-        headers={"X-User-Id": "user-1", "X-User-Role": "staff"},
-    )
-    assert resp.status_code == 401
-
-
-def test_wrong_clinic_returns_403(client_no_auth):
+def test_wrong_clinic_returns_403(client_wrong_clinic):
+    """Valid JWT for a different clinic → 403 from require_staff_clinic_access."""
     with patch(f"{REPO}.list_patients", new=AsyncMock(return_value=[])):
-        resp = client_no_auth.get(
-            BASE_URL,
-            params={"clinic_id": CLINIC_ID},
-            headers={
-                "X-User-Id": "user-1",
-                "X-Clinic-Id": OTHER_CLINIC_ID,
-                "X-User-Role": "staff",
-            },
-        )
+        resp = client_wrong_clinic.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 403
 
 
-def test_viewer_role_denied_returns_403(client_no_auth):
-    resp = client_no_auth.get(
-        BASE_URL,
-        params={"clinic_id": CLINIC_ID},
-        headers={
-            "X-User-Id": "user-1",
-            "X-Clinic-Id": CLINIC_ID,
-            "X-User-Role": "viewer",
-        },
-    )
+def test_viewer_role_denied_returns_403(client_viewer):
+    """Viewer role is not in STAFF_ROLES → 403."""
+    with patch(f"{REPO}.list_patients", new=AsyncMock(return_value=[])):
+        resp = client_viewer.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 403
 
 
-def test_doctor_role_allowed_for_patient_routes(client_no_auth):
+def test_doctor_role_allowed_for_patient_routes(client_doctor):
+    """Doctor role is in STAFF_ROLES → 200."""
     with patch(f"{REPO}.list_patients", new=AsyncMock(return_value=[])):
-        resp = client_no_auth.get(
-            BASE_URL,
-            params={"clinic_id": CLINIC_ID},
-            headers={
-                "X-User-Id": "doc-1",
-                "X-Clinic-Id": CLINIC_ID,
-                "X-User-Role": "doctor",
-            },
-        )
+        resp = client_doctor.get(BASE_URL, params={"clinic_id": CLINIC_ID})
     assert resp.status_code == 200
+
+
+def test_valid_jwt_can_create_patient(client):
+    """Authenticated staff can create a patient."""
+    with patch(f"{REPO}.create_patient", new=AsyncMock(return_value=FAKE_ROW)):
+        resp = client.post(BASE_URL, json=CREATE_BODY)
+    assert resp.status_code == 200
+    assert resp.json()["patient"]["clinic_id"] == CLINIC_ID
+
+
+def test_valid_jwt_can_archive_patient(client):
+    """Authenticated staff can archive a patient."""
+    archived = {**FAKE_ROW, "status": "archived"}
+    with patch(f"{REPO}.archive_patient", new=AsyncMock(return_value=archived)):
+        resp = client.post(ARCHIVE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    assert resp.json()["patient"]["status"] == "archived"
+
+
+def test_patient_response_contains_expected_fields(client):
+    """Patient response includes id, clinic_id, full_name — no auth fields from clinic_users."""
+    with patch(f"{REPO}.get_patient_by_id", new=AsyncMock(return_value=FAKE_ROW)):
+        resp = client.get(GET_ONE_URL, params={"clinic_id": CLINIC_ID})
+    assert resp.status_code == 200
+    patient = resp.json()["patient"]
+    assert "id" in patient
+    assert "clinic_id" in patient
+    assert "full_name" in patient
+    # password_hash lives on clinic_users, not patients — must never appear here
+    assert "password_hash" not in patient
+
+
+def test_other_phi_routes_still_use_old_auth(client):
+    """Consultations route is not changed — still accepts old header-based auth."""
+    resp = client.get("/consultations", params={"clinic_id": CLINIC_ID})
+    assert resp.status_code != 404
 
 
 # ---------------------------------------------------------------------------

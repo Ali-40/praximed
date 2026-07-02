@@ -1,6 +1,6 @@
 # Auth Wiring Plan — PraxisMed Sprint 7 / Module 60
 
-## Current State (as of Module 60)
+## Current State (as of Module 61)
 
 ### What exists
 - `POST /auth/login` — issues a JWT access token (Module 60)
@@ -8,9 +8,13 @@
 - `get_auth_context` FastAPI dependency (Module 36) — reads `X-Service-*` machine auth headers, returns `AuthContext`
 
 ### What PHI routes use today
-All PHI routes (`/patients`, `/consultations`, `/clinical-workflows`, `/appointment-requests`,
-`/notifications`) depend on `get_auth_context` (machine auth headers). Human JWT auth is not
-yet required on these routes.
+| Route group | Auth dependency | Wired in |
+|---|---|---|
+| `/patients` | `get_current_user` (JWT Bearer) | Module 61 ✓ |
+| `/consultations` | `get_auth_context` (header) | pending |
+| `/clinical-workflows` | `get_auth_context` (header) | pending |
+| `/appointment-requests` | `get_auth_context` (header) | pending |
+| `/notifications` | `get_auth_context` (header) | pending |
 
 ---
 
@@ -31,8 +35,7 @@ Wiring is deferred until the frontend login flow is in place and machine callers
 Wire `get_current_user` into PHI routes in this order (one module per route group):
 
 ### Phase 1 — Lowest risk
-1. **`/patients`** — read-only in most flows; wiring here validates the approach without
-   disrupting mutation-heavy routes.
+1. **`/patients`** ✓ Done (Module 61) — wired to `get_current_user`; tenant/role checks preserved.
 2. **`/consultations`** — closely tied to patients; wire together or immediately after.
 
 ### Phase 2 — Mutation routes

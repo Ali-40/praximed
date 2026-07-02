@@ -611,5 +611,17 @@
    - Email normalized to lowercase before lookup
    - Existing PHI routes unchanged — current_user dep not yet wired
 
+59. Module 61 — Wire JWT auth to patient routes
+   - Commit: TBD
+   - `backend/app/api/routes/patients.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context))
+   - `backend/tests/test_patient_routes.py` (updated — fixtures override get_current_user; 7 new JWT auth tests)
+   - `backend/tests/test_clinical_workflow_routes.py` (updated — cross-route smoke test assertion updated)
+   - `docs/security/AUTH_WIRING_PLAN.md` (updated — /patients marked wired ✓)
+   - Module 61 tests: 36/36 patient route tests passed (7 new JWT enforcement tests)
+   - Full backend tests: 1451/1451 passed
+   - Patient routes now require Bearer JWT; header-based X-User-* auth no longer accepted
+   - Tenant/role checks (require_staff_clinic_access) unchanged — same clinic only, viewer denied
+   - Other PHI routes (consultations, clinical-workflows, appointments, notifications) unchanged
+
 ## Next module
-Sprint 7 / Module 61 — (TBD).
+Sprint 7 / Module 62 — Wire JWT Auth to Consultation Routes (pending Module 61 review).

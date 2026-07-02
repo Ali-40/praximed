@@ -1,19 +1,32 @@
-# Sprint 7 / Module 61 — TBD
+# Sprint 7 / Module 62 — Wire JWT Auth to Consultation Routes
 
-Status: pending Module 60 review.
+Status: pending Module 61 review.
 
 ## Context
 
-Module 60 completed the login endpoint (`POST /auth/login`). The `get_current_user` JWT
-dependency exists but is not yet wired to any PHI routes. The auth wiring plan is documented
-in `docs/security/AUTH_WIRING_PLAN.md`.
+Module 61 wired `get_current_user` (JWT Bearer) into `/patients` routes. Consultation routes
+(`/consultations`) still use `get_auth_context` (header-based auth). The wiring pattern is
+now proven; Module 62 repeats it for consultations.
 
-## Likely candidates for Module 61
+## Scope
 
-1. **Wire `get_current_user` into `/patients` routes** — lowest-risk PHI route, read-heavy.
-2. **User management routes** — `POST /auth/register` or admin user creation endpoint.
-3. **Token refresh** — if a short-lived token strategy is needed before PHI wiring.
+- Replace `Depends(get_auth_context)` with `Depends(get_current_user)` in
+  `backend/app/api/routes/consultations.py`.
+- Update `backend/tests/test_consultation_routes.py` (or equivalent) to override
+  `get_current_user` in fixtures and add JWT auth enforcement tests.
+- Update `docs/security/AUTH_WIRING_PLAN.md` — mark `/consultations` wired.
+- Update `docs/claude/CURRENT_STATE.md` and `docs/claude/NEXT_MODULE.md`.
 
-## Decision point
+## What not to do
 
-Confirm direction before starting Module 61.
+- Do not wire clinical-workflows, appointment-requests, or notifications yet.
+- Do not modify machine routes or Vapi/n8n auth.
+- Do not use real DB in tests.
+
+## Acceptance
+
+- All consultation routes require Bearer JWT; header auth rejected.
+- Tenant/role checks preserved.
+- Other PHI routes unchanged.
+- Full suite passes.
+- Commit: `Sprint 7 / Module 62 — Wire JWT auth to consultation routes`
