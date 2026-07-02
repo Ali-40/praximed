@@ -765,7 +765,7 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 07 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_07_FRONTEND_DASHBOARD_REVIEW.md`
-- Commit: (pending)
+- Commit: b36a4a9
 - Full backend tests: 1521/1521 passed
 - Sprint 8 complete (Modules 66–71)
 - Sprint 9 started: Frontend Local Runtime Smoke (Module 72+)
