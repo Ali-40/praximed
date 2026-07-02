@@ -1,57 +1,63 @@
-# Architecture Checkpoint 09 — Polished Local Demo Review
+# Sprint 11 / Module 81 — Appointment Request Workflow UI Foundation
 
-Status: pending Module 80 review.
+Status: pending Architecture Checkpoint 09 review.
 
 ## Context
 
-Sprint 10 (Modules 78–80) completed the local demo polish:
+Architecture Checkpoint 09 identified the appointment request workflow as the
+highest-priority next feature. Clinic staff can currently view appointment requests on
+the dashboard but cannot action them. The backend already has:
+- `PATCH /appointment-requests/{id}/status` — accepts `{"status": "confirmed"}` or
+  `{"status": "rejected"}` with optional `action_required`
+- `PATCH /appointment-requests/{id}/assign` — assigns to a user
+- `POST /appointment-requests/{id}/callback-needed` — flags for callback
+- `POST /appointment-requests/{id}/archive`
 
-| Module | Description | Outcome |
-|---|---|---|
-| 78 | Patient display fix — added `full_name` to Patient interface | Patient row shows "Local Test Patient" |
-| 79 | Dashboard visual polish — header subtitle, count pills, badge tokens, footer | Professional demo-ready dashboard |
-| 80 | Polished demo browser smoke | All changes confirmed in real browser; verdict PASS |
-
-The PraxisMed local demo is now presentable to a stakeholder. Before starting new
-feature work, an architecture checkpoint should review the current state of Sprint 10,
-assess what the local demo proves and what gaps remain, and recommend Sprint 11 focus.
+All routes require a Bearer JWT and enforce clinic-level tenant checks.
 
 ## Scope
 
-Docs only. No code changes.
+Keep the scope small for the first iteration. Build one action only: **Confirm**.
 
-1. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`:
-   - Sprint 10 summary (Modules 78–80)
-   - Current state of the local demo after polish
-   - What is now demo-ready
-   - What gaps remain (no create/edit flows, no workflow actions, no production auth,
-     no deployment, role-based section visibility not enforced on frontend)
-   - Security status review (unchanged from Checkpoint 08 — still all passing)
-   - Recommended next sprint options:
-     A. Appointment request workflow UI (approve/reject/assign on dashboard rows)
-     B. Production auth path (httpOnly cookies, POST /auth/session)
-     C. Appointment detail / patient detail pages
-     D. CI/CD and deployment preparation
-   - Recommend Sprint 11 / Module 81 — Appointment Request Workflow UI
-   - Reason: the core clinic staff workflow (reviewing and actioning appointment
-     requests) is the primary product use case and the most impactful next demo feature
+1. Add a `confirmAppointmentRequest(requestId, clinicId, token)` helper to
+   `frontend/lib/api.ts`:
+   - Calls `PATCH /appointment-requests/{id}/status?clinic_id={clinicId}`
+   - Body: `{"status": "confirmed", "action_required": false}`
+   - Throws on non-2xx response
 
-2. Update `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 09.
+2. Add a Confirm button to each appointment request row in
+   `frontend/app/dashboard/page.tsx`:
+   - Only shown when `appt.status === 'new'` (no button for already-confirmed rows)
+   - On click: calls `confirmAppointmentRequest`, then refreshes the appointments list
+   - Shows a loading/disabled state while the request is in flight
+   - Shows a generic error message if the call fails
+   - On success: row status badge updates to "confirmed"
 
-3. Update `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 81 placeholder.
+3. Create `backend/tests/test_frontend_appointment_workflow_contract.py`:
+   - `confirmAppointmentRequest` defined in `lib/api.ts`
+   - Uses `PATCH` method and `/appointment-requests/` endpoint
+   - Uses Bearer token
+   - Dashboard references `confirmAppointmentRequest`
+   - Confirm button only shown for `status === 'new'`
+   - No hardcoded tokens or real patient data
 
-4. Run `pytest -v backend/tests` — should be 1560/1560 (no code changes).
+4. Manual browser verification:
+   - Login and confirm the seeded appointment request shows a Confirm button.
+   - Click Confirm — status badge updates to "confirmed" and button disappears.
 
 ## What not to do
 
-- Do not write code.
-- Do not modify backend routes, schemas, or migrations.
-- Do not change frontend code.
-- Do not modify seed script or test files.
+- Do not add Reject, Assign, or Archive actions in this module (next modules).
+- Do not add a modal or confirmation dialog — inline button only for now.
+- Do not change backend routes, schemas, or migrations.
+- Do not change auth or seed script.
 
 ## Acceptance
 
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md` created.
-- CURRENT_STATE.md and NEXT_MODULE.md updated.
-- Full backend tests pass.
-- Commit: `Architecture Checkpoint 09 — Polished local demo review`
+- Confirm button appears on appointment request rows with status "new".
+- Clicking Confirm updates the row to status "confirmed".
+- Button disabled while request is in flight.
+- Generic error shown on failure.
+- Contract tests pass: `pytest -v backend/tests/test_frontend_appointment_workflow_contract.py`
+- Full backend tests pass: `pytest -v backend/tests`
+- Commit: `Sprint 11 / Module 81 — Appointment request workflow UI foundation`

@@ -898,8 +898,14 @@
 
 ## Architecture checkpoint
 
-- Architecture Checkpoint 09 recommended: Polished Local Demo Review
-- Sprint 10 scope so far: Module 78 (patient name fix), Module 79 (visual polish), Module 80 (polished smoke)
+- Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
+- Full backend tests: 1560/1560 passed
+- Sprint 10 complete (Modules 78–80): patient display fix, visual polish, polished smoke
+- Local demo confirmed presentable: "Clinic Overview" dashboard, count pills, correct patient names, badge colours, local-demo footer
+- No security regressions in Sprint 10
+- Recommended: Sprint 11 / Module 81 — Appointment Request Workflow UI Foundation
+- Reason: appointment requests are the core Vapi output; clinic staff need Confirm/Reject actions to complete the loop
+- Sprint 11 started: Appointment Request Workflow UI (Module 81+)
 
 ## Next module
-Architecture Checkpoint 09 — Polished Local Demo Review.
+Sprint 11 / Module 81 — Appointment Request Workflow UI Foundation.
