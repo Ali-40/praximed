@@ -1,54 +1,41 @@
-# Sprint 10 / Module 78 — Dashboard Demo Polish and Patient Display Fix
+# Sprint 10 / Module 79 — Dashboard Visual Polish Pass
 
-Status: pending Architecture Checkpoint 08 review.
+Status: pending Module 78 review.
 
 ## Context
 
-Architecture Checkpoint 08 identified the patient name fallback (`"—"`) as the
-highest-priority visible defect before a stakeholder demo. The backend `patients` table
-stores `full_name` as a single field; the frontend `Patient` TypeScript interface only
-exposes `first_name` and `last_name`, so the display expression
-`[patient.first_name, patient.last_name].filter(Boolean).join(' ')` produces `"—"`.
+Module 78 fixed the patient name display issue — the highest-priority visible defect
+identified in Architecture Checkpoint 08. The local demo now shows readable patient
+names. The next step is a broader visual polish pass to make the dashboard look
+credible before a stakeholder demo.
 
 ## Scope
 
-1. Add `full_name` to the `Patient` interface in `frontend/lib/api.ts`:
-   ```ts
-   interface Patient {
-     id: string
-     full_name: string        // added — backend returns this as a single field
-     first_name?: string
-     last_name?: string
-     status: string
-   }
-   ```
+Docs-only scoping required first. Before implementing, inspect the current dashboard
+and decide what visual changes are worth doing in one focused pass. Target:
 
-2. Update the patient row display in `frontend/app/dashboard/page.tsx`:
-   - Current: `[patient.first_name, patient.last_name].filter(Boolean).join(' ') || '—'`
-   - Updated: `patient.full_name || [patient.first_name, patient.last_name].filter(Boolean).join(' ') || '—'`
-   - This is backwards-compatible: uses `full_name` if present, falls back to split fields.
-
-3. Update `backend/tests/test_frontend_patient_list_contract.py`:
-   - Add a test confirming `full_name` is referenced in `frontend/lib/api.ts`.
-   - Add a test confirming the patient row display uses `full_name`.
-
-4. Manual browser verification:
-   - Re-seed: `python backend/scripts/seed_local_data.py`
-   - Login at `http://localhost:3000`
-   - Patients section shows "Local Test Patient" (not `"—"`).
+1. **Section headers with row counts** — show e.g. "Appointments (1)" so the demo
+   communicates how many items exist at a glance.
+2. **Status badge consistency** — review badge styling across all four sections
+   to ensure colours are consistent and readable.
+3. **Empty state copy** — confirm the empty state messages are friendly and not
+   generic error-looking ("No appointment requests found." → acceptable; very
+   terse messages may need softening).
+4. **Loading state copy** — confirm loading messages are consistent.
+5. Optional: Add a thin section divider or icon to each section header.
 
 ## What not to do
 
-- Do not change the backend patients API response shape.
-- Do not add new dashboard sections or features.
-- Do not implement token refresh, httpOnly cookies, or any auth changes.
-- Do not add create/edit flows.
+- Do not add new API calls or backend routes.
+- Do not implement create/edit forms.
+- Do not implement appointment request workflow actions (approve/reject).
+- Do not change auth or token storage.
+- Do not install new npm packages.
 
 ## Acceptance
 
-- Patients section shows "Local Test Patient" (not `"—"`) after re-seed and login.
-- `full_name` field added to `Patient` interface in `lib/api.ts`.
-- Patient row display uses `full_name` in `dashboard/page.tsx`.
-- Contract tests confirm both changes.
-- Full backend tests pass: `pytest -v backend/tests`
-- Commit: `Sprint 10 / Module 78 — Dashboard demo polish and patient display fix`
+- Dashboard looks visually coherent in a live browser demo.
+- All four sections still render loading → list state after seed.
+- Patient row displays "Local Test Patient" (Module 78 fix preserved).
+- Full backend contract tests pass: `pytest -v backend/tests`
+- Commit: `Sprint 10 / Module 79 — Dashboard visual polish pass`

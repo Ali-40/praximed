@@ -852,11 +852,25 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 08 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_08_LOCAL_DEMO_READINESS_REVIEW.md`
+- Commit: cdc2ee1
+- Full backend tests: 1547/1547 passed (re-confirmed at start of Module 78)
 - Sprint 9 complete (Modules 72–77)
-- Full backend tests: 1547/1547 passed
 - Local full-stack demo confirmed viable: login → all four dashboard sections list state → logout
-- Known issue: patient row name displays as `"—"` (full_name vs first_name/last_name field mismatch)
+- Known issue noted: patient row name displayed as `"—"` — resolved in Module 78
 - Sprint 10 started: Dashboard Demo Polish (Module 78+)
 
+76. Module 78 — Dashboard demo polish and patient display fix
+   - Commit: bc3e9e2
+   - `frontend/lib/api.ts` (updated — `full_name: string | null` added to `Patient` interface as primary field; `first_name` and `last_name` kept for defensive compatibility)
+   - `frontend/app/dashboard/page.tsx` (updated — patient name display expression changed from `|| '—'` to `patient.full_name || join(first+last) || 'Unnamed patient'`)
+   - `backend/tests/test_frontend_patient_list_contract.py` (updated — 3 new tests 11–13: full_name in Patient interface, patient.full_name in display, 'Unnamed patient' fallback not '—')
+   - `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` (updated — §6 known issue marked resolved in Module 78)
+   - `docs/architecture/ARCHITECTURE_CHECKPOINT_08_LOCAL_DEMO_READINESS_REVIEW.md` (updated — §4.1 patient name issue marked fixed in Module 78)
+   - Module 78 new tests: 3 new (13 total in patient list contract file); all 13 passed
+   - Full backend tests: 1550/1550 passed
+   - No backend routes or schema modified
+   - Patient row now displays "Local Test Patient" after re-seeding (not `"—"`)
+   - Fallback for missing name data is `'Unnamed patient'` (not `'—'`)
+
 ## Next module
-Sprint 10 / Module 78 — Dashboard Demo Polish and Patient Display Fix.
+Sprint 10 / Module 79 — Dashboard Visual Polish Pass.
