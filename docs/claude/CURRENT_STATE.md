@@ -783,7 +783,7 @@
    - password_hash never printed; hash_password called at runtime inside async function
 
 71. Module 73 — Fix frontend runtime smoke blockers
-   - Commit: (pending)
+   - Commit: 746d77e
    - Runtime blockers found during manual smoke (Module 72):
      1. Alembic revision ID `0002_add_password_hash_to_clinic_users` (42 chars) exceeded `alembic_version VARCHAR(32)` — migration failed
      2. `seed_local_data.py` raised `ModuleNotFoundError: No module named 'backend'` when run directly — missing sys.path safety
