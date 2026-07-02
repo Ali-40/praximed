@@ -538,7 +538,7 @@
    - Real Vapi tunnel retest after Module 56: HTTP 200 OK confirmed
 
 55. Module 57 — Real Vapi tunnel smoke evidence
-   - Commit: TBD
+   - Commit: 9733710
    - `docs/integrations/REAL_VAPI_TUNNEL_SMOKE_RESULTS.md` (new)
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 11 Vapi smoke passed, Section 12 next module)
    - `docs/claude/CURRENT_STATE.md` (updated)
