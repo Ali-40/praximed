@@ -1,5 +1,6 @@
 # Frontend Local Runtime Smoke — PraxisMed Sprint 9 / Module 72
 Updated: Sprint 9 / Module 73 — runtime blockers fixed; runbook updated
+Updated: Sprint 9 / Module 74 — CORS support added; browser login unblocked
 
 This runbook walks through a complete local browser smoke test: start the stack,
 seed a login-capable fake user, sign in at `/login`, and verify all four dashboard
@@ -19,6 +20,7 @@ Before running this runbook, ensure you have the Module 73 fixes applied:
 | `value too long for type character varying(32)` during migration | Alembic revision ID `0002_add_password_hash_to_clinic_users` was 42 chars | Shortened to `0002_password_hash` (16 chars) in `0002_add_password_hash_to_clinic_users.py` |
 | `ModuleNotFoundError: No module named 'backend'` from seed script | Script lacked `sys.path` project-root insertion for direct execution | Added `_PROJECT_ROOT` path safety at top of `seed_local_data.py` |
 | `[Errno 48] Address already in use` on backend start | Previous Uvicorn process still running on port 8000 | Stop old process first (see Step 4 below) |
+| Browser login shows "Sign-in failed" / `OPTIONS /auth/login → 405` | Backend had no CORS support; browser preflight was rejected | Added `CORSMiddleware` to `backend/app/main.py` (Module 74) — restart backend after applying |
 
 ---
 
@@ -112,6 +114,11 @@ uvicorn backend.app.main:app --reload --port 8000
 
 Both `DATABASE_URL` and `JWT_SECRET_KEY` must be set. If `JWT_SECRET_KEY` is missing,
 `POST /auth/login` returns HTTP 503.
+
+The backend now includes `CORSMiddleware` (Module 74) that allows requests from
+`http://localhost:3000` and `http://127.0.0.1:3000` by default. Browser preflight
+(`OPTIONS`) requests will return HTTP 200 with the correct `Access-Control-Allow-*`
+headers. Override allowed origins by setting `FRONTEND_CORS_ORIGINS` (comma-separated).
 
 Expected: Uvicorn starts on `http://127.0.0.1:8000`. Check the health endpoint:
 

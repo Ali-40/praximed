@@ -797,5 +797,19 @@
    - Full backend tests: 1531/1531 passed
    - No backend routes modified; no frontend code changed
 
+72. Module 74 — Fix frontend browser login runtime issue (CORS)
+   - Commit: (pending)
+   - CORS blocker found during manual smoke (Module 73):
+     - curl `POST /auth/login` returned HTTP 200 (backend auth works)
+     - Browser login showed "Sign-in failed" — root cause: `OPTIONS /auth/login → 405 Method Not Allowed`
+     - FastAPI had no CORS middleware; browser preflight was rejected before reaching the auth route
+   - `backend/app/main.py` (updated — `CORSMiddleware` added; defaults to `http://localhost:3000` and `http://127.0.0.1:3000`; `FRONTEND_CORS_ORIGINS` env override; explicit origins only, no wildcard)
+   - `backend/tests/test_cors_contract.py` (new — 8 CORS contract tests)
+   - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (updated — CORS blocker row added; backend CORS note in Step 4)
+   - `frontend/README.md` (updated — backend CORS local-dev note)
+   - Module 74 CORS tests: 8/8 passed
+   - Full backend tests: 1539/1539 passed
+   - No auth routes or frontend code modified
+
 ## Next module
-Sprint 9 / Module 74 — Run Frontend Browser Smoke Evidence (pending Module 73 review).
+Sprint 9 / Module 75 — Run Frontend Browser Smoke Evidence (pending Module 74 review).

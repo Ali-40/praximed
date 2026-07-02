@@ -61,6 +61,12 @@ The backend exposes:
 All API calls go through `lib/api.ts`. Set `NEXT_PUBLIC_API_BASE_URL` to change the
 target backend.
 
+The backend includes CORS support for local development (Module 74). Browser requests
+from `http://localhost:3000` and `http://127.0.0.1:3000` are allowed by default —
+no proxy or tunnel needed for local frontend → backend communication.
+Override with the `FRONTEND_CORS_ORIGINS` environment variable (comma-separated) on
+the backend side.
+
 ## Login flow (Module 67)
 
 The login form collects **Clinic ID**, **Email**, and **Password**, then calls
