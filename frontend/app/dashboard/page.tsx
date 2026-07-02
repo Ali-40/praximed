@@ -1,8 +1,8 @@
 'use client'
 
-// Dashboard page — PraxisMed Sprint 8 / Module 69
-// Appointments and Patients sections are live.
-// Notifications / Consultations remain as placeholders (Module 70+).
+// Dashboard page — PraxisMed Sprint 8 / Module 70
+// Appointments, Patients, and Notifications sections are live.
+// Consultations remains as a placeholder (Module 71+).
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -10,16 +10,13 @@ import { clearToken, getClinicId, getToken, isAuthenticated } from '@/lib/auth'
 import {
   fetchAppointmentRequests,
   fetchPatients,
+  fetchNotifications,
   AppointmentRequest,
   Patient,
+  Notification,
 } from '@/lib/api'
 
 const PLACEHOLDER_SECTIONS = [
-  {
-    key: 'notifications',
-    label: 'Notifications',
-    description: 'Review clinic alerts and urgent call notifications.',
-  },
   {
     key: 'consultations',
     label: 'Consultations',
@@ -37,6 +34,10 @@ export default function DashboardPage() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [patientsLoading, setPatientsLoading] = useState(true)
   const [patientsError, setPatientsError] = useState<string | null>(null)
+
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifLoading, setNotifLoading] = useState(true)
+  const [notifError, setNotifError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -61,6 +62,11 @@ export default function DashboardPage() {
       .then((rows) => setPatients(rows))
       .catch(() => setPatientsError('Could not load patients. Please try again.'))
       .finally(() => setPatientsLoading(false))
+
+    fetchNotifications(clinicId, token)
+      .then((rows) => setNotifications(rows))
+      .catch(() => setNotifError('Could not load notifications. Please try again.'))
+      .finally(() => setNotifLoading(false))
   }, [router])
 
   function handleLogout() {
@@ -240,6 +246,81 @@ export default function DashboardPage() {
                     }}
                   >
                     {patient.status ?? '—'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Notifications section (live)                                      */}
+        {/* ---------------------------------------------------------------- */}
+        <section
+          data-section="notifications"
+          style={{
+            background: '#fff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
+            padding: '1.25rem',
+            boxShadow: 'var(--shadow-card)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Notifications</h3>
+
+          {notifLoading && (
+            <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              Loading notifications…
+            </p>
+          )}
+          {!notifLoading && notifError && (
+            <p data-state="error" style={{ fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+              {notifError}
+            </p>
+          )}
+          {!notifLoading && !notifError && notifications.length === 0 && (
+            <p data-state="empty" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              No notifications found.
+            </p>
+          )}
+          {!notifLoading && !notifError && notifications.length > 0 && (
+            <ul
+              data-state="list"
+              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+            >
+              {notifications.map((notif) => (
+                <li
+                  key={notif.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderBottom: '1px solid var(--color-border)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  <span style={{ flex: 1, fontWeight: 500 }}>
+                    {notif.title ?? '—'}
+                  </span>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: '0.75rem',
+                      background: notif.priority === 'urgent' || notif.priority === 'emergency'
+                        ? '#fee2e2'
+                        : 'var(--color-border)',
+                      color: notif.priority === 'urgent' || notif.priority === 'emergency'
+                        ? '#991b1b'
+                        : 'var(--color-text-muted)',
+                    }}
+                  >
+                    {notif.priority ?? '—'}
+                  </span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    {notif.notification_type ?? '—'}
                   </span>
                 </li>
               ))}

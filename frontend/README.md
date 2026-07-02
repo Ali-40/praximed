@@ -107,9 +107,21 @@ The section shows:
 `fetchPatients(clinicId, token)` in `lib/api.ts` handles the request. The `clinic_id`
 is decoded from the JWT payload by `getClinicId()` in `lib/auth.ts`.
 
-Notifications and Consultations sections remain as placeholders and will be wired in
-subsequent modules.
+## Dashboard data — Notifications (Module 70)
+
+The **Notifications** section fetches `GET /notifications?clinic_id=<id>` from the backend
+using the stored JWT as `Authorization: Bearer <token>`.
+
+The section shows:
+- **Loading** — while the request is in flight
+- **Error** — generic message if the request fails
+- **Empty** — if the clinic has no notifications yet
+- **List** — title, priority badge (red for urgent/emergency), and notification type for each entry
+
+`fetchNotifications(clinicId, token)` in `lib/api.ts` handles the request.
+
+Consultations section remains as a placeholder and will be wired in a subsequent module.
 
 ## Status
 
-Sprint 8 / Module 69 — Appointments and Patients sections wired to backend. Notifications/Consultations in Module 70+.
+Sprint 8 / Module 70 — Appointments, Patients, and Notifications sections wired to backend. Consultations in Module 71+.

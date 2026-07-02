@@ -737,5 +737,17 @@
    - Patient row displays full name (first + last) and status badge (green for active)
    - No hardcoded tokens or real patient data
 
+68. Module 70 — Frontend notifications integration
+   - Commit: (pending)
+   - `frontend/lib/api.ts` (updated — Notification type + fetchNotifications helper)
+   - `frontend/app/dashboard/page.tsx` (updated — Notifications section wired to fetchNotifications; loading/error/empty/list states; Appointments and Patients unchanged; Consultations remains as placeholder)
+   - `frontend/README.md` (updated — notifications section: fetchNotifications, Bearer token, states)
+   - `backend/tests/test_frontend_notifications_contract.py` (new — 10 static contract tests)
+   - Module 70 contract tests: 10/10 passed
+   - Full backend tests: 1511/1511 passed
+   - No backend routes modified
+   - Notification row displays title, priority badge (red for urgent/emergency), and notification_type
+   - No hardcoded tokens or real patient data
+
 ## Next module
-Sprint 8 / Module 70 — Frontend Notifications Integration (pending Module 69 review).
+Sprint 8 / Module 71 — Frontend Consultation List Integration (pending Module 70 review).

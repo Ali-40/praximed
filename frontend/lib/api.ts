@@ -89,3 +89,36 @@ export async function fetchPatients(
   const data = (await resp.json()) as { ok: boolean; patients: Patient[] }
   return data.patients ?? []
 }
+
+// ---------------------------------------------------------------------------
+// Notifications — Sprint 8 / Module 70
+// ---------------------------------------------------------------------------
+
+export interface Notification {
+  id: string
+  title: string
+  message: string
+  notification_type: string
+  priority: string
+  status: string
+  created_at: string | null
+  [key: string]: unknown
+}
+
+// Fetches GET /notifications?clinic_id=<clinicId> with a Bearer JWT.
+// Returns the notifications array from the response body.
+export async function fetchNotifications(
+  clinicId: string,
+  token: string,
+): Promise<Notification[]> {
+  const resp = await apiFetch(
+    `/notifications?clinic_id=${encodeURIComponent(clinicId)}`,
+    {},
+    token,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load notifications (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; notifications: Notification[] }
+  return data.notifications ?? []
+}
