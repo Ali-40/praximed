@@ -127,18 +127,15 @@ Appointment request created:
 
 ---
 
-## 6. Dashboard Loop — Pending Manual Browser Step
+## 6. Dashboard Confirm Loop — Module 86 PASS
 
-The backend intake is complete. Closing the full loop requires a browser step:
+The browser confirm step was completed in Module 86:
+- Vapi-created row appeared in dashboard Appointments section
+- Confirm button visible; clicking it changed status from "new" to "confirmed"
+- Button disappeared; other sections remained stable
+- Seed row (`55555555-…`) unaffected
 
-```bash
-# Open dashboard, find the Vapi-created row (ID: 509211a7-...)
-open http://localhost:3000/dashboard
-# Click Confirm on the new row (distinct from the seed row 55555555-...)
-# Verify status changes to 'confirmed'
-```
-
-This browser step is documented and recorded in Module 86.
+Full evidence: `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_BROWSER_SMOKE_RESULTS.md`
 
 ---
 

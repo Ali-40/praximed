@@ -964,22 +964,33 @@
    - Smoke result: HTTP 503 → resolved; new HTTP 500 — seed UUID `11111111-1111-1111-1111-111111111111` failed `_assert_valid_uuid()` variant byte check `[89ab]`
 
 83. Module 85 — Config loader UUID compatibility and Vapi intake smoke completion
-   - Commit: (see git log)
+   - Commit: fd6ac74
    - `backend/app/core/config_loader.py` (updated — replaced `_UUID_RE` regex with `uuid.UUID()` parser; added DB-error fallback in `_load_db_config`; updated docstrings)
    - `backend/tests/test_config_loader.py` (updated — 5 new tests: accepts deterministic local UUID, accepts RFC 4122 UUID unchanged, rejects brace-wrapped UUID, rejects unhyphenated UUID, DB error falls back to disk)
-   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` (updated — verdict changed to PASS; smoke evidence recorded)
-   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — UUID blocker RESOLVED; smoke command and result recorded; Module 86 recommended)
+   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` (updated — verdict PASS; smoke evidence recorded)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — UUID blocker RESOLVED; smoke command and result recorded)
    - Module 85 new tests: 5/5 passed (28 total in config_loader test file)
    - Full backend tests: 1594/1594 passed
-   - Smoke result: **HTTP 200** — appointment ID `509211a7-784e-4e45-90f1-d9af6f8d7981`, `status: new`, `source: vapi`, `action_required: true`
-   - No real patient data; no secrets; appointment not auto-confirmed (staff review required)
-   - Browser dashboard confirm loop is Module 86
+   - Live smoke: HTTP 200 — appointment ID `509211a7-784e-4e45-90f1-d9af6f8d7981`, `status: new`, `source: vapi`, `action_required: true`
+
+84. Module 86 — Vapi intake to dashboard browser smoke evidence
+   - Commit: (see git log)
+   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_BROWSER_SMOKE_RESULTS.md` (new — full browser smoke evidence: harness output, row verification, Confirm action, verdict PASS)
+   - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` (updated — Module 86 browser confirm note added)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — all local unknowns RESOLVED; next unknown is real Vapi payload from live assistant; Module 87 recommended)
+   - No production code changes
+   - Full backend tests: 1594/1594 passed (re-confirmed)
+   - Browser smoke verdict: **PASS** (2026-07-02)
+   - Vapi-created row appeared in dashboard without seed script
+   - Staff Confirm: status "new" → "confirmed"; button disappeared
+   - Staff confirmation boundary maintained: no auto-confirmation by AI
+   - Other dashboard sections unaffected
 
 ## Architecture checkpoint
 
 - Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
 - Updated in Module 82: §3b follow-up added; §4.1 Confirm action marked delivered
-- Sprint 11 in progress (Modules 81–85 complete)
+- Sprint 11 in progress (Modules 81–86 complete)
 
 ## Next module
-Sprint 11 / Module 86 — Vapi Intake to Dashboard Browser Smoke Evidence.
+Sprint 11 / Module 87 — Real Vapi Appointment Tool Payload Smoke.

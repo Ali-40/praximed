@@ -1,8 +1,8 @@
 # Vapi to Appointment Workflow Integration Prep — PraxisMed Sprint 11
 
 **Date:** 2026-07-02
-**Sprint:** Sprint 11 (Module 85 complete — smoke PASS, HTTP 200)
-**Status:** Backend intake proven. Remaining: browser confirm loop (Module 86).
+**Sprint:** Sprint 11 (Module 86 complete — full local intake loop PASS)
+**Status:** Local loop proven end-to-end. Next unknown: real Vapi tool-call payload from live assistant.
 
 ---
 
@@ -63,16 +63,17 @@ building blocks for the integration loop.
 
 ---
 
-## 4. Unknowns — Status After Module 85
+## 4. Unknowns — Status After Module 86
 
 | Unknown | Status |
 |---|---|
-| Does the capture route create `appointment_requests` rows from a Vapi-shaped payload? | **RESOLVED** — `POST /vapi/tools/capture-appointment-request` returns HTTP 200 and creates a row. Module 83 fixed capture service bugs; Module 84 wired config_loader; Module 85 fixed UUID validation and DB-error fallback. |
-| Does the real Vapi tool-call payload shape differ from the local fixture? | **RESOLVED** — tool endpoint uses `VapiAppointmentCaptureRequest` (structured body). Local fixture matches the schema. |
+| Does the capture route create `appointment_requests` rows from a Vapi-shaped payload? | **RESOLVED** — `POST /vapi/tools/capture-appointment-request` returns HTTP 200, creates row with `source=vapi`, `status=new`, `action_required=true`. |
+| Does the real Vapi tool-call payload shape differ from the local fixture? | **RESOLVED (local)** — local fixture matches `VapiAppointmentCaptureRequest` schema. Real Vapi payload shape from a live assistant is the next unknown (Module 87). |
 | Is `app.state.config_loader` initialized so the endpoint can resolve clinic config? | **RESOLVED** — Module 84 wires `ClinicConfigLoader(pool=app.state.db_pool)` in lifespan startup. |
-| Does an appointment request appear in the dashboard without the manual seed? | **PENDING** — intake smoke returns HTTP 200, row created in DB. Browser dashboard confirmation is Module 86. |
-| Is a notification created when Vapi capture fires? | **PENDING** — `vapi_appointment_capture` calls `notification_router.create_appointment_request_notification`; not verified in smoke output. Will be confirmed in Module 86 browser check. |
-| Does the audit log record the integration path safely? | **PENDING** — audit logging is in place (Module 44); will be confirmed in Module 86 browser check. |
+| Does an appointment request appear in the dashboard without the manual seed? | **RESOLVED** — Module 86 browser smoke: Vapi-created row appeared in Appointments section without running seed script. |
+| Can staff confirm a Vapi-sourced appointment request from the dashboard? | **RESOLVED** — Module 86: Confirm clicked on Vapi row → status "confirmed" → button disappeared. Staff confirmation boundary maintained. |
+| Is a notification created when Vapi capture fires? | **PENDING** — `vapi_appointment_capture` calls `notification_router.create_appointment_request_notification`. Not surfaced in smoke output; can be confirmed via DB inspection in Module 87. |
+| Does the audit log record the integration path safely? | **PENDING** — audit logging is in place (Module 44); can be confirmed via DB audit log in Module 87. |
 
 ---
 
@@ -165,18 +166,20 @@ python backend/scripts/smoke_vapi_appointment_intake.py
 
 ## 8. Recommended Next Module
 
-**Sprint 11 / Module 86 — Vapi Intake to Dashboard Browser Smoke Evidence**
+**Sprint 11 / Module 87 — Real Vapi Appointment Tool Payload Smoke**
 
-With the backend intake proven, the remaining step is the browser confirm loop:
+The local loop is proven. The remaining gap is validating that a real Vapi assistant's
+tool-call payload shape is handled correctly by the capture endpoint — or identifying
+any field mapping needed.
 
-1. Open `http://localhost:3000/dashboard`.
-2. Confirm the new Vapi-created row appears in the Appointments section (distinct from the seed row).
-3. Click Confirm — status updates to "confirmed".
-4. Document evidence in `docs/runtime/VAPI_INTAKE_DASHBOARD_SMOKE_RESULTS.md`.
+Module 87 should:
+1. Inspect the real Vapi tool-call payload format (from Vapi docs or a recorded call).
+2. Compare against `VapiAppointmentCaptureRequest` schema.
+3. Identify any adapter or field-mapping needed.
+4. Document findings and next steps.
 
-### What Module 86 should not do
+### What Module 87 should not do
 
-- Use real patient data, real clinic credentials, or live Vapi
+- Use real patient data
 - Auto-confirm appointment requests or create calendar events
-- Require ngrok or an external tunnel
-- Modify backend routes, auth, or seed data
+- Modify auth, JWT, or machine auth

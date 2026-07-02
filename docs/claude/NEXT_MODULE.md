@@ -1,88 +1,69 @@
-# Sprint 11 / Module 86 — Vapi Intake to Dashboard Browser Smoke Evidence
+# Sprint 11 / Module 87 — Real Vapi Appointment Tool Payload Smoke
 
-Status: pending Module 85 review.
+Status: pending Module 86 review.
 
 ## Context
 
-Module 85 completed the backend half of the Vapi intake loop:
+Module 86 proved the local Vapi intake loop end-to-end:
+- `smoke_vapi_appointment_intake.py` → HTTP 200 → appointment row → dashboard → staff Confirm → "confirmed"
+- Staff confirmation boundary maintained: AI does not auto-confirm
 
-- `POST /vapi/tools/capture-appointment-request` returns HTTP 200
-- Appointment request created: ID `509211a7-784e-4e45-90f1-d9af6f8d7981`, `status: new`, `source: vapi`
-- `action_required: true` — staff review required; not auto-confirmed
-
-The remaining step is the browser confirm loop: a staff member opens the dashboard,
-sees the Vapi-created row (without running the seed script), and clicks Confirm.
-
-Everything is in place:
-- Backend serving on `http://127.0.0.1:8000` (verified)
-- Frontend `npm run dev` on `http://localhost:3000`
-- Vapi-created row now in the DB alongside the seed row
-- Confirm button works (Module 81 — proven in Module 82 browser smoke)
+The local harness uses a hand-crafted JSON payload that matches `VapiAppointmentCaptureRequest`.
+The remaining gap is whether a real Vapi assistant's tool-call payload will match this schema,
+or whether an adapter is needed (similar to the `_adapt_vapi_payload` added for the webhook
+in Module 56).
 
 ## Scope
 
-### 1. Re-seed to get a clean starting state (optional)
+### 1. Inspect real Vapi tool-call payload format
 
-If needed, run seed to reset the `55555555-…` seed row:
-```bash
-python backend/scripts/seed_local_data.py
-```
+Investigate what Vapi sends when a tool call fires during a phone session:
+- Tool call body shape (field names, nesting, types)
+- Whether `clinic_ref`, `call_id`, `patient_name` match exactly or need mapping
+- Whether Vapi wraps the body in a `message` envelope (as the webhook does)
 
-### 2. Re-run the intake smoke to create a fresh Vapi row
+Sources to inspect:
+- Vapi documentation on tool call payloads
+- `backend/app/schemas/vapi.py` — `VapiAppointmentCaptureRequest` field names
+- `backend/app/api/routes/vapi_tools.py` — the capture route handler
+- Module 56 notes in `docs/claude/CURRENT_STATE.md` — how webhook adapter was built
 
-```bash
-python backend/scripts/smoke_vapi_appointment_intake.py
-```
+### 2. Compare against VapiAppointmentCaptureRequest schema
 
-Expected: HTTP 200, new appointment ID different from `55555555-…`.
+| VapiAppointmentCaptureRequest field | Required? | Real Vapi tool payload equivalent |
+|---|---|---|
+| `clinic_ref` | Yes | TBD |
+| `call_id` | Yes | TBD |
+| `patient_name` | Yes | TBD |
+| `caller_phone` | No | TBD |
+| `reason` | No | TBD |
+| `urgency_level` | No | TBD |
+| `raw_payload` | No | TBD |
 
-### 3. Open the dashboard and close the loop in the browser
+### 3. Identify any adapter needed
 
-```bash
-open http://localhost:3000/dashboard
-```
+If the real payload shape differs, plan a minimal field-mapping adapter in the capture route
+(similar to `_adapt_vapi_payload` in the webhook route). If the schema matches exactly,
+document that no adapter is needed.
 
-Steps:
-1. Log in with local-dev credentials (doctor.local@praximed.test / local-dev-password)
-2. Go to Appointments section
-3. Confirm a new row with `source: vapi` appears (patient: "Local Vapi Test Caller")
-4. Click Confirm on that row
-5. Verify status badge changes from "new" to "confirmed"
-6. Verify Confirm button disappears
-7. Verify the seed row (`55555555-…`) is unaffected
+### 4. Update docs
 
-### 4. Create smoke evidence doc
-
-`docs/runtime/VAPI_INTAKE_DASHBOARD_SMOKE_RESULTS.md`:
-- Environment table
-- Steps completed
-- Evidence: smoke script output (HTTP 200, appointment request ID)
-- Evidence: dashboard row appeared without seed script
-- Evidence: Confirm action worked on the new Vapi row
-- What this proves
-- What remains
-
-### 5. Update docs
-
-- `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_SMOKE_RESULTS.md` — add browser-loop evidence
-- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — mark all unknowns RESOLVED
-- `docs/claude/CURRENT_STATE.md` — record Module 86
-- `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 87 — Reject Action
+- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — record findings; mark real payload gap RESOLVED or document required adapter
+- `docs/claude/CURRENT_STATE.md` — record Module 87
+- `docs/claude/NEXT_MODULE.md` — Module 88 (adapter implementation if needed, or next workflow action)
 
 ## What not to do
 
-- Do not use real patient data or real Vapi credentials
+- Do not use real patient data or real Vapi credentials for testing
 - Do not auto-confirm appointment requests or create calendar events
-- Do not change auth, JWT, machine auth, webhook signature, or seed data
-- Do not require ngrok or a live Vapi connection
-- Do not modify backend routes
+- Do not modify auth, JWT, machine auth, or webhook signature
+- Do not implement the adapter without inspecting the real payload first
 
 ## Acceptance
 
-- New Vapi-created row appears in dashboard without seed script
-- Staff can click Confirm on the Vapi row
-- Status updates from "new" to "confirmed"; Confirm button disappears
-- Seed row (`55555555-…`) is unaffected
-- Evidence documented in `docs/runtime/VAPI_INTAKE_DASHBOARD_SMOKE_RESULTS.md`
-- Full backend tests pass: `pytest -v backend/tests`
-- Commit: `Sprint 11 / Module 86 — Vapi intake to dashboard browser smoke evidence`
+- Real Vapi tool-call payload shape documented
+- Gap between real payload and `VapiAppointmentCaptureRequest` identified or ruled out
+- If adapter needed: design documented; implementation scoped to Module 88
+- If no adapter needed: documented explicitly
+- No code changes required for this module (docs + inspection only)
+- Commit: `Sprint 11 / Module 87 — Real Vapi appointment tool payload smoke`
