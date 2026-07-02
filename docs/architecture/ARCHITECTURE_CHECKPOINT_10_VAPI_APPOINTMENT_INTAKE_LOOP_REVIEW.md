@@ -1,22 +1,28 @@
 # Architecture Checkpoint 10 — Vapi Appointment Intake Loop Review
 
 **Date:** 2026-07-03
-**Sprint:** Sprint 11 complete (Modules 81–89)
+**Sprint:** Sprint 11 complete (Modules 81–90)
 **Backend tests:** 1625/1625 passed
-**Status:** Local/ngrok Vapi intake loop proven end-to-end. One evidence gap remains: direct real Vapi assistant call logs.
+**Status:** Integration loop fully proven — real Vapi assistant tool-call logs captured in Module 90. Gap closed.
 
 ---
 
 ## 1. Current Status
 
-Sprint 11 closed the full local appointment intake loop:
-**Vapi/ngrok tool call → backend adapter → appointment request → staff dashboard → Confirm action → confirmed.**
+Sprint 11 closed the full Vapi appointment intake loop:
+**Real Vapi assistant → ngrok → adapter → appointment request → staff dashboard → Confirm action → confirmed.**
 
 The stack works locally and through an ngrok tunnel. The nested real Vapi tool-call body shape
-is handled by an adapter. Staff confirmation is browser-confirmed. No auto-confirmation by AI
-at any layer. The remaining open item before closing this loop completely is capturing direct
-real Vapi assistant call logs from a live assistant — the local/ngrok path is proven but the
-assistant-triggered path has not been captured with logs.
+is handled by the adapter. Staff confirmation is browser-confirmed. No auto-confirmation by AI
+at any layer.
+
+**Post-checkpoint update (Module 90):** The last evidence gap — direct real Vapi assistant call
+logs — was closed. A real live test assistant triggered `capture_appointment_request`, Vapi
+tool logs confirmed success, ngrok confirmed the POST, backend created the appointment row,
+and staff confirmed it from the dashboard. The full integration loop is now proven end-to-end
+for the local/test environment.
+
+See: `docs/runtime/VAPI_DIRECT_ASSISTANT_TOOL_CALL_LOG_RESULTS.md`
 
 ---
 
@@ -94,9 +100,9 @@ assistant-triggered path has not been captured with logs.
 | Vapi-created rows visible in dashboard | PROVEN |
 | Staff Confirm: status new → confirmed | PROVEN |
 | No auto-confirmation by AI | PROVEN |
-| Direct real Vapi assistant tool-call triggered and logged | **PENDING** |
-| Live Vapi assistant configured to call the adapted endpoint | **PENDING** |
-| Real Vapi payload shape matches the sanitized sample | **PENDING** |
+| Direct real Vapi assistant tool-call triggered and logged | **PASS** — Module 90 |
+| Live Vapi assistant configured to call the adapted endpoint | **PASS** — Module 90 |
+| Real Vapi payload shape matches the sanitized sample (nested toolCallList) | **PASS** — Module 90 |
 
 **Interpretation:** The intake loop is proven correct for the local/ngrok path. A real live
 Vapi assistant triggering the tool and returning 2xx is the last unproven claim. It is

@@ -1023,14 +1023,25 @@
    - Machine auth scope confirmed: `X-Vapi-Scopes: vapi:tool` (singular)
    - Direct real Vapi assistant call logs: PENDING — not captured in this module
 
+88. Module 90 — Direct real Vapi assistant tool-call log capture
+   - Commit: (see git log)
+   - `docs/runtime/VAPI_DIRECT_ASSISTANT_TOOL_CALL_LOG_RESULTS.md` (new — full evidence: real Vapi test assistant tool call, ngrok POST, backend row creation, dashboard Confirm, verdict PASS)
+   - `docs/runtime/VAPI_REAL_TOOL_CALL_LIVE_SMOKE_RESULTS.md` (updated — direct assistant log evidence upgraded from PENDING to PASS)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — direct Vapi assistant logs marked RESOLVED; integration loop status section added; next focus options listed)
+   - `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md` (updated — status updated; post-checkpoint Module 90 note; pending claims marked PASS)
+   - No production code changes
+   - Full backend tests: 1625/1625 passed (unchanged)
+   - Evidence: real Vapi test assistant fired `capture_appointment_request`; Vapi tool logs success; ngrok POST confirmed; backend created row; dashboard row confirmed by staff; no real data; no auto-confirmation
+
 ## Architecture checkpoint
 
 - Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
+- Updated post-checkpoint (Module 90): all pending evidence gaps closed
 - Full backend tests: 1625/1625 passed
-- Sprint 11 complete (Modules 81–89)
-- Local/ngrok Vapi intake loop proven end-to-end; direct real Vapi assistant logs pending
+- Sprint 11 complete (Modules 81–90)
+- Full integration loop proven: real Vapi assistant → ngrok → adapter → DB → dashboard → staff Confirm
 - Security boundaries reviewed: no auto-confirm, clinic_ref from machine auth, staff confirmation required
-- Frontend UX opportunity noted: evaluate Fabel 5 / Claude frontend tooling after Checkpoint 10
+- Frontend UX opportunity noted: evaluate Fabel 5 / Claude frontend tooling after Checkpoint 11
 
 ## Next module
-Sprint 11 / Module 90 — Direct Real Vapi Assistant Tool-Call Log Capture.
+Architecture Checkpoint 11 — Post-Vapi Integration Direction Review.

@@ -1,7 +1,7 @@
 # Vapi/ngrok Appointment Intake Dashboard Evidence — PraxisMed Sprint 11 / Module 89
 
 **Date:** 2026-07-03
-**Verdict:** PASS (local/ngrok/dashboard path) — Direct real Vapi assistant log evidence: PENDING
+**Verdict:** PASS — local/ngrok/dashboard path PASS; direct real Vapi assistant log evidence: PASS (Module 90)
 
 ---
 
@@ -127,11 +127,13 @@ Adapter behaviour confirmed:
 
 ### 4.4 Real Vapi Assistant Call Logs
 
-**Status: PENDING**
+**Status: PASS (Module 90)**
 
-Direct real Vapi assistant call logs were not captured in this module.
-The ngrok intake path and dashboard confirmation are proven (above).
-Capture of direct real Vapi assistant tool-call logs is the remaining open item.
+Direct real Vapi assistant call logs were captured in Module 90. The real test assistant
+triggered `capture_appointment_request`, Vapi tool logs showed success, ngrok confirmed
+the POST, and the dashboard row was confirmed by staff.
+
+See: `docs/runtime/VAPI_DIRECT_ASSISTANT_TOOL_CALL_LOG_RESULTS.md`
 
 ---
 
@@ -146,7 +148,7 @@ Capture of direct real Vapi assistant tool-call logs is the remaining open item.
 | Staff Confirm action: status new → confirmed, button disappears | PROVEN (Section 4.3) |
 | Other dashboard sections remain stable | PROVEN (Section 4.3) |
 | No auto-confirmation by AI | PROVEN (status=new until staff clicks Confirm) |
-| Real Vapi assistant call logs captured | **PENDING** |
+| Real Vapi assistant call logs captured | **PASS** — Module 90 |
 
 ---
 

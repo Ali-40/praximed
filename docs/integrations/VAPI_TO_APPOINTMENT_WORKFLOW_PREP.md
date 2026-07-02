@@ -76,7 +76,7 @@ building blocks for the integration loop.
 | Does the audit log record the integration path safely? | **PENDING** — audit logging is in place (Module 44); can be confirmed via DB audit log. |
 | Does the nested Vapi-shape body reach the backend through ngrok and produce a dashboard row? | **RESOLVED** — Module 89: nested shape via ngrok → HTTP 200, rows appeared in dashboard, staff Confirm succeeded. |
 | What is the exact required machine auth scope for the capture route? | **CONFIRMED** — `X-Vapi-Scopes: vapi:tool` (singular). `vapi:tools` (plural) is rejected with HTTP 403. |
-| Are direct real Vapi assistant call logs captured? | **PENDING** — ngrok/adapter path proven; real Vapi assistant logs not captured in Module 89. |
+| Are direct real Vapi assistant call logs captured? | **RESOLVED** — Module 90: real Vapi test assistant triggered `capture_appointment_request`; Vapi logs, ngrok POST, backend row creation, and staff Confirm all passed. See `docs/runtime/VAPI_DIRECT_ASSISTANT_TOOL_CALL_LOG_RESULTS.md`. |
 
 ---
 
@@ -261,6 +261,27 @@ Goals:
 - Preserve all existing security, integration quality, and staff confirmation boundaries
 
 This is a future quality opportunity — not part of Module 89 or the current intake loop work.
+
+---
+
+## 12. Integration Loop Status — Complete (Local/Test Environment)
+
+As of Module 90, the full Vapi appointment intake loop is proven end-to-end for the
+local/test environment:
+
+| Layer | Status |
+|---|---|
+| Real Vapi assistant → tool call fired | PROVEN (Module 90) |
+| ngrok → backend adapter → appointment created | PROVEN (Modules 88–90) |
+| Appointment row visible in dashboard | PROVEN (Modules 86–90) |
+| Staff Confirm → status confirmed → button gone | PROVEN (Modules 82–90) |
+| Machine auth scope `vapi:tool` (singular) | CONFIRMED (Module 89) |
+| No auto-confirmation at any layer | PROVEN throughout |
+
+**Next focus options (Architecture Checkpoint 11):**
+- A. Production deployment preparation (auth hardening, HTTPS, CI/CD)
+- B. Appointment workflow expansion (Reject, Assign, Callback actions)
+- C. Doctor-facing frontend UX sprint (evaluate Fabel 5 / Claude frontend tooling)
 
 ---
 
