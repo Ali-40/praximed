@@ -1,20 +1,20 @@
 'use client'
 
-// Dashboard page — PraxisMed Sprint 8 / Module 68
-// Wires Appointments section to GET /appointment-requests.
-// Patients / Notifications / Consultations remain as placeholders (Module 69+).
+// Dashboard page — PraxisMed Sprint 8 / Module 69
+// Appointments and Patients sections are live.
+// Notifications / Consultations remain as placeholders (Module 70+).
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { clearToken, getClinicId, getToken, isAuthenticated } from '@/lib/auth'
-import { fetchAppointmentRequests, AppointmentRequest } from '@/lib/api'
+import {
+  fetchAppointmentRequests,
+  fetchPatients,
+  AppointmentRequest,
+  Patient,
+} from '@/lib/api'
 
 const PLACEHOLDER_SECTIONS = [
-  {
-    key: 'patients',
-    label: 'Patients',
-    description: 'Browse and search registered patients.',
-  },
   {
     key: 'notifications',
     label: 'Notifications',
@@ -34,6 +34,10 @@ export default function DashboardPage() {
   const [apptLoading, setApptLoading] = useState(true)
   const [apptError, setApptError] = useState<string | null>(null)
 
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [patientsLoading, setPatientsLoading] = useState(true)
+  const [patientsError, setPatientsError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace('/login')
@@ -52,6 +56,11 @@ export default function DashboardPage() {
       .then((rows) => setAppointments(rows))
       .catch(() => setApptError('Could not load appointment requests. Please try again.'))
       .finally(() => setApptLoading(false))
+
+    fetchPatients(clinicId, token)
+      .then((rows) => setPatients(rows))
+      .catch(() => setPatientsError('Could not load patients. Please try again.'))
+      .finally(() => setPatientsLoading(false))
   }, [router])
 
   function handleLogout() {
@@ -100,7 +109,7 @@ export default function DashboardPage() {
         </h2>
 
         {/* ---------------------------------------------------------------- */}
-        {/* Appointments section (live data)                                  */}
+        {/* Appointments section (live)                                       */}
         {/* ---------------------------------------------------------------- */}
         <section
           data-section="appointments"
@@ -115,37 +124,21 @@ export default function DashboardPage() {
         >
           <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Appointments</h3>
 
-          {/* Loading state */}
           {apptLoading && (
-            <p
-              data-state="loading"
-              style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}
-            >
+            <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
               Loading appointment requests…
             </p>
           )}
-
-          {/* Error state */}
           {!apptLoading && apptError && (
-            <p
-              data-state="error"
-              style={{ fontSize: '0.875rem', color: 'var(--color-danger)' }}
-            >
+            <p data-state="error" style={{ fontSize: '0.875rem', color: 'var(--color-danger)' }}>
               {apptError}
             </p>
           )}
-
-          {/* Empty state */}
           {!apptLoading && !apptError && appointments.length === 0 && (
-            <p
-              data-state="empty"
-              style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}
-            >
+            <p data-state="empty" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
               No appointment requests found.
             </p>
           )}
-
-          {/* Appointment list */}
           {!apptLoading && !apptError && appointments.length > 0 && (
             <ul
               data-state="list"
@@ -179,6 +172,74 @@ export default function DashboardPage() {
                   </span>
                   <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                     {appt.urgency_level}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Patients section (live)                                           */}
+        {/* ---------------------------------------------------------------- */}
+        <section
+          data-section="patients"
+          style={{
+            background: '#fff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
+            padding: '1.25rem',
+            boxShadow: 'var(--shadow-card)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Patients</h3>
+
+          {patientsLoading && (
+            <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              Loading patients…
+            </p>
+          )}
+          {!patientsLoading && patientsError && (
+            <p data-state="error" style={{ fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+              {patientsError}
+            </p>
+          )}
+          {!patientsLoading && !patientsError && patients.length === 0 && (
+            <p data-state="empty" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              No patients found.
+            </p>
+          )}
+          {!patientsLoading && !patientsError && patients.length > 0 && (
+            <ul
+              data-state="list"
+              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+            >
+              {patients.map((patient) => (
+                <li
+                  key={patient.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderBottom: '1px solid var(--color-border)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  <span style={{ flex: 1, fontWeight: 500 }}>
+                    {[patient.first_name, patient.last_name].filter(Boolean).join(' ') || '—'}
+                  </span>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: '0.75rem',
+                      background: patient.status === 'active' ? '#dcfce7' : 'var(--color-border)',
+                      color: patient.status === 'active' ? '#166534' : 'var(--color-text-muted)',
+                    }}
+                  >
+                    {patient.status ?? '—'}
                   </span>
                 </li>
               ))}

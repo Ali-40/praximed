@@ -1,38 +1,37 @@
-# Sprint 8 / Module 69 — Frontend Patient List Integration
+# Sprint 8 / Module 70 — Frontend Notifications Integration
 
-Status: pending Module 68 review.
+Status: pending Module 69 review.
 
 ## Context
 
-Module 68 wired the Appointments section of the dashboard to `GET /appointment-requests`
-using the stored JWT. The pattern is established:
-- `fetchAppointmentRequests(clinicId, token)` in `lib/api.ts`
-- `getClinicId()` decodes `clinic_id` from the stored JWT payload
-- Dashboard `useEffect` fetches after auth check
-- Loading / error / empty / list states rendered
+Module 69 wired the Patients section of the dashboard to `GET /patients`. The
+pattern is now established for both live sections:
+- `fetchAppointmentRequests(clinicId, token)` — Appointments section, Module 68
+- `fetchPatients(clinicId, token)` — Patients section, Module 69
 
-The same pattern applies to Patients. The backend already has `GET /patients`
-(requires Bearer JWT, Module 61).
+The same pattern applies to Notifications. The backend has `GET /notifications`
+(requires Bearer JWT, Module 65).
 
 ## Scope
 
-- Add a `fetchPatients(clinicId, token)` helper to `frontend/lib/api.ts`.
-- Wire the Patients section of the dashboard to fetch `GET /patients`.
-- Show loading, error, empty, and list states (patient name, status, created_at).
-- Keep Notifications and Consultations as placeholders.
-- Add static contract tests confirming the patient fetch is wired correctly.
+- Add a `fetchNotifications(clinicId, token)` helper to `frontend/lib/api.ts`.
+- Wire the Notifications section of the dashboard to fetch `GET /notifications`.
+- Show loading, error, empty, and list states (notification message, severity, created_at).
+- Keep Consultations as a placeholder.
+- Keep Appointments and Patients sections live and unchanged.
+- Add static contract tests confirming the notification fetch is wired correctly.
 
 ## What not to do
 
-- Do not fetch notifications or consultations yet.
+- Do not fetch consultations yet.
 - Do not add search or filtering UI.
-- Do not add real patient data to tests.
+- Do not add real notification data to tests.
 - Do not modify backend routes.
-- Do not remove the Appointments section wired in Module 68.
+- Do not remove or change the Appointments or Patients sections.
 
 ## Acceptance
 
-- Dashboard fetches patients for the logged-in clinic and displays them.
+- Dashboard fetches notifications for the logged-in clinic and displays them.
 - Loading and error states are handled gracefully.
 - Full backend tests pass.
-- Commit: `Sprint 8 / Module 69 — Frontend patient list integration`
+- Commit: `Sprint 8 / Module 70 — Frontend notifications integration`

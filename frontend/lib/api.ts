@@ -58,3 +58,34 @@ export async function fetchAppointmentRequests(
   const data = (await resp.json()) as { ok: boolean; requests: AppointmentRequest[] }
   return data.requests ?? []
 }
+
+// ---------------------------------------------------------------------------
+// Patients — Sprint 8 / Module 69
+// ---------------------------------------------------------------------------
+
+export interface Patient {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  status: string
+  created_at: string
+  [key: string]: unknown
+}
+
+// Fetches GET /patients?clinic_id=<clinicId> with a Bearer JWT.
+// Returns the patients array from the response body.
+export async function fetchPatients(
+  clinicId: string,
+  token: string,
+): Promise<Patient[]> {
+  const resp = await apiFetch(
+    `/patients?clinic_id=${encodeURIComponent(clinicId)}`,
+    {},
+    token,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load patients (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; patients: Patient[] }
+  return data.patients ?? []
+}

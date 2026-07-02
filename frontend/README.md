@@ -93,9 +93,23 @@ The section shows:
 - **Empty** — if the clinic has no appointment requests yet
 - **List** — patient name, status badge, and urgency level for each request
 
-Patients, Notifications, and Consultations sections remain as placeholders
-and will be wired in subsequent modules.
+## Dashboard data — Patients (Module 69)
+
+The **Patients** section fetches `GET /patients?clinic_id=<id>` from the backend using
+the stored JWT as `Authorization: Bearer <token>`.
+
+The section shows:
+- **Loading** — while the request is in flight
+- **Error** — generic message if the request fails
+- **Empty** — if the clinic has no patients yet
+- **List** — full name (first + last) and status badge for each patient
+
+`fetchPatients(clinicId, token)` in `lib/api.ts` handles the request. The `clinic_id`
+is decoded from the JWT payload by `getClinicId()` in `lib/auth.ts`.
+
+Notifications and Consultations sections remain as placeholders and will be wired in
+subsequent modules.
 
 ## Status
 
-Sprint 8 / Module 68 — Appointments section wired to backend. Patients/Notifications/Consultations in Module 69+.
+Sprint 8 / Module 69 — Appointments and Patients sections wired to backend. Notifications/Consultations in Module 70+.

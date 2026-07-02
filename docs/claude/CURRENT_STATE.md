@@ -725,5 +725,17 @@
    - clinic_id decoded from JWT payload client-side (no extra library)
    - No hardcoded tokens or real patient data
 
+67. Module 69 — Frontend patient list integration
+   - Commit: (pending)
+   - `frontend/lib/api.ts` (updated — Patient type + fetchPatients helper)
+   - `frontend/app/dashboard/page.tsx` (updated — Patients section wired to fetchPatients; loading/error/empty/list states; Appointments section unchanged; Notifications/Consultations remain as placeholders)
+   - `frontend/README.md` (updated — patients section: fetchPatients, Bearer token, states)
+   - `backend/tests/test_frontend_patient_list_contract.py` (new — 10 static contract tests)
+   - Module 69 contract tests: 10/10 passed
+   - Full backend tests: 1501/1501 passed
+   - No backend routes modified
+   - Patient row displays full name (first + last) and status badge (green for active)
+   - No hardcoded tokens or real patient data
+
 ## Next module
-Sprint 8 / Module 69 — Frontend Patient List Integration (pending Module 68 review).
+Sprint 8 / Module 70 — Frontend Notifications Integration (pending Module 69 review).
