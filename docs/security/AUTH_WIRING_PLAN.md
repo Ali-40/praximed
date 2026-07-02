@@ -12,7 +12,7 @@
 |---|---|---|
 | `/patients` | `get_current_user` (JWT Bearer) | Module 61 ✓ |
 | `/consultations` | `get_current_user` (JWT Bearer) | Module 62 ✓ |
-| `/clinical-workflows` | `get_auth_context` (header) | pending |
+| `/clinical-workflows` | `get_current_user` (JWT Bearer) | Module 63 ✓ |
 | `/appointment-requests` | `get_auth_context` (header) | pending |
 | `/notifications` | `get_auth_context` (header) | pending |
 
@@ -39,7 +39,7 @@ Wire `get_current_user` into PHI routes in this order (one module per route grou
 2. **`/consultations`** ✓ Done (Module 62) — wired to `get_current_user`; clinical role guard preserved (staff/viewer denied).
 
 ### Phase 2 — Mutation routes
-3. **`/clinical-workflows`** — write-heavy; wire after patient/consultation auth is stable.
+3. **`/clinical-workflows`** ✓ Done (Module 63) — wired to `get_current_user`; clinical role guard preserved; staff/viewer denied.
 4. **`/appointment-requests`** — dual-path (machine callers from Vapi + human callers);
    requires coordination with machine auth layer.
 
