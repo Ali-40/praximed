@@ -120,6 +120,19 @@ This document focuses on the post-polish rendering verification only.
 
 ---
 
+## Module 81 — Confirm Action Added (Sprint 11)
+
+Sprint 11 / Module 81 added a **Confirm** button to appointment request rows with `status === 'new'`.
+
+- Button calls `PATCH /appointment-requests/{id}/status` with `{"status": "confirmed", "action_required": false}`.
+- Button disabled and shows "Confirming…" while in-flight.
+- On success: appointments list re-fetched; row status updates to "confirmed"; button disappears.
+- On failure: generic error message below the appointments list.
+- 10 new contract tests added: `backend/tests/test_frontend_appointment_workflow_contract.py`.
+- Full backend tests: 1570/1570 passed.
+
+---
+
 ## 7. Recommended Next Step
 
 **Architecture Checkpoint 09 — Polished Local Demo Review**

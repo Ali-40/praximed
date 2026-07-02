@@ -124,6 +124,30 @@ export async function fetchConsultations(
 }
 
 // ---------------------------------------------------------------------------
+// Appointment request workflow actions — Sprint 11 / Module 81
+// ---------------------------------------------------------------------------
+
+// Confirms an appointment request via PATCH /appointment-requests/{id}/status.
+// Throws on non-2xx response.
+export async function confirmAppointmentRequest(
+  requestId: string,
+  clinicId: string,
+  token: string,
+): Promise<void> {
+  const resp = await apiFetch(
+    `/appointment-requests/${encodeURIComponent(requestId)}/status?clinic_id=${encodeURIComponent(clinicId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'confirmed', action_required: false }),
+    },
+    token,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to confirm appointment request (HTTP ${resp.status})`)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Notifications — Sprint 8 / Module 70
 // ---------------------------------------------------------------------------
 

@@ -1,63 +1,46 @@
-# Sprint 11 / Module 81 — Appointment Request Workflow UI Foundation
+# Sprint 11 / Module 82 — Appointment Workflow Browser Smoke Evidence
 
-Status: pending Architecture Checkpoint 09 review.
+Status: pending Module 81 commit.
 
 ## Context
 
-Architecture Checkpoint 09 identified the appointment request workflow as the
-highest-priority next feature. Clinic staff can currently view appointment requests on
-the dashboard but cannot action them. The backend already has:
-- `PATCH /appointment-requests/{id}/status` — accepts `{"status": "confirmed"}` or
-  `{"status": "rejected"}` with optional `action_required`
-- `PATCH /appointment-requests/{id}/assign` — assigns to a user
-- `POST /appointment-requests/{id}/callback-needed` — flags for callback
-- `POST /appointment-requests/{id}/archive`
-
-All routes require a Bearer JWT and enforce clinic-level tenant checks.
+Module 81 added a **Confirm** button to appointment request rows with `status === 'new'`.
+The button calls `PATCH /appointment-requests/{id}/status` and refreshes the appointments
+list on success. This module records browser evidence that the Confirm action works
+end-to-end in a real browser against the local backend.
 
 ## Scope
 
-Keep the scope small for the first iteration. Build one action only: **Confirm**.
+Docs-only. No production code changes.
 
-1. Add a `confirmAppointmentRequest(requestId, clinicId, token)` helper to
-   `frontend/lib/api.ts`:
-   - Calls `PATCH /appointment-requests/{id}/status?clinic_id={clinicId}`
-   - Body: `{"status": "confirmed", "action_required": false}`
-   - Throws on non-2xx response
+1. Run the local stack:
+   - `python backend/scripts/seed_local_data.py` — upsert seed rows (idempotent)
+   - `uvicorn backend.app.main:app --reload --port 8000`
+   - `cd frontend && npm run dev`
 
-2. Add a Confirm button to each appointment request row in
-   `frontend/app/dashboard/page.tsx`:
-   - Only shown when `appt.status === 'new'` (no button for already-confirmed rows)
-   - On click: calls `confirmAppointmentRequest`, then refreshes the appointments list
-   - Shows a loading/disabled state while the request is in flight
-   - Shows a generic error message if the call fails
-   - On success: row status badge updates to "confirmed"
+2. Perform the smoke in a browser:
+   - Login with local-dev credentials → `/dashboard`
+   - Confirm the seeded appointment request row shows a **Confirm** button (status: new)
+   - Click Confirm — observe button goes to "Confirming…" (disabled) while in-flight
+   - Observe row status badge updates to "confirmed" and button disappears
+   - Confirm no error message is shown
 
-3. Create `backend/tests/test_frontend_appointment_workflow_contract.py`:
-   - `confirmAppointmentRequest` defined in `lib/api.ts`
-   - Uses `PATCH` method and `/appointment-requests/` endpoint
-   - Uses Bearer token
-   - Dashboard references `confirmAppointmentRequest`
-   - Confirm button only shown for `status === 'new'`
-   - No hardcoded tokens or real patient data
+3. Create `docs/runtime/FRONTEND_APPOINTMENT_WORKFLOW_SMOKE_RESULTS.md`:
+   - Date, sprint, verdict
+   - Environment table (same as Module 80 smoke)
+   - Steps completed table
+   - Evidence: what was observed at each step
+   - What this proves
+   - What remains (Reject, Assign, Callback, Archive not yet built)
+   - Recommended next step
 
-4. Manual browser verification:
-   - Login and confirm the seeded appointment request shows a Confirm button.
-   - Click Confirm — status badge updates to "confirmed" and button disappears.
-
-## What not to do
-
-- Do not add Reject, Assign, or Archive actions in this module (next modules).
-- Do not add a modal or confirmation dialog — inline button only for now.
-- Do not change backend routes, schemas, or migrations.
-- Do not change auth or seed script.
+4. Update `docs/claude/CURRENT_STATE.md` — record Module 82
+5. Update `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 83 — Reject Action
 
 ## Acceptance
 
-- Confirm button appears on appointment request rows with status "new".
-- Clicking Confirm updates the row to status "confirmed".
-- Button disabled while request is in flight.
-- Generic error shown on failure.
-- Contract tests pass: `pytest -v backend/tests/test_frontend_appointment_workflow_contract.py`
-- Full backend tests pass: `pytest -v backend/tests`
-- Commit: `Sprint 11 / Module 81 — Appointment request workflow UI foundation`
+- Browser smoke evidence document created.
+- Confirm flow proven end-to-end: button visible → click → status updates → button gone.
+- `docs/claude/CURRENT_STATE.md` updated.
+- `docs/claude/NEXT_MODULE.md` updated.
+- Commit: `Sprint 11 / Module 82 — Appointment workflow browser smoke evidence`

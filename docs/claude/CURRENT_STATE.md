@@ -907,5 +907,18 @@
 - Reason: appointment requests are the core Vapi output; clinic staff need Confirm/Reject actions to complete the loop
 - Sprint 11 started: Appointment Request Workflow UI (Module 81+)
 
+79. Module 81 — Appointment request workflow UI foundation
+   - Commit: (see below — Sprint 11 / Module 81)
+   - `frontend/lib/api.ts` (updated — `confirmAppointmentRequest(requestId, clinicId, token)` helper: PATCH /appointment-requests/{id}/status?clinic_id=..., body {"status":"confirmed","action_required":false}, throws on non-2xx)
+   - `frontend/app/dashboard/page.tsx` (updated — `confirmAppointmentRequest` imported; `confirmingIds: Set<string>` and `apptActionError` state added; `handleConfirm()` async handler; Confirm button on rows with status === 'new'; button disabled + "Confirming…" while in-flight; generic error on failure; refetches appointments on success)
+   - `backend/tests/test_frontend_appointment_workflow_contract.py` (new — 10 static contract tests: helper defined, PATCH method, correct endpoint, Bearer token via apiFetch, dashboard imports helper, button gated on status==='new', disabled state, action error state, refetch on success, no hardcoded credentials)
+   - `docs/runtime/FRONTEND_POLISHED_DEMO_BROWSER_SMOKE_RESULTS.md` (updated — Module 81 note added)
+   - `frontend/README.md` (updated — Confirm action section)
+   - Module 81 new tests: 10 new (1570 total); all 10 passed
+   - Full backend tests: 1570/1570 passed
+   - No backend routes or schema modified
+   - Confirm button only shown on status === 'new' rows; disappears after successful confirmation
+   - Action error is generic — does not expose backend error detail
+
 ## Next module
-Sprint 11 / Module 81 — Appointment Request Workflow UI Foundation.
+Sprint 11 / Module 82 — Appointment Workflow Browser Smoke Evidence.

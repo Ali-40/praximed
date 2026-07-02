@@ -1,14 +1,14 @@
 'use client'
 
-// Dashboard page — PraxisMed Sprint 10 / Module 79
-// Visual polish: clinic header subtitle, section row counts, Clinic Overview heading,
-// badge colour tokens, local-demo footer label.
-// Data fetching for all four sections unchanged from Module 78.
+// Dashboard page — PraxisMed Sprint 11 / Module 81
+// Module 81: Confirm action on appointment request rows (status === 'new' only).
+// Module 79: Visual polish — header subtitle, count pills, badge tokens, footer.
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { clearToken, getClinicId, getToken, isAuthenticated } from '@/lib/auth'
 import {
+  confirmAppointmentRequest,
   fetchAppointmentRequests,
   fetchPatients,
   fetchNotifications,
@@ -82,6 +82,10 @@ export default function DashboardPage() {
   const [consultLoading, setConsultLoading] = useState(true)
   const [consultError, setConsultError] = useState<string | null>(null)
 
+  // Tracks which appointment request IDs have a Confirm call in-flight.
+  const [confirmingIds, setConfirmingIds] = useState<Set<string>>(new Set())
+  const [apptActionError, setApptActionError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!isAuthenticated()) {
       router.replace('/login')
@@ -120,6 +124,29 @@ export default function DashboardPage() {
   function handleLogout() {
     clearToken()
     router.push('/login')
+  }
+
+  async function handleConfirm(requestId: string) {
+    const token = getToken()
+    const clinicId = getClinicId()
+    if (!token || !clinicId) return
+
+    setConfirmingIds((prev) => new Set(prev).add(requestId))
+    setApptActionError(null)
+
+    try {
+      await confirmAppointmentRequest(requestId, clinicId, token)
+      const rows = await fetchAppointmentRequests(clinicId, token)
+      setAppointments(rows)
+    } catch {
+      setApptActionError('Could not confirm appointment request. Please try again.')
+    } finally {
+      setConfirmingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(requestId)
+        return next
+      })
+    }
   }
 
   // Shared card style for the four sections
@@ -230,9 +257,32 @@ export default function DashboardPage() {
                   <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                     {appt.urgency_level}
                   </span>
+                  {appt.status === 'new' && (
+                    <button
+                      data-action="confirm"
+                      onClick={() => handleConfirm(appt.id)}
+                      disabled={confirmingIds.has(appt.id)}
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '2px 10px',
+                        borderRadius: 4,
+                        border: '1px solid var(--badge-green-text)',
+                        background: confirmingIds.has(appt.id) ? 'var(--color-border)' : 'var(--badge-green-bg)',
+                        color: confirmingIds.has(appt.id) ? 'var(--color-text-muted)' : 'var(--badge-green-text)',
+                        cursor: confirmingIds.has(appt.id) ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {confirmingIds.has(appt.id) ? 'Confirming…' : 'Confirm'}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
+          )}
+          {apptActionError && (
+            <p data-state="action-error" style={{ fontSize: '0.875rem', color: 'var(--color-danger)', marginTop: '0.5rem' }}>
+              {apptActionError}
+            </p>
           )}
         </section>
 

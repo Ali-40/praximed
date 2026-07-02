@@ -187,6 +187,20 @@ fake/local rows so all four dashboard sections show list state after login:
 See `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` for the full step-by-step runbook
 including expected responses, known limitations, and tear-down instructions.
 
+## Appointment request workflow — Confirm action (Module 81)
+
+Appointment request rows with `status === 'new'` show a **Confirm** button.
+
+Clicking Confirm calls `PATCH /appointment-requests/{id}/status?clinic_id=<id>` with body
+`{"status": "confirmed", "action_required": false}` using the stored Bearer JWT.
+
+- Button is disabled and shows "Confirming…" while the call is in flight.
+- On success: the appointments list is re-fetched and the row's status badge updates to "confirmed"
+  (and the Confirm button disappears from that row).
+- On failure: a generic error message appears below the appointments list.
+
+`confirmAppointmentRequest(requestId, clinicId, token)` in `lib/api.ts` handles the request.
+
 ## Status
 
-Sprint 9 / Module 76 — Local demo data polished. All four dashboard sections show list state after seed.
+Sprint 11 / Module 81 — Confirm action added to appointment request rows.
