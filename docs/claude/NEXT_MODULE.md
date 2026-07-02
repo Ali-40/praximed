@@ -1,59 +1,101 @@
-# Architecture Checkpoint 10 — Vapi Appointment Intake Loop Review
+# Sprint 11 / Module 90 — Direct Real Vapi Assistant Tool-Call Log Capture
 
-Status: pending Module 89 review.
+Status: pending Architecture Checkpoint 10 review.
 
 ## Context
 
-Sprint 11 (Modules 81–89) has delivered the full local Vapi appointment intake loop:
-
-- Module 81 — Appointment request Confirm action in the staff dashboard
-- Module 82 — Appointment workflow browser smoke evidence
-- Module 83 — Vapi intake smoke harness and bug fix
-- Module 84 — `app.state.config_loader` wired in lifespan
-- Module 85 — Config loader UUID compatibility; live smoke HTTP 200
-- Module 86 — Vapi intake to dashboard browser smoke evidence (full loop)
-- Module 87 — Real Vapi tool payload shape analysis; inspector script
-- Module 88 — `adapt_vapi_tool_call_body` adapter for nested Vapi tool-call shape
-- Module 89 — ngrok/dashboard intake evidence; scope `vapi:tool` confirmed
-
-The Vapi intake loop is now locally demonstrated end-to-end. The remaining open item
-before moving to the next sprint is a formal architecture review of this sprint's work.
+Architecture Checkpoint 10 reviewed the full Sprint 11 Vapi intake loop. One evidence
+gap remains: the local/ngrok path is proven end-to-end, but direct real Vapi assistant
+call logs have not been captured. The adapted endpoint is ready. The shape is understood.
+Module 90 closes this gap with evidence from a real live Vapi test assistant.
 
 ## Scope
 
-### 1. Create Architecture Checkpoint 10 document
+Docs and evidence only. No production code changes unless a real blocker appears.
 
-File: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_INTAKE_LOOP_REVIEW.md`
+### 1. Prerequisites
 
-Sections:
-1. **Sprint summary** — what was built in Modules 81–89
-2. **What is proven** — local/ngrok intake loop, adapter, staff confirm, browser
-3. **What is not yet proven** — real Vapi assistant logs, production deployment
-4. **Security review** — clinic_ref from machine auth, no auto-confirm, PHI handling
-5. **Machine auth scope note** — `vapi:tool` (singular); reject `vapi:tools`
-6. **Known gaps before production** — auth session storage, calendar, notification surfacing
-7. **Frontend opportunity** — evaluate Fabel 5 / Claude frontend tooling for UI polish sprint
-8. **Recommended next sprint** — Sprint 12 options: real Vapi assistant log capture, calendar integration, frontend UX sprint
+- A test Vapi assistant configured to call `capture_appointment_request` as a server-URL tool.
+- ngrok tunnel exposing `http://127.0.0.1:8000`.
+- Backend running with `DATABASE_URL`, `JWT_SECRET_KEY`, and machine auth env vars.
+- Seed data fresh (`python backend/scripts/seed_local_data.py`).
 
-### 2. Update docs
+**Test assistant only — never a production assistant with real patients.**
 
-- `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 10
-- `docs/claude/NEXT_MODULE.md` — Sprint 12 placeholder
+### 2. Vapi tool configuration (from Module 89)
 
-## What not to do
+| Field | Value |
+|---|---|
+| Method | `POST` |
+| URL | `https://<ngrok-id>.ngrok-free.app/vapi/tools/capture-appointment-request` |
+| `X-Vapi-Service-Name` | `vapi` |
+| `X-Vapi-Clinic-Id` | `11111111-1111-1111-1111-111111111111` |
+| `X-Vapi-Scopes` | `vapi:tool` (singular — not `vapi:tools`) |
+| Function name | `capture_appointment_request` |
+| `patient_name` | string, required |
+| `reason` | string, optional |
+| `urgency_level` | string enum `["normal", "urgent", "emergency"]`, optional |
 
-- Do not change production code
-- Do not run migrations or touch the DB schema
-- Do not claim production readiness
-- Do not document real patient data or secrets
-- Do not mark real Vapi assistant log evidence as proven if not captured
+Do NOT add `caller_phone` to parameters — it comes from `message.call.customer.number`.
+
+### 3. Steps
+
+1. Start stack: PostgreSQL, seed, backend, frontend, ngrok.
+2. Configure test Vapi assistant with tool as above.
+3. Make a test call: *"I'd like to book an appointment. My name is Local Real Vapi Caller. Fake test consultation only."*
+4. Observe Vapi tool-call result in Vapi dashboard call logs.
+5. Confirm backend received request (backend terminal or ngrok inspector).
+6. Sanitize the captured payload — replace all patient names/phones with fake values.
+7. Save sanitized payload as `docs/integrations/local_payloads/vapi_real_tool_payload_captured_from_live_assistant.json`.
+8. Run inspector:
+   ```bash
+   python backend/scripts/inspect_vapi_tool_payload.py \
+     --payload-file docs/integrations/local_payloads/vapi_real_tool_payload_captured_from_live_assistant.json
+   ```
+9. Note the argument keys present in the real payload — compare with adapter expectations.
+10. Open `http://localhost:3000/login`, verify appointment row appeared with `source=vapi`, `status=new`.
+11. Click Confirm; verify status → confirmed.
+
+### 4. If argument keys differ from sample
+
+If the real Vapi assistant sends `name` instead of `patient_name`, `phone` instead of
+`caller_phone`, or any other alias:
+- Add alias handling to `adapt_vapi_tool_call_body` in `vapi_appointment_capture.py`.
+- Add unit tests for the alias keys.
+- Re-run the live smoke to confirm the fix.
+- This would be the only code change in Module 90.
+
+### 5. Document results
+
+Create `docs/runtime/VAPI_REAL_ASSISTANT_TOOL_CALL_SMOKE_RESULTS.md` with:
+- Environment (ngrok URL sanitized, Vapi assistant name/ID sanitized)
+- Steps completed
+- Evidence table: Vapi call log status, HTTP status from backend, response body (sanitized), dashboard row, inspector verdict
+- Accuracy statement: what is now proven vs what remains pending
+- What this proves / what it does not prove
+
+### 6. Update docs
+
+- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — mark direct Vapi assistant logs RESOLVED
+- `docs/claude/CURRENT_STATE.md` — record Module 90
+- `docs/claude/NEXT_MODULE.md` — Architecture Checkpoint 11 or Sprint 12 placeholder
+
+### 7. What not to do
+
+- Do not use real patient data or real patient names
+- Do not commit any payload with residual PII
+- Do not auto-confirm appointment requests
+- Do not change machine auth or webhook signature logic
+- Do not claim production readiness in the docs
 
 ## Acceptance
 
-- Architecture Checkpoint 10 document created
-- Sprint 11 scope accurately summarised
-- Remaining gaps documented honestly
-- Frontend opportunity recorded as future-only
-- No code changes
-- Tests still pass (1625/1625)
-- Commit: `Architecture Checkpoint 10 — Vapi appointment intake loop review`
+- Real live Vapi assistant triggers `capture_appointment_request`
+- Backend receives nested Vapi-shape body, adapter fires, HTTP 2xx returned
+- Appointment row visible in dashboard with `source=vapi`, `status=new`
+- Staff Confirm succeeds in browser
+- Sanitized payload archived
+- Inspector reports NEEDS ADAPTER (adapter already wired)
+- If argument keys differ from sample, adapter adjusted and re-tested
+- All existing tests pass (1625/1625 minimum)
+- Commit: `Sprint 11 / Module 90 — Direct real Vapi assistant tool-call log capture`

@@ -1011,29 +1011,26 @@
    - Security boundary enforced: patient-supplied clinic_ref in arguments silently ignored; machine_clinic_id always used
 
 87. Module 89 — Vapi/ngrok appointment intake dashboard evidence
-   - Commit: (see git log)
+   - Commit: 514206e
    - `docs/runtime/VAPI_REAL_TOOL_CALL_LIVE_SMOKE_RESULTS.md` (new — full evidence: ngrok intake, dashboard rows, staff Confirm, accuracy statement, what's proven vs pending)
    - `docs/runtime/VAPI_REAL_TOOL_PAYLOAD_ADAPTER_RESULTS.md` (updated — Module 89 ngrok/dashboard evidence note)
    - `docs/runtime/VAPI_INTAKE_TO_DASHBOARD_BROWSER_SMOKE_RESULTS.md` (updated — Module 89 dashboard confirmation note)
    - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — unknowns table updated; scope `vapi:tool` confirmed; frontend opportunity note added)
+   - `docs/integrations/local_payloads/vapi_real_tool_payload_captured.json` (new — sanitized captured payload from ngrok smoke)
    - No production code changes
    - Full backend tests: 1625/1625 passed (unchanged)
    - Evidence: nested Vapi-shape through ngrok → HTTP 200; 4 appointment rows in dashboard; staff Confirm succeeded; status new → confirmed; button disappeared; other sections stable
    - Machine auth scope confirmed: `X-Vapi-Scopes: vapi:tool` (singular)
    - Direct real Vapi assistant call logs: PENDING — not captured in this module
-   - No real patient data; no auto-confirmation; staff confirmation boundary maintained
-
-## Frontend opportunity (noted Module 89)
-   - Evaluate Fabel 5 / Claude-related frontend generation tooling for premium doctor-facing UI polish
-   - Timing: after Architecture Checkpoint 10, in a dedicated frontend UX sprint
-   - Goal: make clinic dashboard more premium, user-friendly, and impressive while preserving security and integration quality
-   - Not part of Module 89 scope; recorded here for future sprint planning
 
 ## Architecture checkpoint
 
-- Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
-- Updated in Module 82: §3b follow-up added; §4.1 Confirm action marked delivered
-- Sprint 11 in progress (Modules 81–89 complete)
+- Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
+- Full backend tests: 1625/1625 passed
+- Sprint 11 complete (Modules 81–89)
+- Local/ngrok Vapi intake loop proven end-to-end; direct real Vapi assistant logs pending
+- Security boundaries reviewed: no auto-confirm, clinic_ref from machine auth, staff confirmation required
+- Frontend UX opportunity noted: evaluate Fabel 5 / Claude frontend tooling after Checkpoint 10
 
 ## Next module
-Architecture Checkpoint 10 — Vapi Appointment Intake Loop Review.
+Sprint 11 / Module 90 — Direct Real Vapi Assistant Tool-Call Log Capture.
