@@ -1,44 +1,40 @@
-# Sprint 8 / Module 66 — Frontend Dashboard Foundation
+# Sprint 8 / Module 67 — Frontend Login Flow Integration
 
-Status: pending Architecture Checkpoint 06 review.
+Status: pending Module 66 review.
 
 ## Context
 
-Sprint 7 (Modules 59–65) completed the full human auth layer:
-- JWT login endpoint (`POST /auth/login`)
-- `get_current_user` dependency enforcing Bearer JWT on all PHI routes
-- All five PHI route groups now require JWT: `/patients`, `/consultations`,
-  `/clinical-workflows`, `/appointment-requests`, `/notifications`
+Module 66 created the Next.js frontend skeleton with:
+- `/login` — email/password form UI (not yet connected to backend)
+- `/dashboard` — placeholder cards for Patients, Appointments, Notifications, Consultations
+- `lib/api.ts` — `apiFetch` helper with `NEXT_PUBLIC_API_BASE_URL`
+- `lib/auth.ts` — `loginUser`, `storeToken`, `getToken`, `clearToken`, `isAuthenticated`
 
-The backend is auth-complete for human users. Machine routes (Vapi, n8n, webhooks)
-remain on header-based machine auth and are unchanged.
-
-A frontend can now be built against real JWT-secured API endpoints.
+The backend already has `POST /auth/login` returning a JWT (Module 60). The helpers
+exist; they just need to be wired to the form.
 
 ## Scope
 
-Build a minimal Next.js frontend skeleton:
-- Login page: email + password form → `POST /auth/login` → store JWT
-- Session handling: secure JWT storage (httpOnly cookie preferred)
-- Clinic dashboard layout: sidebar, route guards for authenticated pages
-- Appointment request queue: list view fetching `GET /appointment-requests`
-- Notification feed: list view fetching `GET /notifications`
-
-Do not build:
-- Doctor review / clinical workflow UI (deferred)
-- Patient record editing UI (deferred)
-- Full CRUD forms beyond minimal read views
+- Wire the login form in `frontend/app/login/page.tsx` to call `loginUser()` from `lib/auth.ts`.
+- On success: store the token and redirect to `/dashboard`.
+- On failure: display an error message below the form.
+- Add a route guard to `/dashboard/page.tsx`: redirect to `/login` if no token in storage.
+- Add a logout button to the dashboard header that calls `clearToken()` and redirects to `/login`.
+- Add static contract tests confirming the form has an `onSubmit` handler and the dashboard has a logout trigger.
 
 ## What not to do
 
-- Do not add auth hardening (refresh tokens, rate limiting) in this module.
+- Do not add refresh token logic.
+- Do not switch to httpOnly cookies in this module (deferred to auth hardening sprint).
+- Do not fetch real data from the backend yet (Patients/Appointments/Notifications list fetching is Module 68+).
 - Do not modify any backend routes.
 - Do not use real patient data.
-- Do not deploy to production.
 
 ## Acceptance
 
-- Login page authenticates against the backend and stores the JWT.
-- Dashboard loads and displays appointment requests and notifications for the logged-in clinic.
-- Unauthenticated navigation redirects to login.
-- Commit: `Sprint 8 / Module 66 — Frontend dashboard foundation`
+- Submitting the login form with correct credentials stores a token and loads `/dashboard`.
+- Submitting with wrong credentials shows an error without crashing.
+- Navigating to `/dashboard` without a token redirects to `/login`.
+- Dashboard logout button clears the token and redirects to `/login`.
+- Full backend tests pass.
+- Commit: `Sprint 8 / Module 67 — Frontend login flow integration`

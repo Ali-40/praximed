@@ -680,5 +680,25 @@
 - Sprint 7 complete (Modules 59–65)
 - Sprint 8 started: Frontend Dashboard Foundation (Module 66+)
 
+64. Module 66 — Frontend dashboard foundation
+   - Commit: pending
+   - `frontend/package.json` (new — Next.js 14, React 18, TypeScript 5)
+   - `frontend/tsconfig.json` (new)
+   - `frontend/next.config.js` (new)
+   - `frontend/app/layout.tsx` (new — root layout with PraxisMed metadata)
+   - `frontend/app/page.tsx` (new — redirects to /login)
+   - `frontend/app/globals.css` (new — minimal design tokens and reset)
+   - `frontend/app/login/page.tsx` (new — email/password form UI scaffold)
+   - `frontend/app/dashboard/page.tsx` (new — placeholder cards for Patients, Appointments, Notifications, Consultations)
+   - `frontend/lib/api.ts` (new — apiFetch helper with NEXT_PUBLIC_API_BASE_URL and localhost fallback)
+   - `frontend/lib/auth.ts` (new — loginUser, storeToken, getToken, clearToken, isAuthenticated; sessionStorage local-dev only)
+   - `frontend/README.md` (new — local startup instructions)
+   - `backend/tests/test_frontend_dashboard_foundation_contract.py` (new — 10 static contract tests)
+   - Module 66 contract tests: 10/10 passed
+   - Full backend tests: 1471/1471 passed
+   - No backend routes modified
+   - No real patient data; no hardcoded secrets
+   - Login flow wired to backend in Module 67
+
 ## Next module
-Sprint 8 / Module 66 — Frontend Dashboard Foundation (pending Architecture Checkpoint 06 review).
+Sprint 8 / Module 67 — Frontend Login Flow Integration (pending Module 66 review).
