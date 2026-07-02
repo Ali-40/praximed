@@ -3,15 +3,19 @@ Updated: Sprint 9 / Module 73 — runtime blockers fixed; runbook updated
 Updated: Sprint 9 / Module 74 — CORS support added; browser login unblocked
 Updated: Sprint 9 / Module 75 — full browser smoke executed; verdict PASS
 Updated: Sprint 9 / Module 76 — fake appointment request and notification added to seed
+Updated: Sprint 9 / Module 77 — demo data browser smoke confirmed PASS; all four sections list state
 
 **Smoke result: PASS** (2026-07-02) — see `docs/runtime/FRONTEND_BROWSER_SMOKE_RESULTS.md` for full evidence.
+
+**Demo data smoke result: PASS** (2026-07-02) — see
+`docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` for full evidence.
 
 **Module 76 demo data note:** After re-running `python backend/scripts/seed_local_data.py`,
 all four dashboard sections render list state:
 - Appointments — "Local Test Patient" (status: new, urgency: normal)
-- Patients — "Local Test Patient" (status: active)
+- Patients — seeded patient row visible (status: active; name shows `"—"` — cosmetic issue, see §6 of demo smoke doc)
 - Notifications — "Local Test Notification" (priority: normal, type: appointment_request)
-- Consultations — "Local Test Consultation Session" (approval_status: not_ready)
+- Consultations — "Local Test Consultation Session" (approval_status: not_ready, source: manual)
 
 This runbook walks through a complete local browser smoke test: start the stack,
 seed a login-capable fake user, sign in at `/login`, and verify all four dashboard

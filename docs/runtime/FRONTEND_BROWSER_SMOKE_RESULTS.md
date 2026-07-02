@@ -165,3 +165,23 @@ After re-running `python backend/scripts/seed_local_data.py` all four dashboard
 sections should render list state (not empty state).
 
 See `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` for updated runbook notes.
+
+---
+
+## 10. Module 77 — Demo Data Browser Smoke Confirmed PASS
+
+**Sprint 9 / Module 77 — Rerun Frontend Demo Data Browser Smoke Evidence (2026-07-02)**
+
+After re-running `seed_local_data.py` (Module 76 seed), a full browser smoke was
+executed. All four dashboard sections rendered **list state**:
+
+| Section | Observed |
+|---|---|
+| Appointments | "Local Test Patient" — status: new, urgency: normal |
+| Patients | Seeded patient row visible — status: active |
+| Notifications | "Local Test Notification" — priority: normal, type: appointment_request |
+| Consultations | "Local Test Consultation Session" — status: not_ready, source: manual |
+
+Known minor issue: Patients row displays fallback `"—"` for the name (frontend splits
+`first_name`/`last_name` but backend returns `full_name` — cosmetic, does not block
+demo). Full evidence in `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md`.
