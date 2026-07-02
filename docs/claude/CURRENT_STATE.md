@@ -824,5 +824,18 @@
    - All four dashboard sections rendered (Appointments empty, Patients seeded, Notifications empty, Consultations seeded)
    - Logout cleared sessionStorage token; auth guard redirected back to /login
 
+74. Module 76 — Dashboard empty-state and local demo data polish
+   - Commit: 4f263b5
+   - `backend/scripts/seed_local_data.py` (updated — LOCAL_APPOINTMENT_REQUEST_ID + LOCAL_NOTIFICATION_ID constants; INSERT into appointment_requests and clinic_notifications; ON CONFLICT upserts; main() prints both new IDs)
+   - `backend/tests/test_local_seed_contract.py` (updated — 8 new tests 30–37: appointment request ID, notification ID, UUID validity, table INSERT references, constant usage count, ON CONFLICT count)
+   - `docs/runtime/FRONTEND_BROWSER_SMOKE_RESULTS.md` (updated — Section 9 rewritten to Module 76 demo data note)
+   - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (updated — Module 76 update line at top; demo data note; Step 3 expected output updated; Step 8 all four sections show list state)
+   - `frontend/README.md` (updated — seed row table for all four dashboard sections; status updated to Module 76)
+   - Module 76 new tests: 8 new (37 total in file); all 37 passed
+   - Full backend tests: 1547/1547 passed
+   - No backend routes modified; no frontend code changed
+   - Seed script creates: clinic, doctor user, patient, consultation session, appointment request (55555555), notification (66666666)
+   - All four dashboard sections now show list state after re-seeding
+
 ## Next module
-Sprint 9 / Module 76 — Dashboard Empty-State and Local Demo Data Polish.
+Sprint 9 / Module 77 — Rerun Frontend Demo Data Browser Smoke Evidence.
