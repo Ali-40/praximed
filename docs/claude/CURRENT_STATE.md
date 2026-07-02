@@ -811,5 +811,18 @@
    - Full backend tests: 1539/1539 passed
    - No auth routes or frontend code modified
 
+73. Module 75 — Frontend browser smoke evidence
+   - Commit: c5f9d4a
+   - `docs/runtime/FRONTEND_BROWSER_SMOKE_RESULTS.md` (new — full smoke evidence: environment, steps, curl/browser/CORS/logout evidence, what this proves, what it does not prove, future language note, recommended Module 76)
+   - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (updated — smoke PASS note added at top, link to results doc)
+   - `docs/claude/NEXT_MODULE.md` (updated — Module 76 spec: dashboard demo data polish)
+   - No production code changes
+   - Full backend tests: 1539/1539 passed
+   - Browser smoke verdict: PASS (2026-07-02)
+   - login → dashboard → logout flow confirmed in real browser
+   - CORS preflight (OPTIONS /auth/login) → HTTP 200 confirmed
+   - All four dashboard sections rendered (Appointments empty, Patients seeded, Notifications empty, Consultations seeded)
+   - Logout cleared sessionStorage token; auth guard redirected back to /login
+
 ## Next module
-Sprint 9 / Module 75 — Run Frontend Browser Smoke Evidence (pending Module 74 review).
+Sprint 9 / Module 76 — Dashboard Empty-State and Local Demo Data Polish.
