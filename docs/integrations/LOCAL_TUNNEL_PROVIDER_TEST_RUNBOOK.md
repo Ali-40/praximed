@@ -269,16 +269,30 @@ If you configured a real signing secret in the Vapi or n8n dashboard for this te
 
 ---
 
-## 10. Next Module Recommendation
+## 10. Observed Real Vapi Tunnel Result (Module 55 session)
 
-**Sprint 6 / Module 56 — Real Vapi Tunnel Smoke Test Evidence**
+The following was confirmed during a real Vapi tunnel test session:
 
-Status: pending manual dashboard setup.
+- Real Vapi reached ngrok and the backend.
+- HMAC auth passed after configuring:
+  - Signature Header: `x-signature`
+  - Include Timestamp: OFF
+  - Payload Format: `{body}`
+  - Encoding: Hex
+- Machine auth headers that worked:
+  - `X-Vapi-Service-Name: vapi`
+  - `X-Vapi-Clinic-Id: 11111111-1111-1111-1111-111111111111`
+  - `X-Vapi-Scopes: vapi:webhook`
+- Backend returned **HTTP 400**: `{"detail":"Missing required field: 'clinic_id'"}`
+  - **Root cause**: Real Vapi server payloads use `{"message": {"type": "assistant-started", ...}}` — they do not include `clinic_id`, `call_id`, or `event_type` at the root.
+  - **Fixed in Module 56**: The route now adapts real Vapi payloads — resolving `clinic_id` from machine auth, `event_type` from `message.type`, and `call_id` from `message.call.id` or `X-Call-Id` header.
 
-Once a real Vapi test assistant is configured and a public tunnel is running, conduct the Vapi test plan from Section 6 and capture the evidence from Section 8. Record:
+---
 
-- Exact payload shape Vapi sends.
-- Exact signature header name and format Vapi uses.
-- Whether any route schema or auth adapter changes are needed.
+## 11. Next Module Recommendation
 
-Do not make code changes until this evidence exists. The evidence determines what (if anything) needs to change.
+**Sprint 6 / Module 57 — Real Vapi Tunnel Retest Evidence**
+
+Status: pending Module 56 review.
+
+Repeat the Vapi test plan from Section 6 with the adapter in place. Verify that the real Vapi payload no longer causes HTTP 400 and that HTTP 200 is returned for both `assistant-started` and `end-of-call-report` events.

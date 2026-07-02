@@ -1,13 +1,14 @@
-# Sprint 6 / Module 56 — Real Vapi Tunnel Smoke Test Evidence
+# Sprint 6 / Module 57 — Real Vapi Tunnel Retest Evidence
 
-Status: pending manual dashboard setup.
+Status: pending Module 56 review.
 
-Once a real Vapi test assistant is configured and a public tunnel is running, conduct the Vapi test plan from `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` Section 6 and capture the evidence from Section 8.
+Repeat the Vapi test plan from `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` Section 6 with the Module 56 payload adapter in place.
+
+Verify that the real Vapi payload no longer causes HTTP 400 and that HTTP 200 is returned for both `assistant-started` and `end-of-call-report` events.
 
 Record:
 
-- Exact payload shape Vapi sends.
-- Exact signature header name and format Vapi uses.
-- Whether any route schema or auth adapter changes are needed.
-
-Do not make code changes until this evidence exists. The evidence determines what (if anything) needs to change.
+- HTTP response status from FastAPI for each real Vapi event type.
+- Whether `clinic_id` was correctly resolved from machine auth headers.
+- Whether `event_type` was correctly mapped from `message.type`.
+- Whether any further schema or adapter changes are needed.

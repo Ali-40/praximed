@@ -510,13 +510,31 @@
 
 53. Module 55 — Local tunnel real provider test runbook
    - Commit: 708952a
-   - Docs commit: TBD
+   - Docs commit: 7afb929
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (new)
    - `docs/integrations/EXTERNAL_INTEGRATION_COMPATIBILITY_PLAN.md` (updated — Section N added)
    - `docs/claude/CURRENT_STATE.md` (updated)
    - `docs/claude/NEXT_MODULE.md` (updated — Module 56 placeholder)
    - No production code changes
    - Full backend tests: 1380/1380 passed
+   - Real Vapi tunnel test result: HMAC and machine auth passed; backend returned HTTP 400 due to payload shape mismatch (clinic_id absent in real Vapi body)
+   - Real Vapi payload shape: {"message": {"type": "assistant-started", ...}} — no clinic_id/call_id/event_type at root
+
+54. Module 56 — Real Vapi payload compatibility adapter
+   - Commit: 53b6ddb
+   - Docs commit: TBD
+   - `backend/app/api/routes/vapi_webhooks.py` (updated — _adapt_vapi_payload, request: Request added)
+   - `backend/tests/test_vapi_webhook_route.py` (updated — 6 new adapter tests, 30 total)
+   - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 10 real result, Section 11 next module)
+   - `docs/claude/CURRENT_STATE.md` (updated)
+   - `docs/claude/NEXT_MODULE.md` (updated — Module 57 placeholder)
+   - Module 56 tests: 6 new tests passed (30 total in file)
+   - Full backend tests: 1386/1386 passed
+   - Route now accepts both local payload shape and real Vapi server shape
+   - clinic_id resolved from machine auth when absent in body
+   - event_type mapped from message.type (assistant-started → call.started, end-of-call-report → call.ended)
+   - call_id resolved from message.call.id → message.callId → X-Call-Id header → fallback
+   - HMAC and machine auth enforcement unchanged
 
 ## Next module
-Sprint 6 / Module 56 — Real Vapi Tunnel Smoke Test Evidence (pending manual dashboard setup).
+Sprint 6 / Module 57 — Real Vapi Tunnel Retest Evidence (pending Module 56 review).
