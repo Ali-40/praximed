@@ -749,5 +749,18 @@
    - Notification row displays title, priority badge (red for urgent/emergency), and notification_type
    - No hardcoded tokens or real patient data
 
+69. Module 71 — Frontend consultation list integration
+   - Commit: (pending)
+   - `frontend/lib/api.ts` (updated — ConsultationSession type + fetchConsultations helper)
+   - `frontend/app/dashboard/page.tsx` (updated — Consultations section wired to fetchConsultations; loading/error/empty/list states; placeholder grid removed; all four sections live)
+   - `frontend/README.md` (updated — consultations section: fetchConsultations, Bearer token, states)
+   - `backend/tests/test_frontend_consultations_contract.py` (new — 10 static contract tests)
+   - Module 71 contract tests: 10/10 passed
+   - Full backend tests: 1521/1521 passed
+   - No backend routes modified
+   - Consultation row displays title, approval status badge (green for approved), and source
+   - Consultations placeholder card removed; all four dashboard sections now live
+   - No hardcoded tokens or real patient data
+
 ## Next module
-Sprint 8 / Module 71 — Frontend Consultation List Integration (pending Module 70 review).
+Architecture Checkpoint 07 — Frontend Dashboard Review (pending Module 71 review).

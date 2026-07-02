@@ -1,8 +1,7 @@
 'use client'
 
-// Dashboard page — PraxisMed Sprint 8 / Module 70
-// Appointments, Patients, and Notifications sections are live.
-// Consultations remains as a placeholder (Module 71+).
+// Dashboard page — PraxisMed Sprint 8 / Module 71
+// Appointments, Patients, Notifications, and Consultations sections are live.
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -11,18 +10,12 @@ import {
   fetchAppointmentRequests,
   fetchPatients,
   fetchNotifications,
+  fetchConsultations,
   AppointmentRequest,
   Patient,
   Notification,
+  ConsultationSession,
 } from '@/lib/api'
-
-const PLACEHOLDER_SECTIONS = [
-  {
-    key: 'consultations',
-    label: 'Consultations',
-    description: 'Access consultation sessions and clinical summaries.',
-  },
-]
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -38,6 +31,10 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [notifLoading, setNotifLoading] = useState(true)
   const [notifError, setNotifError] = useState<string | null>(null)
+
+  const [consultations, setConsultations] = useState<ConsultationSession[]>([])
+  const [consultLoading, setConsultLoading] = useState(true)
+  const [consultError, setConsultError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -67,6 +64,11 @@ export default function DashboardPage() {
       .then((rows) => setNotifications(rows))
       .catch(() => setNotifError('Could not load notifications. Please try again.'))
       .finally(() => setNotifLoading(false))
+
+    fetchConsultations(clinicId, token)
+      .then((rows) => setConsultations(rows))
+      .catch(() => setConsultError('Could not load consultations. Please try again.'))
+      .finally(() => setConsultLoading(false))
   }, [router])
 
   function handleLogout() {
@@ -329,49 +331,75 @@ export default function DashboardPage() {
         </section>
 
         {/* ---------------------------------------------------------------- */}
-        {/* Placeholder cards for remaining sections                          */}
+        {/* Consultations section (live)                                      */}
         {/* ---------------------------------------------------------------- */}
-        <div
+        <section
+          data-section="consultations"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '1rem',
+            background: '#fff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
+            padding: '1.25rem',
+            boxShadow: 'var(--shadow-card)',
+            marginBottom: '1.5rem',
           }}
         >
-          {PLACEHOLDER_SECTIONS.map((section) => (
-            <div
-              key={section.key}
-              data-section={section.key}
-              style={{
-                background: '#fff',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius)',
-                padding: '1.25rem',
-                boxShadow: 'var(--shadow-card)',
-                opacity: 0.7,
-                cursor: 'not-allowed',
-              }}
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Consultations</h3>
+
+          {consultLoading && (
+            <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              Loading consultations…
+            </p>
+          )}
+          {!consultLoading && consultError && (
+            <p data-state="error" style={{ fontSize: '0.875rem', color: 'var(--color-danger)' }}>
+              {consultError}
+            </p>
+          )}
+          {!consultLoading && !consultError && consultations.length === 0 && (
+            <p data-state="empty" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+              No consultations found.
+            </p>
+          )}
+          {!consultLoading && !consultError && consultations.length > 0 && (
+            <ul
+              data-state="list"
+              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
             >
-              <h3 style={{ fontWeight: 600, marginBottom: '0.4rem' }}>{section.label}</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                {section.description}
-              </p>
-              <span
-                style={{
-                  display: 'inline-block',
-                  marginTop: '0.75rem',
-                  fontSize: '0.7rem',
-                  background: 'var(--color-border)',
-                  borderRadius: 4,
-                  padding: '2px 6px',
-                  color: 'var(--color-text-muted)',
-                }}
-              >
-                Coming soon
-              </span>
-            </div>
-          ))}
-        </div>
+              {consultations.map((consult) => (
+                <li
+                  key={consult.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.5rem 0',
+                    borderBottom: '1px solid var(--color-border)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  <span style={{ flex: 1, fontWeight: 500 }}>
+                    {consult.title ?? '—'}
+                  </span>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: '0.75rem',
+                      background: consult.approval_status === 'approved' ? '#dcfce7' : 'var(--color-border)',
+                      color: consult.approval_status === 'approved' ? '#166534' : 'var(--color-text-muted)',
+                    }}
+                  >
+                    {consult.approval_status ?? consult.status ?? '—'}
+                  </span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    {consult.source ?? '—'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </main>
   )

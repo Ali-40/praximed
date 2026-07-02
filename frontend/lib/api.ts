@@ -91,6 +91,38 @@ export async function fetchPatients(
 }
 
 // ---------------------------------------------------------------------------
+// Consultations — Sprint 8 / Module 71
+// ---------------------------------------------------------------------------
+
+export interface ConsultationSession {
+  id: string
+  status: string
+  approval_status: string | null
+  title: string | null
+  source: string | null
+  created_at: string | null
+  [key: string]: unknown
+}
+
+// Fetches GET /consultations?clinic_id=<clinicId> with a Bearer JWT.
+// Returns the consultations array from the response body.
+export async function fetchConsultations(
+  clinicId: string,
+  token: string,
+): Promise<ConsultationSession[]> {
+  const resp = await apiFetch(
+    `/consultations?clinic_id=${encodeURIComponent(clinicId)}`,
+    {},
+    token,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load consultations (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; consultations: ConsultationSession[] }
+  return data.consultations ?? []
+}
+
+// ---------------------------------------------------------------------------
 // Notifications — Sprint 8 / Module 70
 // ---------------------------------------------------------------------------
 

@@ -120,8 +120,21 @@ The section shows:
 
 `fetchNotifications(clinicId, token)` in `lib/api.ts` handles the request.
 
-Consultations section remains as a placeholder and will be wired in a subsequent module.
+## Dashboard data — Consultations (Module 71)
+
+The **Consultations** section fetches `GET /consultations?clinic_id=<id>` from the backend
+using the stored JWT as `Authorization: Bearer <token>`.
+
+The section shows:
+- **Loading** — while the request is in flight
+- **Error** — generic message if the request fails
+- **Empty** — if the clinic has no consultation sessions yet
+- **List** — title, approval status badge (green for approved), and source for each session
+
+`fetchConsultations(clinicId, token)` in `lib/api.ts` handles the request.
+
+All four dashboard sections (Appointments, Patients, Notifications, Consultations) are now live.
 
 ## Status
 
-Sprint 8 / Module 70 — Appointments, Patients, and Notifications sections wired to backend. Consultations in Module 71+.
+Sprint 8 / Module 71 — All dashboard sections wired to backend.
