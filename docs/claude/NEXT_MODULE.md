@@ -1,46 +1,77 @@
-# Sprint 11 / Module 82 — Appointment Workflow Browser Smoke Evidence
+# Sprint 11 / Module 83 — Vapi Intake to Appointment Dashboard Smoke Harness
 
-Status: pending Module 81 commit.
+Status: pending Module 82 review.
 
 ## Context
 
-Module 81 added a **Confirm** button to appointment request rows with `status === 'new'`.
-The button calls `PATCH /appointment-requests/{id}/status` and refreshes the appointments
-list on success. This module records browser evidence that the Confirm action works
-end-to-end in a real browser against the local backend.
+Module 82 proved the full local staff workflow loop: login → Confirm appointment request
+→ status "confirmed" → button disappears. The next gap is proving that the AI intake
+path (Vapi call event) creates a dashboard-visible appointment request without relying
+on the manual seed script.
+
+The backend already has:
+- `POST /webhooks/vapi/call-event` — Vapi webhook endpoint with HMAC + machine auth
+- `vapi_appointment_capture` module — creates appointment requests from Vapi payloads
+- `appointment_requests` table — stores captured requests
+- `GET /appointment-requests` — frontend fetches this on dashboard load
+
+The unknowns (documented in `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md`):
+- Whether the current capture module extracts `patient_name`, `reason`, and `clinic_id`
+  from the adapted Vapi payload shape (Module 56's adapter output)
+- Whether a real or simulated Vapi call produces a dashboard-visible row without the seed
 
 ## Scope
 
-Docs-only. No production code changes.
+### 1. Inspect the Vapi capture module
 
-1. Run the local stack:
-   - `python backend/scripts/seed_local_data.py` — upsert seed rows (idempotent)
-   - `uvicorn backend.app.main:app --reload --port 8000`
-   - `cd frontend && npm run dev`
+Read `backend/app/modules/vapi/vapi_appointment_capture.py` and the webhook route
+`backend/app/api/routes/vapi_webhooks.py` to understand:
+- What payload fields the capture module expects
+- Whether `clinic_id` and `patient_name` are available after Module 56's adapter runs
+- Whether an `appointment_requests` row is created on `call.ended` events
 
-2. Perform the smoke in a browser:
-   - Login with local-dev credentials → `/dashboard`
-   - Confirm the seeded appointment request row shows a **Confirm** button (status: new)
-   - Click Confirm — observe button goes to "Confirming…" (disabled) while in-flight
-   - Observe row status badge updates to "confirmed" and button disappears
-   - Confirm no error message is shown
+### 2. Add static contract tests if gaps exist
 
-3. Create `docs/runtime/FRONTEND_APPOINTMENT_WORKFLOW_SMOKE_RESULTS.md`:
-   - Date, sprint, verdict
-   - Environment table (same as Module 80 smoke)
-   - Steps completed table
-   - Evidence: what was observed at each step
-   - What this proves
-   - What remains (Reject, Assign, Callback, Archive not yet built)
-   - Recommended next step
+Create or update contract tests to assert:
+- The capture module reads `patient_name` (or a suitable field) from the adapted payload
+- The capture module uses `clinic_id` from the machine auth context, not from the raw Vapi body
+- No real credentials or patient data appear in the contract
 
-4. Update `docs/claude/CURRENT_STATE.md` — record Module 82
-5. Update `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 83 — Reject Action
+Place new tests in `backend/tests/test_vapi_appointment_capture_contract.py` (or extend
+`backend/tests/test_vapi_appointment_capture.py` if appropriate).
+
+### 3. Add a local fixture smoke script (optional, for manual verification only)
+
+If the contract inspection reveals the flow should work:
+- Write `backend/scripts/smoke_vapi_appointment_capture.py` (not a pytest file)
+- It should construct a fake Vapi-shaped payload matching Module 56's adapter input
+- Sign with the local HMAC secret
+- POST to `http://127.0.0.1:8000/webhooks/vapi/call-event`
+- Print the HTTP status and response
+- Query `GET /appointment-requests?clinic_id=…` to confirm the new row appears
+
+This script is for manual local use only — it must not be a pytest test (no real DB in tests rule).
+
+### 4. Update docs
+
+- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` — update "Unknowns" section
+  with findings from the inspection
+- `docs/claude/CURRENT_STATE.md` — record Module 83
+- `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 84 — Reject Action
+
+## What not to do
+
+- Do not modify Vapi configuration, n8n workflows, or production webhook routes.
+- Do not use real patient data, real phone numbers, or real clinic credentials.
+- Do not auto-confirm appointment requests or auto-create calendar events.
+- Do not add a live Vapi connection — the fixture smoke uses a constructed local payload only.
+- Do not change the seed script or remove any existing seed rows.
 
 ## Acceptance
 
-- Browser smoke evidence document created.
-- Confirm flow proven end-to-end: button visible → click → status updates → button gone.
-- `docs/claude/CURRENT_STATE.md` updated.
-- `docs/claude/NEXT_MODULE.md` updated.
-- Commit: `Sprint 11 / Module 82 — Appointment workflow browser smoke evidence`
+- Contract inspection complete — findings documented.
+- Any gaps in the capture path covered by static contract tests.
+- Smoke script written (if capture path is viable) or gaps documented (if not).
+- `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` updated with findings.
+- Full backend tests pass: `pytest -v backend/tests`
+- Commit: `Sprint 11 / Module 83 — Vapi intake to appointment dashboard smoke harness`

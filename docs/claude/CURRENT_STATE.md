@@ -908,7 +908,7 @@
 - Sprint 11 started: Appointment Request Workflow UI (Module 81+)
 
 79. Module 81 — Appointment request workflow UI foundation
-   - Commit: (see below — Sprint 11 / Module 81)
+   - Commit: acda04c
    - `frontend/lib/api.ts` (updated — `confirmAppointmentRequest(requestId, clinicId, token)` helper: PATCH /appointment-requests/{id}/status?clinic_id=..., body {"status":"confirmed","action_required":false}, throws on non-2xx)
    - `frontend/app/dashboard/page.tsx` (updated — `confirmAppointmentRequest` imported; `confirmingIds: Set<string>` and `apptActionError` state added; `handleConfirm()` async handler; Confirm button on rows with status === 'new'; button disabled + "Confirming…" while in-flight; generic error on failure; refetches appointments on success)
    - `backend/tests/test_frontend_appointment_workflow_contract.py` (new — 10 static contract tests: helper defined, PATCH method, correct endpoint, Bearer token via apiFetch, dashboard imports helper, button gated on status==='new', disabled state, action error state, refetch on success, no hardcoded credentials)
@@ -920,5 +920,23 @@
    - Confirm button only shown on status === 'new' rows; disappears after successful confirmation
    - Action error is generic — does not expose backend error detail
 
+80. Module 82 — Appointment workflow browser smoke evidence and integration loop prep
+   - Commit: (see below)
+   - `docs/runtime/APPOINTMENT_WORKFLOW_BROWSER_SMOKE_RESULTS.md` (new — full smoke evidence: Confirm button visible on new row, in-flight disabled state observed, status badge updated to confirmed, button disappeared, all other sections stable, verdict PASS)
+   - `docs/runtime/FRONTEND_POLISHED_DEMO_BROWSER_SMOKE_RESULTS.md` (updated — Module 82 PASS note added)
+   - `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md` (updated — §3b Sprint 11 follow-up added; §4.1 updated to reflect Confirm action delivered, remaining actions not yet built)
+   - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (new — integration prep: target flow, proven pieces, unknowns, safety constraints, recommended Module 83)
+   - No production code changes
+   - Full backend tests: 1570/1570 passed
+   - Browser smoke verdict: PASS (2026-07-02)
+   - Appointment Confirm workflow proven end-to-end: login → Confirm → status "confirmed" → button gone → dashboard stable
+   - Next integration target: Vapi intake → appointment request → dashboard confirm loop
+
+## Architecture checkpoint
+
+- Architecture Checkpoint 09 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`
+- Updated in Module 82: §3b follow-up added (Modules 81–82 outcomes); §4.1 Confirm action marked delivered
+- Sprint 11 in progress (Modules 81–82 complete)
+
 ## Next module
-Sprint 11 / Module 82 — Appointment Workflow Browser Smoke Evidence.
+Sprint 11 / Module 83 — Vapi Intake to Appointment Dashboard Smoke Harness.

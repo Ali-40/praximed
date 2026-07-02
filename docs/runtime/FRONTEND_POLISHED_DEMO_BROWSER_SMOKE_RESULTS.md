@@ -120,6 +120,20 @@ This document focuses on the post-polish rendering verification only.
 
 ---
 
+## Module 82 — Appointment Workflow Browser Smoke PASS (2026-07-02)
+
+Sprint 11 / Module 82 confirmed the Confirm action works end-to-end in a real browser:
+
+- Appointment row showed "Local Test Patient", status: new, Confirm button visible.
+- Clicked Confirm — button changed to "Confirming…" (disabled) while PATCH was in flight.
+- After PATCH: status badge updated to "confirmed" (green); Confirm button disappeared.
+- No error message shown; all other dashboard sections remained stable.
+- Footer and Logout button remained visible.
+
+Full evidence in `docs/runtime/APPOINTMENT_WORKFLOW_BROWSER_SMOKE_RESULTS.md`.
+
+---
+
 ## Module 81 — Confirm Action Added (Sprint 11)
 
 Sprint 11 / Module 81 added a **Confirm** button to appointment request rows with `status === 'new'`.

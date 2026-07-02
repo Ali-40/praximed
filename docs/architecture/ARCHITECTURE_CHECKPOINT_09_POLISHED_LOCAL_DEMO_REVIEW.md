@@ -55,21 +55,38 @@ build next.
 
 ---
 
+## 3b. Sprint 11 Follow-Up (Modules 81–82)
+
+Sprint 11 partially addressed the highest-priority gap identified in this checkpoint.
+
+| Module | Description | Outcome |
+|---|---|---|
+| 81 | Appointment Confirm action — `confirmAppointmentRequest` helper + Confirm button on `status === 'new'` rows | Frontend can now mutate appointment request status via PATCH; 10 contract tests; 1570/1570 |
+| 82 | Appointment workflow browser smoke | End-to-end Confirm flow confirmed in real browser: new → confirmed; button disappears; dashboard stable |
+
+**Remaining appointment workflow gap:** Reject, Assign, Callback, and Archive actions are not yet built.
+**Next integration target:** Prove a real or simulated Vapi appointment capture creates a dashboard-reviewable
+request without the manual seed script — closing the AI intake → staff action loop.
+See `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` for the full integration prep plan.
+
+---
+
 ## 4. What Is Still Missing
 
 ### 4.1 Appointment Request Workflow Actions
 
-The appointment request row shows patient name, status badge, and urgency level — but
-there are no UI controls to act on a request. The backend already supports:
-- `PATCH /appointment-requests/{id}/status` — confirm / reject
-- `PATCH /appointment-requests/{id}/assign` — assign to a user
-- `POST /appointment-requests/{id}/callback-needed` — flag for callback
-- `POST /appointment-requests/{id}/archive` — archive
+**Partially resolved in Sprint 11 (Modules 81–82).**
 
-The frontend dashboard does not expose any of these. A staff member cannot action
-a request from the dashboard.
+The Confirm action (`PATCH /appointment-requests/{id}/status` with `status: "confirmed"`)
+is now wired in the frontend dashboard and browser-smoke confirmed. The remaining
+actions are not yet built:
 
-**Priority:** High — this is the core clinic staff workflow for the Vapi use case.
+- `PATCH /appointment-requests/{id}/status` with `status: "rejected"` — **not yet built**
+- `PATCH /appointment-requests/{id}/assign` — assign to a user — **not yet built**
+- `POST /appointment-requests/{id}/callback-needed` — flag for callback — **not yet built**
+- `POST /appointment-requests/{id}/archive` — archive — **not yet built**
+
+**Priority:** Medium for Reject (next most common staff action); lower for Assign/Archive.
 
 ### 4.2 Patient Detail Page
 
