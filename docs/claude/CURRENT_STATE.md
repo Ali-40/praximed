@@ -872,5 +872,17 @@
    - Patient row now displays "Local Test Patient" after re-seeding (not `"—"`)
    - Fallback for missing name data is `'Unnamed patient'` (not `'—'`)
 
+77. Module 79 — Dashboard visual polish pass
+   - Commit: 32e9781
+   - `frontend/app/dashboard/page.tsx` (updated — "Clinic Dashboard" subtitle in header; "Clinic Overview" page heading; per-section row count pills; shared BADGE_STYLES helper + badgeStyle() function; cardStyle/rowStyle/badgePillStyle constants; local-demo footer label; all four data fetch calls unchanged)
+   - `frontend/app/globals.css` (updated — badge colour token variables: --badge-blue-bg/text, --badge-green-bg/text, --badge-red-bg/text, --badge-neutral-bg/text)
+   - `backend/tests/test_frontend_dashboard_visual_polish_contract.py` (new — 10 static contract tests: PraxisMed brand, logout button, all four sections, clinical heading, all loading/error/empty states, badge styling, no hardcoded credentials/data)
+   - `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` (updated — Module 79 note added)
+   - Module 79 new tests: 10 new; all 10 passed
+   - Full backend tests: 1560/1560 passed
+   - No backend routes, API helpers, or auth modified
+   - No data fetching behavior changed
+   - Dashboard improvements: clinic context, count pills, consistent badge colours, demo label
+
 ## Next module
-Sprint 10 / Module 79 — Dashboard Visual Polish Pass.
+Sprint 10 / Module 80 — Local Demo Retest After Visual Polish.

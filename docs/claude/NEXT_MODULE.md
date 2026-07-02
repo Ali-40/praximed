@@ -1,41 +1,51 @@
-# Sprint 10 / Module 79 — Dashboard Visual Polish Pass
+# Sprint 10 / Module 80 — Local Demo Retest After Visual Polish
 
-Status: pending Module 78 review.
+Status: pending Module 79 review.
 
 ## Context
 
-Module 78 fixed the patient name display issue — the highest-priority visible defect
-identified in Architecture Checkpoint 08. The local demo now shows readable patient
-names. The next step is a broader visual polish pass to make the dashboard look
-credible before a stakeholder demo.
+Module 79 made several visual changes to the dashboard:
+- Header now shows "Clinic Dashboard" subtitle.
+- Page heading changed to "Clinic Overview".
+- Each section heading shows a row-count pill when data is loaded.
+- Status/priority badges use shared BADGE_STYLES helper and CSS token colours.
+- Local-demo footer label added.
+
+A manual browser smoke should confirm these changes render correctly and that all
+four dashboard sections still load list state after re-seeding.
 
 ## Scope
 
-Docs-only scoping required first. Before implementing, inspect the current dashboard
-and decide what visual changes are worth doing in one focused pass. Target:
+Docs only. No code changes.
 
-1. **Section headers with row counts** — show e.g. "Appointments (1)" so the demo
-   communicates how many items exist at a glance.
-2. **Status badge consistency** — review badge styling across all four sections
-   to ensure colours are consistent and readable.
-3. **Empty state copy** — confirm the empty state messages are friendly and not
-   generic error-looking ("No appointment requests found." → acceptable; very
-   terse messages may need softening).
-4. **Loading state copy** — confirm loading messages are consistent.
-5. Optional: Add a thin section divider or icon to each section header.
+1. Run the local stack:
+   - `python backend/scripts/seed_local_data.py` (idempotent re-seed)
+   - `uvicorn backend.app.main:app --reload --port 8000`
+   - `npm run dev` in `frontend/`
+2. Login at `http://localhost:3000` with local-dev credentials.
+3. Verify the updated dashboard:
+   - Header shows "PraxisMed" + "Clinic Dashboard" subtitle.
+   - Page heading shows "Clinic Overview".
+   - All four sections show row-count pills (1 appointment, 1 patient, 1 notification, 1 consultation).
+   - Patient row shows "Local Test Patient" (not `"—"`).
+   - Status badges are colour-coded correctly.
+   - Footer label "Local demo — all data is fake…" visible.
+4. Create or update `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` with Module 80 evidence.
+5. Update `docs/claude/CURRENT_STATE.md` with Module 79 completed and Module 80 entry.
+6. Update `docs/claude/NEXT_MODULE.md` to Sprint 10 / Module 81 or Architecture Checkpoint 09.
 
 ## What not to do
 
-- Do not add new API calls or backend routes.
-- Do not implement create/edit forms.
-- Do not implement appointment request workflow actions (approve/reject).
-- Do not change auth or token storage.
-- Do not install new npm packages.
+- Do not change frontend code.
+- Do not change backend routes, schemas, or migrations.
+- Do not change seed script or test files.
 
 ## Acceptance
 
-- Dashboard looks visually coherent in a live browser demo.
-- All four sections still render loading → list state after seed.
-- Patient row displays "Local Test Patient" (Module 78 fix preserved).
-- Full backend contract tests pass: `pytest -v backend/tests`
-- Commit: `Sprint 10 / Module 79 — Dashboard visual polish pass`
+- All four sections render list state with count pills.
+- Patient row shows "Local Test Patient".
+- "Clinic Dashboard" subtitle visible in header.
+- "Clinic Overview" heading visible.
+- Local-demo footer label visible.
+- Full backend tests pass: `pytest -v backend/tests`
+- Commit: `Sprint 10 / Module 80 — Local demo retest after visual polish`
