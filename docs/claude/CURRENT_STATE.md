@@ -553,6 +553,7 @@
 
 56. Module 58 — Real n8n tunnel smoke evidence
    - Commit: f70041f
+   - Docs commit: a9d0d79
    - `docs/integrations/REAL_N8N_TUNNEL_SMOKE_RESULTS.md` (new)
    - `docs/integrations/LOCAL_TUNNEL_PROVIDER_TEST_RUNBOOK.md` (updated — Section 12 n8n smoke passed, Section 13 next recommendation)
    - `docs/claude/CURRENT_STATE.md` (updated)
@@ -564,5 +565,13 @@
    - Machine auth via X-N8N-* aliases accepted
    - Key fix: HMAC must be computed over the exact raw bytes transmitted by n8n
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 05 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_05_EXTERNAL_INTEGRATION_REVIEW.md`
+- Commit: TBD
+- Full backend tests: 1386/1386 passed
+- Sprint 6 complete (Modules 52–58)
+- Sprint 7 started: Production Auth and User Session Foundation (Module 59+)
+
 ## Next module
-Architecture Checkpoint 05 — External Integration Review (pending).
+Sprint 7 / Module 59 — Production Auth and User Session Foundation (pending Architecture Checkpoint 05 review).

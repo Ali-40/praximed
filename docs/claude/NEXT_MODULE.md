@@ -1,27 +1,30 @@
-# Architecture Checkpoint 05 — External Integration Review
+# Sprint 7 / Module 59 — Production Auth and User Session Foundation
 
-Status: pending.
+Status: pending Architecture Checkpoint 05 review.
+
+## Goal
+
+Add human authentication as a parallel trust model alongside the existing machine auth layer. Doctors and admins must have production-grade login before the frontend can be built and before real patient data handling can begin.
 
 ## Scope
 
-Sprint 6 external integration work (Modules 52–58):
-
-- Module 52 — External integration compatibility plan
-- Module 53 — Provider webhook signature header alias config
-- Module 54 — Provider machine auth header alias config
-- Module 55 — Local tunnel provider test runbook
-- Module 56 — Real Vapi payload compatibility adapter
-- Module 57 — Real Vapi tunnel smoke evidence (HTTP 200 OK confirmed)
-- Module 58 — Real n8n tunnel smoke evidence (success confirmed)
-
-## What to document
-
-- Summary of what the external integration layer now supports.
-- Confirmed working: Vapi webhook delivery end-to-end, n8n calendar sync delivery end-to-end.
-- Remaining gaps before production: production secrets, real hostname, TLS, real patient data, production n8n workflows.
-- Recommended next sprint focus (e.g. production deployment foundation, frontend integration, or additional Vapi/n8n workflow features).
+- Add a `users` table to `schema.sql` and a corresponding Alembic migration.
+- Add `backend/app/db/repositories/user_repo.py` for user lookup and creation.
+- Add secure password hashing (bcrypt or argon2).
+- Add JWT access and refresh token issuance and validation.
+- Add a `get_current_user` FastAPI dependency that protects PHI routes.
+- Add tests covering login, token refresh, and unauthorized access rejection.
 
 ## What not to do
 
-- Do not change code.
-- Do not start the next sprint until this checkpoint is written and reviewed.
+- Do not build the frontend.
+- Do not implement OAuth (Google, Apple) yet — basic email/password first.
+- Do not add role-based access control (RBAC) beyond doctor/admin distinction — keep it minimal.
+- Do not touch machine auth, HMAC, or existing webhook routes.
+- Do not modify existing completed modules unless the import chain requires it.
+
+## Acceptance
+
+- All new tests pass.
+- Full backend tests pass (no regression).
+- No existing machine auth or webhook behavior changed.
