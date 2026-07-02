@@ -700,5 +700,17 @@
    - No real patient data; no hardcoded secrets
    - Login flow wired to backend in Module 67
 
+65. Module 67 — Frontend login flow integration
+   - Commit: pending
+   - `frontend/app/login/page.tsx` (updated — 'use client'; onSubmit wired to loginUser; storeToken on success; router.push('/dashboard'); generic error display)
+   - `frontend/app/dashboard/page.tsx` (updated — 'use client'; useEffect auth guard redirects to /login if no token; Logout button calls clearToken + router.push('/login'))
+   - `frontend/README.md` (updated — login flow section: Clinic ID + email + password, local test instructions)
+   - `backend/tests/test_frontend_login_flow_contract.py` (new — 10 static contract tests)
+   - Module 67 contract tests: 10/10 passed
+   - Full backend tests: 1481/1481 passed
+   - No backend routes modified
+   - Generic error on login failure — does not reveal email vs password mismatch
+   - Section data fetching wired in Module 68
+
 ## Next module
-Sprint 8 / Module 67 — Frontend Login Flow Integration (pending Module 66 review).
+Sprint 8 / Module 68 — Frontend Patient List Placeholder Integration (pending Module 67 review).

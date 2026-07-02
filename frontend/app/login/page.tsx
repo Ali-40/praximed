@@ -1,7 +1,39 @@
-// Login page — PraxisMed Sprint 8 / Module 66
-// UI scaffold only. Form submission and JWT handling are wired in Module 67.
+'use client'
+
+// Login page — PraxisMed Sprint 8 / Module 67
+// Wires form submission to POST /auth/login via loginUser helper.
+
+import { FormEvent, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { loginUser, storeToken } from '@/lib/auth'
 
 export default function LoginPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const form = e.currentTarget
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value
+    const password = (form.elements.namedItem('password') as HTMLInputElement).value
+    const clinicId = (form.elements.namedItem('clinic_id') as HTMLInputElement).value
+
+    try {
+      const result = await loginUser(email, password, clinicId)
+      storeToken(result.access_token)
+      router.push('/dashboard')
+    } catch {
+      // Generic message only — do not reveal whether email or password was wrong.
+      setError('Sign-in failed. Please check your details and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <main
       style={{
@@ -33,15 +65,76 @@ export default function LoginPage() {
         >
           PraxisMed
         </h1>
-        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+        <p
+          style={{
+            color: 'var(--color-text-muted)',
+            marginBottom: '1.5rem',
+            fontSize: '0.875rem',
+          }}
+        >
           Sign in to your clinic dashboard
         </p>
 
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {error && (
+          <p
+            role="alert"
+            style={{
+              color: 'var(--color-danger)',
+              fontSize: '0.875rem',
+              marginBottom: '1rem',
+              padding: '0.5rem 0.75rem',
+              background: '#fef2f2',
+              borderRadius: 'var(--radius)',
+              border: '1px solid #fecaca',
+            }}
+          >
+            {error}
+          </p>
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        >
+          <div>
+            <label
+              htmlFor="clinic_id"
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                marginBottom: '0.25rem',
+              }}
+            >
+              Clinic ID
+            </label>
+            <input
+              id="clinic_id"
+              name="clinic_id"
+              type="text"
+              required
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius)',
+                fontSize: '0.875rem',
+                outline: 'none',
+                fontFamily: 'monospace',
+              }}
+            />
+          </div>
+
           <div>
             <label
               htmlFor="email"
-              style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                marginBottom: '0.25rem',
+              }}
             >
               Email
             </label>
@@ -66,7 +159,12 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                marginBottom: '0.25rem',
+              }}
             >
               Password
             </label>
@@ -89,19 +187,21 @@ export default function LoginPage() {
 
           <button
             type="submit"
+            disabled={loading}
             style={{
               width: '100%',
               padding: '0.625rem',
-              background: 'var(--color-brand)',
+              background: loading ? 'var(--color-text-muted)' : 'var(--color-brand)',
               color: '#fff',
               border: 'none',
               borderRadius: 'var(--radius)',
               fontSize: '1rem',
               fontWeight: 600,
               marginTop: '0.5rem',
+              cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
-            Sign in
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
       </div>

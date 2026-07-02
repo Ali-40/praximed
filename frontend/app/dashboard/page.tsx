@@ -1,5 +1,13 @@
-// Dashboard page — PraxisMed Sprint 8 / Module 66
-// Placeholder only. Data fetching and auth guards are wired in Module 67.
+'use client'
+
+// Dashboard page — PraxisMed Sprint 8 / Module 67
+// Client-side auth guard: redirects to /login if no token is stored.
+// Logout button clears the token and returns to /login.
+// Data fetching for each section is wired in Module 68+.
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { clearToken, isAuthenticated } from '@/lib/auth'
 
 const SECTIONS = [
   {
@@ -25,6 +33,21 @@ const SECTIONS = [
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
+
+  // Local-dev auth guard: redirect to /login if no token in sessionStorage.
+  // Production guard should use server-side session verification (Module 68+).
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace('/login')
+    }
+  }, [router])
+
+  function handleLogout() {
+    clearToken()
+    router.push('/login')
+  }
+
   return (
     <main style={{ minHeight: '100vh', background: 'var(--color-surface)' }}>
       {/* Header */}
@@ -38,12 +61,26 @@ export default function DashboardPage() {
           justifyContent: 'space-between',
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-brand)' }}>
+        <span
+          style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-brand)' }}
+        >
           PraxisMed
         </span>
-        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-          Clinic Dashboard
-        </span>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            fontSize: '0.875rem',
+            padding: '0.375rem 0.875rem',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius)',
+            background: '#fff',
+            color: 'var(--color-text-muted)',
+            cursor: 'pointer',
+          }}
+        >
+          Logout
+        </button>
       </header>
 
       {/* Content */}
@@ -89,14 +126,20 @@ export default function DashboardPage() {
                   color: 'var(--color-text-muted)',
                 }}
               >
-                Coming in Module 67
+                Data in Module 68
               </span>
             </div>
           ))}
         </div>
 
-        <p style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-          Data loading and auth guards are wired in Sprint 8 / Module 67.
+        <p
+          style={{
+            marginTop: '2rem',
+            fontSize: '0.8rem',
+            color: 'var(--color-text-muted)',
+          }}
+        >
+          Section data fetching is wired in Sprint 8 / Module 68.
         </p>
       </div>
     </main>

@@ -61,6 +61,26 @@ The backend exposes:
 All API calls go through `lib/api.ts`. Set `NEXT_PUBLIC_API_BASE_URL` to change the
 target backend.
 
+## Login flow (Module 67)
+
+The login form collects **Clinic ID**, **Email**, and **Password**, then calls
+`POST /auth/login` on the backend. On success the JWT access token is stored in
+`sessionStorage` (local development only — see auth note above) and the browser
+navigates to `/dashboard`.
+
+On failure a generic error is shown — the message does not reveal whether the email
+or password was wrong.
+
+The dashboard performs a client-side auth check on load. If no token is found in
+`sessionStorage`, the user is redirected to `/login`. The **Logout** button in the
+header clears the token and returns to `/login`.
+
+To test the full login flow locally:
+1. Ensure the backend is running (`uvicorn backend.app.main:app --reload`).
+2. Seed a user in the local database (see `backend/scripts/seed_local_data.py`).
+3. Start the frontend (`npm run dev`) and open `http://localhost:3000`.
+4. Enter the seeded Clinic ID, email, and password.
+
 ## Status
 
-Sprint 8 / Module 66 — skeleton only. Login flow wired to backend in Module 67.
+Sprint 8 / Module 67 — login flow wired to backend. Section data fetching in Module 68.

@@ -1,40 +1,39 @@
-# Sprint 8 / Module 67 — Frontend Login Flow Integration
+# Sprint 8 / Module 68 — Frontend Appointment List Integration
 
-Status: pending Module 66 review.
+Status: pending Module 67 review.
 
 ## Context
 
-Module 66 created the Next.js frontend skeleton with:
-- `/login` — email/password form UI (not yet connected to backend)
-- `/dashboard` — placeholder cards for Patients, Appointments, Notifications, Consultations
-- `lib/api.ts` — `apiFetch` helper with `NEXT_PUBLIC_API_BASE_URL`
-- `lib/auth.ts` — `loginUser`, `storeToken`, `getToken`, `clearToken`, `isAuthenticated`
+Module 67 wired the login form to `POST /auth/login` and added a client-side auth
+guard to the dashboard. The token is now stored and available via `getToken()`.
 
-The backend already has `POST /auth/login` returning a JWT (Module 60). The helpers
-exist; they just need to be wired to the form.
+The dashboard currently shows four disabled placeholder cards. The backend already
+has `GET /appointment-requests` (requires Bearer JWT, Module 64). This module wires
+that endpoint to the Appointments card on the dashboard.
 
 ## Scope
 
-- Wire the login form in `frontend/app/login/page.tsx` to call `loginUser()` from `lib/auth.ts`.
-- On success: store the token and redirect to `/dashboard`.
-- On failure: display an error message below the form.
-- Add a route guard to `/dashboard/page.tsx`: redirect to `/login` if no token in storage.
-- Add a logout button to the dashboard header that calls `clearToken()` and redirects to `/login`.
-- Add static contract tests confirming the form has an `onSubmit` handler and the dashboard has a logout trigger.
+- In `frontend/app/dashboard/page.tsx`, fetch `GET /appointment-requests` using
+  `apiFetch` with the stored JWT and render the returned list under the Appointments
+  section.
+- Show a loading state while fetching and an error state on failure.
+- Do not build a full CRUD table — a simple read-only list of request IDs,
+  patient names, and status is sufficient.
+- Add static contract tests confirming:
+  - dashboard calls the appointments endpoint
+  - dashboard handles loading and error states
+  - dashboard renders appointment list data
 
 ## What not to do
 
-- Do not add refresh token logic.
-- Do not switch to httpOnly cookies in this module (deferred to auth hardening sprint).
-- Do not fetch real data from the backend yet (Patients/Appointments/Notifications list fetching is Module 68+).
-- Do not modify any backend routes.
-- Do not use real patient data.
+- Do not fetch patients, consultations, or notifications yet.
+- Do not add real patient data to tests.
+- Do not modify backend routes.
+- Do not remove the auth guard added in Module 67.
 
 ## Acceptance
 
-- Submitting the login form with correct credentials stores a token and loads `/dashboard`.
-- Submitting with wrong credentials shows an error without crashing.
-- Navigating to `/dashboard` without a token redirects to `/login`.
-- Dashboard logout button clears the token and redirects to `/login`.
+- Dashboard fetches appointment requests for the logged-in clinic and displays them.
+- Loading and error states are handled gracefully.
 - Full backend tests pass.
-- Commit: `Sprint 8 / Module 67 — Frontend login flow integration`
+- Commit: `Sprint 8 / Module 68 — Frontend appointment list integration`
