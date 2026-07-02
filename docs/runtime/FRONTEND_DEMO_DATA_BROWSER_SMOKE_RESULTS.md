@@ -126,6 +126,18 @@ first, with `'Unnamed patient'` as the final fallback. The patient row now displ
 
 ---
 
+## 7b. Module 79 — Dashboard Visual Polish
+
+Sprint 10 / Module 79 improved the dashboard presentation for local demo credibility:
+- Header now shows "PraxisMed" brand + "Clinic Dashboard" subtitle.
+- Page heading changed from "Welcome to PraxisMed" to "Clinic Overview".
+- Each section heading shows a row-count pill when data is loaded (e.g. "Appointments (1)").
+- Status/priority badges now use shared CSS token variables for consistent colour.
+- A "Local demo — all data is fake and for development only" footer label was added.
+- No data fetching or backend behavior changed.
+
+---
+
 ## 8. Recommended Next Step
 
 **Architecture Checkpoint 08 — Local Demo Readiness Review**

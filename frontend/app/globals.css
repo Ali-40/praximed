@@ -16,6 +16,16 @@
   --color-danger: #dc2626;
   --radius: 8px;
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+
+  /* Status badge colours */
+  --badge-blue-bg: #dbeafe;
+  --badge-blue-text: #1e40af;
+  --badge-green-bg: #dcfce7;
+  --badge-green-text: #166534;
+  --badge-red-bg: #fee2e2;
+  --badge-red-text: #991b1b;
+  --badge-neutral-bg: var(--color-border);
+  --badge-neutral-text: var(--color-text-muted);
 }
 
 html,

@@ -1,7 +1,9 @@
 'use client'
 
-// Dashboard page — PraxisMed Sprint 8 / Module 71
-// Appointments, Patients, Notifications, and Consultations sections are live.
+// Dashboard page — PraxisMed Sprint 10 / Module 79
+// Visual polish: clinic header subtitle, section row counts, Clinic Overview heading,
+// badge colour tokens, local-demo footer label.
+// Data fetching for all four sections unchanged from Module 78.
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -16,6 +18,50 @@ import {
   Notification,
   ConsultationSession,
 } from '@/lib/api'
+
+// ---------------------------------------------------------------------------
+// Shared badge helper — keeps badge rendering DRY across all four sections.
+// ---------------------------------------------------------------------------
+
+const BADGE_STYLES: Record<string, { background: string; color: string }> = {
+  new:       { background: 'var(--badge-blue-bg)',    color: 'var(--badge-blue-text)' },
+  active:    { background: 'var(--badge-green-bg)',   color: 'var(--badge-green-text)' },
+  approved:  { background: 'var(--badge-green-bg)',   color: 'var(--badge-green-text)' },
+  urgent:    { background: 'var(--badge-red-bg)',     color: 'var(--badge-red-text)' },
+  emergency: { background: 'var(--badge-red-bg)',     color: 'var(--badge-red-text)' },
+}
+
+function badgeStyle(value: string | null | undefined) {
+  if (!value) return { background: 'var(--badge-neutral-bg)', color: 'var(--badge-neutral-text)' }
+  return BADGE_STYLES[value] ?? { background: 'var(--badge-neutral-bg)', color: 'var(--badge-neutral-text)' }
+}
+
+// ---------------------------------------------------------------------------
+// Small count pill shown in section headers when data is loaded.
+// ---------------------------------------------------------------------------
+
+function CountPill({ count }: { count: number }) {
+  return (
+    <span
+      style={{
+        fontSize: '0.7rem',
+        fontWeight: 500,
+        color: 'var(--color-text-muted)',
+        background: 'var(--color-border)',
+        padding: '1px 7px',
+        borderRadius: 99,
+        marginLeft: '0.4rem',
+        verticalAlign: 'middle',
+      }}
+    >
+      {count}
+    </span>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard page
+// ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -76,24 +122,55 @@ export default function DashboardPage() {
     router.push('/login')
   }
 
+  // Shared card style for the four sections
+  const cardStyle: React.CSSProperties = {
+    background: '#fff',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius)',
+    padding: '1.25rem',
+    boxShadow: 'var(--shadow-card)',
+    marginBottom: '1.5rem',
+  }
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.5rem 0',
+    borderBottom: '1px solid var(--color-border)',
+    fontSize: '0.875rem',
+  }
+
+  const badgePillStyle = (value: string | null | undefined): React.CSSProperties => ({
+    ...badgeStyle(value),
+    padding: '2px 8px',
+    borderRadius: 4,
+    fontSize: '0.75rem',
+  })
+
   return (
     <main style={{ minHeight: '100vh', background: 'var(--color-surface)' }}>
-      {/* Header */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Header                                                               */}
+      {/* ------------------------------------------------------------------ */}
       <header
         style={{
           background: '#fff',
           borderBottom: '1px solid var(--color-border)',
-          padding: '1rem 2rem',
+          padding: '0.875rem 2rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
       >
-        <span
-          style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-brand)' }}
-        >
-          PraxisMed
-        </span>
+        <div>
+          <span style={{ fontWeight: 700, fontSize: '1.125rem', color: 'var(--color-brand)' }}>
+            PraxisMed
+          </span>
+          <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '1px' }}>
+            Clinic Dashboard
+          </p>
+        </div>
 
         <button
           onClick={handleLogout}
@@ -104,33 +181,28 @@ export default function DashboardPage() {
             borderRadius: 'var(--radius)',
             background: '#fff',
             color: 'var(--color-text-muted)',
-            cursor: 'pointer',
           }}
         >
           Logout
         </button>
       </header>
 
+      {/* ------------------------------------------------------------------ */}
+      {/* Page body                                                            */}
+      {/* ------------------------------------------------------------------ */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>
-          Welcome to PraxisMed
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--color-text)' }}>
+          Clinic Overview
         </h2>
 
         {/* ---------------------------------------------------------------- */}
         {/* Appointments section (live)                                       */}
         {/* ---------------------------------------------------------------- */}
-        <section
-          data-section="appointments"
-          style={{
-            background: '#fff',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            padding: '1.25rem',
-            boxShadow: 'var(--shadow-card)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Appointments</h3>
+        <section data-section="appointments" style={cardStyle}>
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>
+            Appointments
+            {!apptLoading && !apptError && <CountPill count={appointments.length} />}
+          </h3>
 
           {apptLoading && (
             <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
@@ -148,36 +220,13 @@ export default function DashboardPage() {
             </p>
           )}
           {!apptLoading && !apptError && appointments.length > 0 && (
-            <ul
-              data-state="list"
-              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-            >
+            <ul data-state="list" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {appointments.map((appt) => (
-                <li
-                  key={appt.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.5rem 0',
-                    borderBottom: '1px solid var(--color-border)',
-                    fontSize: '0.875rem',
-                  }}
-                >
+                <li key={appt.id} style={rowStyle}>
                   <span style={{ flex: 1, fontWeight: 500 }}>
                     {appt.patient_name ?? '—'}
                   </span>
-                  <span
-                    style={{
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      fontSize: '0.75rem',
-                      background: appt.status === 'new' ? '#dbeafe' : 'var(--color-border)',
-                      color: appt.status === 'new' ? '#1e40af' : 'var(--color-text-muted)',
-                    }}
-                  >
-                    {appt.status}
-                  </span>
+                  <span style={badgePillStyle(appt.status)}>{appt.status}</span>
                   <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                     {appt.urgency_level}
                   </span>
@@ -190,18 +239,11 @@ export default function DashboardPage() {
         {/* ---------------------------------------------------------------- */}
         {/* Patients section (live)                                           */}
         {/* ---------------------------------------------------------------- */}
-        <section
-          data-section="patients"
-          style={{
-            background: '#fff',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            padding: '1.25rem',
-            boxShadow: 'var(--shadow-card)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Patients</h3>
+        <section data-section="patients" style={cardStyle}>
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>
+            Patients
+            {!patientsLoading && !patientsError && <CountPill count={patients.length} />}
+          </h3>
 
           {patientsLoading && (
             <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
@@ -219,38 +261,15 @@ export default function DashboardPage() {
             </p>
           )}
           {!patientsLoading && !patientsError && patients.length > 0 && (
-            <ul
-              data-state="list"
-              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-            >
+            <ul data-state="list" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {patients.map((patient) => (
-                <li
-                  key={patient.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.5rem 0',
-                    borderBottom: '1px solid var(--color-border)',
-                    fontSize: '0.875rem',
-                  }}
-                >
+                <li key={patient.id} style={rowStyle}>
                   <span style={{ flex: 1, fontWeight: 500 }}>
                     {patient.full_name ||
                       [patient.first_name, patient.last_name].filter(Boolean).join(' ') ||
                       'Unnamed patient'}
                   </span>
-                  <span
-                    style={{
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      fontSize: '0.75rem',
-                      background: patient.status === 'active' ? '#dcfce7' : 'var(--color-border)',
-                      color: patient.status === 'active' ? '#166534' : 'var(--color-text-muted)',
-                    }}
-                  >
-                    {patient.status ?? '—'}
-                  </span>
+                  <span style={badgePillStyle(patient.status)}>{patient.status ?? '—'}</span>
                 </li>
               ))}
             </ul>
@@ -260,18 +279,11 @@ export default function DashboardPage() {
         {/* ---------------------------------------------------------------- */}
         {/* Notifications section (live)                                      */}
         {/* ---------------------------------------------------------------- */}
-        <section
-          data-section="notifications"
-          style={{
-            background: '#fff',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            padding: '1.25rem',
-            boxShadow: 'var(--shadow-card)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Notifications</h3>
+        <section data-section="notifications" style={cardStyle}>
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>
+            Notifications
+            {!notifLoading && !notifError && <CountPill count={notifications.length} />}
+          </h3>
 
           {notifLoading && (
             <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
@@ -289,40 +301,13 @@ export default function DashboardPage() {
             </p>
           )}
           {!notifLoading && !notifError && notifications.length > 0 && (
-            <ul
-              data-state="list"
-              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-            >
+            <ul data-state="list" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {notifications.map((notif) => (
-                <li
-                  key={notif.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.5rem 0',
-                    borderBottom: '1px solid var(--color-border)',
-                    fontSize: '0.875rem',
-                  }}
-                >
+                <li key={notif.id} style={rowStyle}>
                   <span style={{ flex: 1, fontWeight: 500 }}>
                     {notif.title ?? '—'}
                   </span>
-                  <span
-                    style={{
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      fontSize: '0.75rem',
-                      background: notif.priority === 'urgent' || notif.priority === 'emergency'
-                        ? '#fee2e2'
-                        : 'var(--color-border)',
-                      color: notif.priority === 'urgent' || notif.priority === 'emergency'
-                        ? '#991b1b'
-                        : 'var(--color-text-muted)',
-                    }}
-                  >
-                    {notif.priority ?? '—'}
-                  </span>
+                  <span style={badgePillStyle(notif.priority)}>{notif.priority ?? '—'}</span>
                   <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                     {notif.notification_type ?? '—'}
                   </span>
@@ -335,18 +320,11 @@ export default function DashboardPage() {
         {/* ---------------------------------------------------------------- */}
         {/* Consultations section (live)                                      */}
         {/* ---------------------------------------------------------------- */}
-        <section
-          data-section="consultations"
-          style={{
-            background: '#fff',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
-            padding: '1.25rem',
-            boxShadow: 'var(--shadow-card)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>Consultations</h3>
+        <section data-section="consultations" style={cardStyle}>
+          <h3 style={{ fontWeight: 600, marginBottom: '0.75rem' }}>
+            Consultations
+            {!consultLoading && !consultError && <CountPill count={consultations.length} />}
+          </h3>
 
           {consultLoading && (
             <p data-state="loading" style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
@@ -364,34 +342,13 @@ export default function DashboardPage() {
             </p>
           )}
           {!consultLoading && !consultError && consultations.length > 0 && (
-            <ul
-              data-state="list"
-              style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
-            >
+            <ul data-state="list" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {consultations.map((consult) => (
-                <li
-                  key={consult.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.5rem 0',
-                    borderBottom: '1px solid var(--color-border)',
-                    fontSize: '0.875rem',
-                  }}
-                >
+                <li key={consult.id} style={rowStyle}>
                   <span style={{ flex: 1, fontWeight: 500 }}>
                     {consult.title ?? '—'}
                   </span>
-                  <span
-                    style={{
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                      fontSize: '0.75rem',
-                      background: consult.approval_status === 'approved' ? '#dcfce7' : 'var(--color-border)',
-                      color: consult.approval_status === 'approved' ? '#166534' : 'var(--color-text-muted)',
-                    }}
-                  >
+                  <span style={badgePillStyle(consult.approval_status ?? undefined)}>
                     {consult.approval_status ?? consult.status ?? '—'}
                   </span>
                   <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
@@ -402,6 +359,21 @@ export default function DashboardPage() {
             </ul>
           )}
         </section>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Local-demo footer label                                           */}
+        {/* ---------------------------------------------------------------- */}
+        <p
+          style={{
+            textAlign: 'center',
+            fontSize: '0.7rem',
+            color: 'var(--color-text-muted)',
+            marginTop: '1rem',
+            paddingBottom: '1rem',
+          }}
+        >
+          Local demo — all data is fake and for development only
+        </p>
       </div>
     </main>
   )
