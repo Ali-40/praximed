@@ -701,7 +701,7 @@
    - Login flow wired to backend in Module 67
 
 65. Module 67 — Frontend login flow integration
-   - Commit: pending
+   - Commit: eafe918
    - `frontend/app/login/page.tsx` (updated — 'use client'; onSubmit wired to loginUser; storeToken on success; router.push('/dashboard'); generic error display)
    - `frontend/app/dashboard/page.tsx` (updated — 'use client'; useEffect auth guard redirects to /login if no token; Logout button calls clearToken + router.push('/login'))
    - `frontend/README.md` (updated — login flow section: Clinic ID + email + password, local test instructions)
