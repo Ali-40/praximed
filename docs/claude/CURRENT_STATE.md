@@ -771,7 +771,7 @@
 - Sprint 9 started: Frontend Local Runtime Smoke (Module 72+)
 
 70. Module 72 — Frontend local runtime smoke and seed login
-   - Commit: (pending)
+   - Commit: 82d7856
    - `backend/scripts/seed_local_data.py` (updated — LOCAL_LOGIN_EMAIL + LOCAL_LOGIN_PASSWORD_LABEL constants; hash_password imported; password_hash included in clinic_users INSERT; ON CONFLICT updates email + password_hash; main() prints email/password label but NOT hash)
    - `backend/tests/test_local_seed_contract.py` (updated — 6 new tests 23–28: password_hash reference, hash_password usage, local login email, email constant value, password label, no print of raw hash)
    - `docs/runtime/FRONTEND_LOCAL_RUNTIME_SMOKE.md` (new — 9-step local browser smoke runbook: PostgreSQL, migrations, seed, backend, frontend, login, dashboard verification, logout, known limitations)
