@@ -1,58 +1,54 @@
-# Architecture Checkpoint 08 — Local Demo Readiness Review
+# Sprint 10 / Module 78 — Dashboard Demo Polish and Patient Display Fix
 
-Status: pending Module 77 review.
+Status: pending Architecture Checkpoint 08 review.
 
 ## Context
 
-Sprint 9 (Modules 72–77) brought the PraxisMed frontend from zero browser testing to a
-fully functional local demo:
-
-| Module | Milestone |
-|---|---|
-| 72 | Seed script updated with login-capable user; smoke runbook created |
-| 73 | Three runtime blockers fixed (Alembic revision length, sys.path, port conflict) |
-| 74 | CORS middleware added; browser login unblocked |
-| 75 | Full browser smoke executed — login → dashboard → logout — verdict PASS |
-| 76 | Demo seed data added (appointment request + notification); all four sections list state |
-| 77 | Demo data browser smoke confirmed PASS |
-
-The local full-stack demo is now viable end-to-end. Before continuing to production-
-readiness work, an architecture checkpoint should document current state, gaps, and
-recommend Sprint 10 focus.
+Architecture Checkpoint 08 identified the patient name fallback (`"—"`) as the
+highest-priority visible defect before a stakeholder demo. The backend `patients` table
+stores `full_name` as a single field; the frontend `Patient` TypeScript interface only
+exposes `first_name` and `last_name`, so the display expression
+`[patient.first_name, patient.last_name].filter(Boolean).join(' ')` produces `"—"`.
 
 ## Scope
 
-Docs only. No code changes.
+1. Add `full_name` to the `Patient` interface in `frontend/lib/api.ts`:
+   ```ts
+   interface Patient {
+     id: string
+     full_name: string        // added — backend returns this as a single field
+     first_name?: string
+     last_name?: string
+     status: string
+   }
+   ```
 
-1. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_08_LOCAL_DEMO_READINESS_REVIEW.md`:
-   - Sprint 9 summary (Modules 72–77)
-   - What is proven by the local demo smoke
-   - What is not proven (gaps)
-   - Known issues (patient name display, sessionStorage, no token refresh, no role-based
-     visibility, no create/edit flows, no production build)
-   - Security review: local-dev credentials not committed, no plaintext passwords, fake
-     data only, CORS explicit origins only
-   - Recommend Sprint 10 focus options (e.g. patient name display fix, token refresh,
-     httpOnly cookie auth, role-based dashboard sections, production build foundations)
-   - Recommended: Sprint 10 / Module 78
+2. Update the patient row display in `frontend/app/dashboard/page.tsx`:
+   - Current: `[patient.first_name, patient.last_name].filter(Boolean).join(' ') || '—'`
+   - Updated: `patient.full_name || [patient.first_name, patient.last_name].filter(Boolean).join(' ') || '—'`
+   - This is backwards-compatible: uses `full_name` if present, falls back to split fields.
 
-2. Update `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 08.
+3. Update `backend/tests/test_frontend_patient_list_contract.py`:
+   - Add a test confirming `full_name` is referenced in `frontend/lib/api.ts`.
+   - Add a test confirming the patient row display uses `full_name`.
 
-3. Update `docs/claude/NEXT_MODULE.md` — Sprint 10 / Module 78 placeholder.
-
-4. Run `pytest -v backend/tests` — should be 1547/1547 (no code changes).
+4. Manual browser verification:
+   - Re-seed: `python backend/scripts/seed_local_data.py`
+   - Login at `http://localhost:3000`
+   - Patients section shows "Local Test Patient" (not `"—"`).
 
 ## What not to do
 
-- Do not write code.
-- Do not modify backend routes, schemas, or migrations.
-- Do not change frontend code.
-- Do not modify seed script or test files.
+- Do not change the backend patients API response shape.
+- Do not add new dashboard sections or features.
+- Do not implement token refresh, httpOnly cookies, or any auth changes.
+- Do not add create/edit flows.
 
 ## Acceptance
 
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_08_LOCAL_DEMO_READINESS_REVIEW.md` created.
-- CURRENT_STATE.md updated.
-- NEXT_MODULE.md updated to Module 78 placeholder.
-- Full backend tests pass.
-- Commit: `Architecture Checkpoint 08 — Local demo readiness review`
+- Patients section shows "Local Test Patient" (not `"—"`) after re-seed and login.
+- `full_name` field added to `Patient` interface in `lib/api.ts`.
+- Patient row display uses `full_name` in `dashboard/page.tsx`.
+- Contract tests confirm both changes.
+- Full backend tests pass: `pytest -v backend/tests`
+- Commit: `Sprint 10 / Module 78 — Dashboard demo polish and patient display fix`

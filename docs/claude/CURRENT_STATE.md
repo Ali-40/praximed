@@ -851,9 +851,12 @@
 
 ## Architecture checkpoint
 
+- Architecture Checkpoint 08 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_08_LOCAL_DEMO_READINESS_REVIEW.md`
 - Sprint 9 complete (Modules 72–77)
-- Sprint 9 summary: local runtime smoke, CORS fix, browser smoke, demo data polish, demo re-smoke
-- Architecture Checkpoint 08 recommended: Local Demo Readiness Review
+- Full backend tests: 1547/1547 passed
+- Local full-stack demo confirmed viable: login → all four dashboard sections list state → logout
+- Known issue: patient row name displays as `"—"` (full_name vs first_name/last_name field mismatch)
+- Sprint 10 started: Dashboard Demo Polish (Module 78+)
 
 ## Next module
-Architecture Checkpoint 08 — Local Demo Readiness Review.
+Sprint 10 / Module 78 — Dashboard Demo Polish and Patient Display Fix.
