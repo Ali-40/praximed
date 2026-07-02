@@ -636,7 +636,7 @@
    - Other PHI routes (clinical-workflows, appointments, notifications) unchanged
 
 61. Module 63 — Wire JWT auth to clinical workflow routes
-   - Commit: TBD
+   - Commit: 79e75b6
    - `backend/app/api/routes/clinical_workflows.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context) across all 7 routes)
    - `backend/tests/test_clinical_workflow_routes.py` (updated — fixtures override get_current_user; 9 new JWT auth tests replacing 6 old header-based tests)
    - `docs/security/AUTH_WIRING_PLAN.md` (updated — /clinical-workflows marked wired ✓)
