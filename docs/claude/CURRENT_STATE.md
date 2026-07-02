@@ -612,7 +612,7 @@
    - Existing PHI routes unchanged — current_user dep not yet wired
 
 59. Module 61 — Wire JWT auth to patient routes
-   - Commit: TBD
+   - Commit: f6afa45
    - `backend/app/api/routes/patients.py` (updated — Depends(get_current_user) replaces Depends(get_auth_context))
    - `backend/tests/test_patient_routes.py` (updated — fixtures override get_current_user; 7 new JWT auth tests)
    - `backend/tests/test_clinical_workflow_routes.py` (updated — cross-route smoke test assertion updated)
