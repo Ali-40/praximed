@@ -13,7 +13,7 @@
 | `/patients` | `get_current_user` (JWT Bearer) | Module 61 ✓ |
 | `/consultations` | `get_current_user` (JWT Bearer) | Module 62 ✓ |
 | `/clinical-workflows` | `get_current_user` (JWT Bearer) | Module 63 ✓ |
-| `/appointment-requests` | `get_auth_context` (header) | pending |
+| `/appointment-requests` | `get_current_user` (JWT Bearer) | Module 64 ✓ |
 | `/notifications` | `get_auth_context` (header) | pending |
 
 ---

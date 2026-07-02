@@ -2,6 +2,7 @@
 Appointment Request API routes — PraxisMed Sprint 1 / Module 17
 Updated: Sprint 3 / Module 38 — tenant guards applied (staff-level access)
 Updated: Sprint 4 / Module 43 — audit logging for mutation routes
+Updated: Sprint 7 / Module 64 — JWT current_user auth wired
 
 Exposes seven endpoints under /appointment-requests for creating, listing,
 fetching, updating, assigning, and archiving appointment requests.
@@ -16,7 +17,8 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend.app.api.dependencies.auth import get_auth_context, require_staff_clinic_access
+from backend.app.api.dependencies.auth import require_staff_clinic_access
+from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import appointment_request_repo
@@ -39,7 +41,7 @@ router = APIRouter(prefix="/appointment-requests", tags=["appointment-requests"]
 async def create_appointment_request(
     body: AppointmentRequestCreate,
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestResponse:
     require_staff_clinic_access(requested_clinic_id=body.clinic_id, auth_context=auth)
     try:
@@ -78,7 +80,7 @@ async def list_appointment_requests(
     action_required: Optional[bool] = Query(None),
     limit: int = Query(50),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestListResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -103,7 +105,7 @@ async def get_appointment_request(
     request_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -130,7 +132,7 @@ async def update_appointment_request_status(
     body: AppointmentRequestUpdateStatus,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -163,7 +165,7 @@ async def assign_appointment_request(
     body: AppointmentRequestAssign,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -194,7 +196,7 @@ async def mark_callback_needed(
     request_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
@@ -224,7 +226,7 @@ async def archive_appointment_request(
     request_id: str,
     clinic_id: str = Query(...),
     pool: Any = Depends(get_db_pool),
-    auth: AuthContext = Depends(get_auth_context),
+    auth: AuthContext = Depends(get_current_user),
 ) -> AppointmentRequestResponse:
     require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
     try:
