@@ -675,7 +675,7 @@
 ## Architecture checkpoint
 
 - Architecture Checkpoint 06 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_06_HUMAN_AUTH_WIRING_REVIEW.md`
-- Commit: pending
+- Commit: 6b64de9
 - Full backend tests: 1461/1461 passed
 - Sprint 7 complete (Modules 59–65)
 - Sprint 8 started: Frontend Dashboard Foundation (Module 66+)
