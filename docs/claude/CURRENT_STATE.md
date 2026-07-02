@@ -726,7 +726,7 @@
    - No hardcoded tokens or real patient data
 
 67. Module 69 — Frontend patient list integration
-   - Commit: (pending)
+   - Commit: 6890f8e
    - `frontend/lib/api.ts` (updated — Patient type + fetchPatients helper)
    - `frontend/app/dashboard/page.tsx` (updated — Patients section wired to fetchPatients; loading/error/empty/list states; Appointments section unchanged; Notifications/Consultations remain as placeholders)
    - `frontend/README.md` (updated — patients section: fetchPatients, Bearer token, states)
