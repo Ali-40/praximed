@@ -154,3 +154,19 @@ Scope for Architecture Checkpoint 08:
 - Identify the highest-priority gaps (e.g. patient name display, token refresh, httpOnly
   cookies, role-based section visibility, production build).
 - Recommend Sprint 10 focus.
+
+---
+
+## Module 80 — Polished Demo Browser Smoke PASS (2026-07-02)
+
+After Module 78 (patient name fix) and Module 79 (visual polish), a full browser smoke
+confirmed the polished dashboard renders correctly:
+
+- "PraxisMed" brand + "Clinic Dashboard" subtitle in header.
+- "Clinic Overview" page heading.
+- All four sections show count pill (1) and correct list row content.
+- Patient row displays "Local Test Patient" — name fallback `"—"` issue fully resolved.
+- Status badges use correct colours by value.
+- Local-demo footer label visible.
+
+Full evidence in `docs/runtime/FRONTEND_POLISHED_DEMO_BROWSER_SMOKE_RESULTS.md`.

@@ -1,51 +1,57 @@
-# Sprint 10 / Module 80 — Local Demo Retest After Visual Polish
+# Architecture Checkpoint 09 — Polished Local Demo Review
 
-Status: pending Module 79 review.
+Status: pending Module 80 review.
 
 ## Context
 
-Module 79 made several visual changes to the dashboard:
-- Header now shows "Clinic Dashboard" subtitle.
-- Page heading changed to "Clinic Overview".
-- Each section heading shows a row-count pill when data is loaded.
-- Status/priority badges use shared BADGE_STYLES helper and CSS token colours.
-- Local-demo footer label added.
+Sprint 10 (Modules 78–80) completed the local demo polish:
 
-A manual browser smoke should confirm these changes render correctly and that all
-four dashboard sections still load list state after re-seeding.
+| Module | Description | Outcome |
+|---|---|---|
+| 78 | Patient display fix — added `full_name` to Patient interface | Patient row shows "Local Test Patient" |
+| 79 | Dashboard visual polish — header subtitle, count pills, badge tokens, footer | Professional demo-ready dashboard |
+| 80 | Polished demo browser smoke | All changes confirmed in real browser; verdict PASS |
+
+The PraxisMed local demo is now presentable to a stakeholder. Before starting new
+feature work, an architecture checkpoint should review the current state of Sprint 10,
+assess what the local demo proves and what gaps remain, and recommend Sprint 11 focus.
 
 ## Scope
 
 Docs only. No code changes.
 
-1. Run the local stack:
-   - `python backend/scripts/seed_local_data.py` (idempotent re-seed)
-   - `uvicorn backend.app.main:app --reload --port 8000`
-   - `npm run dev` in `frontend/`
-2. Login at `http://localhost:3000` with local-dev credentials.
-3. Verify the updated dashboard:
-   - Header shows "PraxisMed" + "Clinic Dashboard" subtitle.
-   - Page heading shows "Clinic Overview".
-   - All four sections show row-count pills (1 appointment, 1 patient, 1 notification, 1 consultation).
-   - Patient row shows "Local Test Patient" (not `"—"`).
-   - Status badges are colour-coded correctly.
-   - Footer label "Local demo — all data is fake…" visible.
-4. Create or update `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` with Module 80 evidence.
-5. Update `docs/claude/CURRENT_STATE.md` with Module 79 completed and Module 80 entry.
-6. Update `docs/claude/NEXT_MODULE.md` to Sprint 10 / Module 81 or Architecture Checkpoint 09.
+1. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md`:
+   - Sprint 10 summary (Modules 78–80)
+   - Current state of the local demo after polish
+   - What is now demo-ready
+   - What gaps remain (no create/edit flows, no workflow actions, no production auth,
+     no deployment, role-based section visibility not enforced on frontend)
+   - Security status review (unchanged from Checkpoint 08 — still all passing)
+   - Recommended next sprint options:
+     A. Appointment request workflow UI (approve/reject/assign on dashboard rows)
+     B. Production auth path (httpOnly cookies, POST /auth/session)
+     C. Appointment detail / patient detail pages
+     D. CI/CD and deployment preparation
+   - Recommend Sprint 11 / Module 81 — Appointment Request Workflow UI
+   - Reason: the core clinic staff workflow (reviewing and actioning appointment
+     requests) is the primary product use case and the most impactful next demo feature
+
+2. Update `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 09.
+
+3. Update `docs/claude/NEXT_MODULE.md` — Sprint 11 / Module 81 placeholder.
+
+4. Run `pytest -v backend/tests` — should be 1560/1560 (no code changes).
 
 ## What not to do
 
+- Do not write code.
+- Do not modify backend routes, schemas, or migrations.
 - Do not change frontend code.
-- Do not change backend routes, schemas, or migrations.
-- Do not change seed script or test files.
+- Do not modify seed script or test files.
 
 ## Acceptance
 
-- All four sections render list state with count pills.
-- Patient row shows "Local Test Patient".
-- "Clinic Dashboard" subtitle visible in header.
-- "Clinic Overview" heading visible.
-- Local-demo footer label visible.
-- Full backend tests pass: `pytest -v backend/tests`
-- Commit: `Sprint 10 / Module 80 — Local demo retest after visual polish`
+- `docs/architecture/ARCHITECTURE_CHECKPOINT_09_POLISHED_LOCAL_DEMO_REVIEW.md` created.
+- CURRENT_STATE.md and NEXT_MODULE.md updated.
+- Full backend tests pass.
+- Commit: `Architecture Checkpoint 09 — Polished local demo review`

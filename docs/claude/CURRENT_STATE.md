@@ -884,5 +884,22 @@
    - No data fetching behavior changed
    - Dashboard improvements: clinic context, count pills, consistent badge colours, demo label
 
+78. Module 80 — Local demo retest after visual polish
+   - Commit: (docs only — no code commit; see sprint commit below)
+   - `docs/runtime/FRONTEND_POLISHED_DEMO_BROWSER_SMOKE_RESULTS.md` (new — full polished demo smoke evidence: header, count pills, patient name fix confirmed, badge colours, footer label, what this proves, what remains, Architecture Checkpoint 09 recommended)
+   - `docs/runtime/FRONTEND_DEMO_DATA_BROWSER_SMOKE_RESULTS.md` (updated — Module 80 PASS note added, links to polished smoke results doc)
+   - No production code changes
+   - Full backend tests: 1560/1560 passed
+   - Polished browser smoke verdict: PASS (2026-07-02)
+   - All four sections show count pills (1) and correct row content
+   - Patient row shows "Local Test Patient" — Module 78 fix confirmed
+   - "Clinic Dashboard" subtitle and "Clinic Overview" heading confirmed
+   - Local-demo footer label confirmed visible
+
+## Architecture checkpoint
+
+- Architecture Checkpoint 09 recommended: Polished Local Demo Review
+- Sprint 10 scope so far: Module 78 (patient name fix), Module 79 (visual polish), Module 80 (polished smoke)
+
 ## Next module
-Sprint 10 / Module 80 — Local Demo Retest After Visual Polish.
+Architecture Checkpoint 09 — Polished Local Demo Review.
