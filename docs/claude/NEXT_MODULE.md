@@ -1,93 +1,79 @@
-# Sprint 12 / Module 93 — Production CORS/Auth/Domain Plan
+# Sprint 12 / Module 94 — Deployment Smoke Runbook
 
-Status: pending Module 92 commit.
+Status: pending Module 93 commit.
 
 ## Context
 
-Module 92 defined the full environment and secrets contract across all four deployment
-tiers. Module 91 identified 13 production deployment blockers. Two of the highest-risk
-blockers relate to auth and CORS:
+Modules 91–93 produced:
+- A production readiness inventory (13 deployment blockers)
+- An environment and secrets contract (4 tiers; all env vars defined)
+- A CORS/auth/domain plan (domain topology; sessionStorage risk; cookie migration path)
 
-- Blocker 3: `FRONTEND_CORS_ORIGINS` not set → production frontend blocked by CORS
-- Blocker 8: JWT in `sessionStorage` → XSS-accessible token; clinic staff credentials at risk
-
-This module defines the production domain topology, CORS policy, and auth hardening path.
-It is a planning and documentation module. No implementation unless a missing doc-only
-correction is needed.
+The remaining Sprint 12 step before Architecture Checkpoint 12 is a concrete runbook
+that describes how to smoke-test a deployment once the blockers are resolved. This module
+creates the runbook document. No deployment occurs in this module.
 
 ## Scope
 
 ### 1. Read and audit current state
 
 Read:
-- `backend/app/main.py` — CORS configuration (`_cors_origins`, CORSMiddleware)
-- `backend/app/api/routes/auth.py` — login response; how token is returned
-- `frontend/lib/auth.ts` — how token is stored and used
-- `frontend/lib/api.ts` — how Bearer token is injected into requests
-- `frontend/app/login/` — login page; token handling
-- `docs/deployment/PRODUCTION_READINESS_INVENTORY.md` — blockers 3, 8, 9, 10
-- `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` — CORS/domain contract (Section I)
+- `docs/deployment/PRODUCTION_READINESS_INVENTORY.md` — 13 blockers
+- `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` — env vars per tier
+- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` — domain topology; CORS plan
+- `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` — existing local runbook pattern
+- `backend/scripts/` — what scripts exist (run_migrations.py, seed_local_data.py, db_smoke_test.py)
+- `backend/app/api/routes/health.py` — current health endpoint
 
-### 2. Create `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md`
+### 2. Create `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md`
 
 Sections:
-1. **Purpose** — planning doc only; no implementation
-2. **Domain topology** — production backend URL, frontend URL, how they relate
-3. **CORS policy for production** — what `FRONTEND_CORS_ORIGINS` must be set to;
-   why wildcard is forbidden; how to handle multiple environments
-4. **Current auth mechanism** — how JWT is issued (login response), stored
-   (sessionStorage), and sent (Authorization: Bearer header)
-5. **sessionStorage risk assessment** — why sessionStorage is XSS-vulnerable;
-   what the actual attack surface is in the current frontend; severity rating
-6. **httpOnly cookie migration path** — what changes are needed in backend (set-cookie
-   on login) and frontend (remove manual Authorization header); complexity estimate;
-   blockers; what must be decided before implementation
-7. **MVP risk decision options** — three options:
-   A. Block production until httpOnly cookie path is implemented
-   B. Deploy with sessionStorage + XSS hardening (Content-Security-Policy header, no
-      inline scripts); accept residual risk; document explicitly
-   C. Hybrid: deploy behind a VPN or IP allowlist so only clinic staff can reach the
-      frontend; reduces but does not eliminate XSS risk
-8. **Token expiry and refresh** — current 60-minute token expiry; no refresh; what
-   happens on expiry; options (extend expiry vs. add refresh endpoint)
-9. **NEXT_PUBLIC_API_BASE_URL configuration** — how to set for production; must not
-   default to localhost
-10. **Backend URL requirements** — stable HTTPS, not ngrok; what reverse proxy or
-    platform service is needed
-11. **Pre-CORS/auth checklist** — items that must be resolved before Module 94
-    (deployment runbook)
-12. **Not in scope** — no httpOnly cookie implementation, no CI/CD, no Fabel 5
+1. **Purpose** — when to use this runbook; what it does not cover
+2. **Pre-smoke checklist** — verify all env vars set; domain live; HTTPS working; DB migrated
+3. **Backend smoke steps** — start backend; hit `/health`; verify DB pool; check logs
+4. **Frontend smoke steps** — build with `npm run build`; start with `next start`; load login page; verify NEXT_PUBLIC_API_BASE_URL
+5. **Auth smoke** — log in with a test user; verify JWT returned; verify dashboard loads
+6. **CORS smoke** — verify browser does not show CORS errors in console; verify preflight passes
+7. **Vapi tool smoke** — trigger a test Vapi tool call to production URL; verify appointment row created; verify staff Confirm works
+8. **n8n webhook smoke** — trigger a test n8n webhook; verify HMAC signature passes
+9. **DB smoke** — verify migration version in alembic_version table; verify seed table absent; verify a real row can be written and read
+10. **Secrets sanity check** — confirm no local placeholder values in production env; confirm no ngrok URLs
+11. **Rollback steps** — what to do if smoke fails; how to take the backend offline without data loss
+12. **Post-smoke sign-off** — what counts as pass; who signs off
 
 ### 3. Static contract tests
 
-Create `backend/tests/test_production_cors_auth_domain_plan_contract.py`:
-- Plan doc exists
-- Plan mentions sessionStorage risk
-- Plan mentions httpOnly cookie path
-- Plan mentions wildcard CORS prohibition
-- Plan mentions stable HTTPS production URL
-- Plan mentions NEXT_PUBLIC_API_BASE_URL
-- Plan mentions FRONTEND_CORS_ORIGINS production value
-- Plan mentions MVP risk decision options
-- Plan mentions no implementation in this module
+Create `backend/tests/test_deployment_smoke_runbook_contract.py`:
+- Runbook doc exists
+- Mentions pre-smoke checklist
+- Mentions `/health` endpoint
+- Mentions `npm run build`
+- Mentions auth smoke / login
+- Mentions CORS smoke
+- Mentions Vapi tool smoke
+- Mentions n8n webhook smoke
+- Mentions DB migration check
+- Mentions no local placeholder values in production
+- Mentions no ngrok in production
+- Mentions rollback steps
+- Does not contain real secrets or real domain names with passwords
 
 ### 4. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Module 92 commit and Module 93
-- `docs/claude/NEXT_MODULE.md` — Module 94: Deployment Smoke Runbook
+- `docs/claude/CURRENT_STATE.md` — record Module 93 commit; record Module 94
+- `docs/claude/NEXT_MODULE.md` — Architecture Checkpoint 12: Production Readiness Review
 
 ## What not to do
 
-- Do not implement httpOnly cookie auth
-- Do not modify JWT signing, login route, or token handling
-- Do not change CORS configuration in main.py
-- Do not register a production domain
-- Do not deploy
-- Do not add real secrets
+- Do not execute any deployment steps
+- Do not create CI/CD pipeline files
+- Do not change backend routes, auth, or CORS config
+- Do not add real secrets or real domain names
+- Do not start the Fabel 5 / UX sprint
 
 ## Acceptance
 
-- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` created
+- `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` created
 - Contract tests pass
-- Full test suite passes (1697/1697 minimum)
-- Commit: `Sprint 12 / Module 93 — Production CORS/auth/domain plan`
+- Full test suite passes (1729/1729 minimum)
+- Commit: `Sprint 12 / Module 94 — Deployment smoke runbook`

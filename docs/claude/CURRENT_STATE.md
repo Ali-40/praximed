@@ -1044,7 +1044,7 @@
    - Production blockers: 13 explicit blockers documented before first real deployment
 
 90. Module 92 — Environment and Secrets Contract
-   - Commit: (see git log)
+   - Commit: 6679453
    - `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` (new — 14-section contract: purpose, environment tiers, backend env var contract table, frontend env var contract, secret generation rules, rotation policy, storage rules, env file rules, CORS/domain contract, Vapi/n8n production contract, database contract, logging/secrets safety, pre-deployment checklist, non-goals)
    - `frontend/.env.example` (new — documents NEXT_PUBLIC_API_BASE_URL with localhost placeholder; no backend secrets)
    - `backend/tests/test_environment_and_secrets_contract.py` (new — 43 static contract tests: contract doc coverage, backend/frontend .env.example completeness, no real secrets, security rules, Vapi/n8n requirements)
@@ -1055,6 +1055,17 @@
    - Rotation policy: all 5 secrets with when-to-rotate, impact, and coordination notes
    - Logging safety: PHI and secret values that must never appear in logs enumerated
 
+91. Module 93 — Production CORS/Auth/Domain Plan
+   - Commit: (see git log)
+   - `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` (new — 13-section plan: purpose, current local state, production domain topology, CORS policy per tier, sessionStorage JWT risk assessment, httpOnly Secure SameSite cookie migration path with options A/B/C, domain/auth interaction, Vapi/n8n server-to-server domain plan, security headers plan, env var mapping per tier, implementation sequence, risks and decisions table, go/no-go verdict)
+   - `backend/tests/test_production_cors_auth_domain_plan_contract.py` (new — 32 static contract tests)
+   - No production code changes; no runtime behavior changed
+   - Full backend tests: 1729/1729 passed
+   - sessionStorage JWT risk rated High (XSS-accessible; blocker for real PHI production)
+   - httpOnly Secure SameSite=Lax cookie migration recommended before production PHI; implementation deferred to Module 95+
+   - Machine auth headers (Vapi/n8n) are server-to-server; not browser CORS — correctly excluded from allow_headers
+   - Go/no-go: Not ready for production launch; 6 blockers remain; ready to proceed to deployment smoke runbook
+
 ## Architecture checkpoints
 
 - Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
@@ -1063,8 +1074,8 @@
   - Reviews Sprint 11 outcomes; decides next sprint direction
   - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
   - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
-- Full backend tests: 1697/1697 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 in progress (Modules 91–92 complete)
+- Full backend tests: 1729/1729 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 in progress (Modules 91–93 complete)
 
 ## Next module
-Sprint 12 / Module 93 — Production CORS/Auth/Domain Plan.
+Sprint 12 / Module 94 — Deployment Smoke Runbook.
