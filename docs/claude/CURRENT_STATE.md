@@ -1034,7 +1034,7 @@
    - Evidence: real Vapi test assistant fired `capture_appointment_request`; Vapi tool logs success; ngrok POST confirmed; backend created row; dashboard row confirmed by staff; no real data; no auto-confirmation
 
 89. Module 91 — Production Deployment Readiness Inventory
-   - Commit: (see git log)
+   - Commit: 2f373b5
    - `docs/deployment/PRODUCTION_READINESS_INVENTORY.md` (new — 12-section inventory: purpose, required env vars, infrastructure components, DB strategy, secrets handling, CORS/domain strategy, auth hardening gaps, Vapi production config, n8n production config, health and readiness, production blockers, not in scope)
    - `backend/.env.example` (updated — added JWT_SECRET_KEY, VAPI_WEBHOOK_SECRET, N8N_WEBHOOK_SECRET, INTERNAL_WEBHOOK_SECRET, FRONTEND_CORS_ORIGINS with placeholder values)
    - `backend/tests/test_production_readiness_inventory_contract.py` (new — 29 static contract tests: inventory exists, .env.example completeness, no real secrets, all required env vars covered, critical components mentioned)
@@ -1042,6 +1042,18 @@
    - Full backend tests: 1654/1654 passed
    - Env var audit: 7 backend vars + 1 frontend var documented; 5 were missing from .env.example and added
    - Production blockers: 13 explicit blockers documented before first real deployment
+
+90. Module 92 — Environment and Secrets Contract
+   - Commit: (see git log)
+   - `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` (new — 14-section contract: purpose, environment tiers, backend env var contract table, frontend env var contract, secret generation rules, rotation policy, storage rules, env file rules, CORS/domain contract, Vapi/n8n production contract, database contract, logging/secrets safety, pre-deployment checklist, non-goals)
+   - `frontend/.env.example` (new — documents NEXT_PUBLIC_API_BASE_URL with localhost placeholder; no backend secrets)
+   - `backend/tests/test_environment_and_secrets_contract.py` (new — 43 static contract tests: contract doc coverage, backend/frontend .env.example completeness, no real secrets, security rules, Vapi/n8n requirements)
+   - No production code changes; no runtime behavior changes
+   - Full backend tests: 1697/1697 passed
+   - Four deployment tiers documented: local, test/CI, staging, production
+   - Secret classification: DATABASE_URL, JWT_SECRET_KEY, all webhook secrets, POSTGRES_PASSWORD classified as secrets
+   - Rotation policy: all 5 secrets with when-to-rotate, impact, and coordination notes
+   - Logging safety: PHI and secret values that must never appear in logs enumerated
 
 ## Architecture checkpoints
 
@@ -1051,8 +1063,8 @@
   - Reviews Sprint 11 outcomes; decides next sprint direction
   - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
   - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
-- Full backend tests: 1654/1654 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 started (Module 91 complete)
+- Full backend tests: 1697/1697 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 in progress (Modules 91–92 complete)
 
 ## Next module
-Sprint 12 / Module 92 — Environment and Secrets Contract.
+Sprint 12 / Module 93 — Production CORS/Auth/Domain Plan.
