@@ -1,26 +1,21 @@
-# Sprint 15 / Module 106 — Railway PostgreSQL Provisioning and Migration Evidence
+# Sprint 15 / Module 107 — Vercel Frontend Project Creation Runbook
 
-Status: pending Module 105 review.
+Status: pending Module 106 review.
 
 ## Context
 
-Module 105 complete:
-- `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` created (15 sections)
-- Railway backend service creation guide: exact settings, env vars, start command, evidence checklist
-- 32 contract tests; full suite: 2135/2135 passed
+Module 106 complete:
+- `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md` created (15 sections)
+- `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` created (BLOCKED/PENDING — no Railway PostgreSQL yet)
+- 25 contract tests; full suite: 2160/2160 passed
 
-After the developer follows the Module 105 runbook and the Railway backend service is
-running with `/health` returning 200, the next step is:
-1. Add Railway PostgreSQL add-on
-2. Wire `DATABASE_URL` to the backend service
-3. Run migrations against the staging DB
-4. Provision staging fake clinic and user
+Sprint 15 sequence so far:
+- Module 105 — Railway backend service creation runbook (READY)
+- Module 106 — Railway PostgreSQL provisioning/migration runbook + evidence (BLOCKED/PENDING)
+- Module 107 — Vercel frontend project creation runbook ← NEXT
 
-Module 106 covers these steps with exact Railway UI guidance, evidence templates, and
-stop rules.
-
-If the Railway backend service from Module 105 has not yet been created, Module 106
-should document the blocker and not proceed to PostgreSQL provisioning steps.
+Module 107 creates a human-executable runbook for creating the Vercel frontend project.
+No actual Vercel deployment inside Claude. No real secrets. No frontend code changes.
 
 ## Scope
 
@@ -29,75 +24,88 @@ Docs/static tests only. No deployment. No real secrets. No runtime changes.
 ### 1. Read and audit current state
 
 Read:
+- docs/deployment/VERCEL_FRONTEND_DEPLOYMENT_PREP.md — Module 102 prep doc
 - docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md — Module 105
-- docs/deployment/STAGING_DB_MIGRATION_AND_SEED_STRATEGY.md — Module 103 strategy
-- docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md — env var spec
-- docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md — DATABASE_URL details
-- docs/runtime/STAGING_SMOKE_EXECUTION_RESULTS.md — current blocker list
-- backend/scripts/run_migrations.py — migration runner
-- backend/scripts/db_smoke_test.py — table verification script
+- docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md — Module 106
+- docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md — Module 96
+- docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md — Module 97
+- docs/runtime/STAGING_SMOKE_EXECUTION_RESULTS.md — blocker list
+- frontend/package.json — build/start commands
+- frontend/.env.example
+- frontend/next.config.js
 
-### 2. Create `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_RUNBOOK.md`
+### 2. Create `docs/deployment/VERCEL_FRONTEND_PROJECT_CREATION_RUNBOOK.md`
 
 Sections:
-1. **Purpose** — human-executable Railway PostgreSQL provisioning guide; no Claude deployment
-2. **Preconditions** — Module 105 Railway backend service must exist; `/health` must return 200
-3. **Step 1: Add Railway PostgreSQL add-on** — exact Railway dashboard steps; Plugin vs. service
-4. **Step 2: Link DATABASE_URL to backend service** — Railway auto-injects; confirm injection in Variables panel
-5. **Step 3: Wait for PostgreSQL to show "Running" status** — Railway DB cold-start timing
-6. **Step 4: Run migrations** — `python backend/scripts/run_migrations.py` via Railway "Run Command"; expected output; stop if non-zero
-7. **Step 5: Verify migrations** — `python backend/scripts/db_smoke_test.py` via Railway "Run Command"; expected 4-table check
-8. **Step 6: Verify /health/ready** — should return 200 now that DB is connected; expected JSON
-9. **Step 7: Provision staging fake clinic and user** — Option A SQL from Module 103 Section 8; uuid generation; bcrypt hash generation; INSERT statements with placeholders; idempotent ON CONFLICT
-10. **Step 8: Verify fake data** — SELECT queries to confirm rows exist; expected column values
-11. **DATABASE_URL safety rules** — never local Docker; never production; auto-injected only
-12. **Evidence to capture** — PostgreSQL service name; DATABASE_URL injection confirmed; migration output (sanitized); db_smoke_test result; fake clinic UUID; fake user email; /health/ready 200
-13. **Failure triage** — DB not ready; migration fails; bcrypt import fails; duplicate key on provisioning; /health/ready still 503 after migrations
-14. **Stop rules** — wrong DATABASE_URL; real patient data; secrets in logs; migration non-zero; production DB touched
-15. **What this runbook does not cover** — Vercel frontend (Module 107); CORS wiring (Module 107-108); Vapi config (Module 108); smoke execution (Module 109)
-16. **Recommended next** — Module 107: Vercel Frontend Project Creation Runbook
+1. **Purpose** — human-executable Vercel frontend project creation guide; no Claude deployment
+2. **Prerequisites** — Module 106 completion (Railway backend URL known); Vercel account; GitHub access; Railway backend `NEXT_PUBLIC_API_BASE_URL` source
+3. **Step 1: Create Vercel project** — exact Vercel dashboard steps; import GitHub repo; framework auto-detect
+4. **Step 2: Set root directory** — must be `frontend` (critical: without this Vercel fails to find `package.json`)
+5. **Step 3: Configure build settings** — framework=Next.js (auto-detect); install=`npm install`; build=`npm run build`; output=`.next` (managed by Vercel); no `vercel.json` needed; no `output:standalone`
+6. **Step 4: Set `NEXT_PUBLIC_API_BASE_URL`** — exact Railway backend HTTPS URL from Module 105; public var; baked into build; not a secret; must be set before first build
+7. **Step 5: Trigger first deploy** — what Vercel does; expected build log; Next.js 14.2.3 build time
+8. **Step 6: Capture Vercel URL** — the assigned `*.vercel.app` URL; needed for Module 108 CORS update
+9. **CORS dependency note** — `FRONTEND_CORS_ORIGINS` on Railway cannot be finalized until this Vercel URL is known; document it before proceeding to Module 108
+10. **No backend secrets in Vercel env** — `NEXT_PUBLIC_*` vars are public/baked into browser bundle; list what must never appear
+11. **Evidence to capture** — Vercel project name; Vercel URL; `NEXT_PUBLIC_API_BASE_URL` name confirmed; build status; commit SHA; build log snippet; no secret values
+12. **Failure triage** — build fails (root directory wrong; TypeScript error; env var missing); 404 on deploy; CORS error in browser (FRONTEND_CORS_ORIGINS not yet set; expected at this stage)
+13. **Stop rules** — backend secrets in Vercel env; wrong `NEXT_PUBLIC_API_BASE_URL`; production data; build fails without obvious config fix
+14. **Result states** — PASS / BLOCKED/PENDING / FAIL
+15. **What this runbook does not cover** — CORS update on Railway (Module 108); Vapi config (Module 108); full smoke (Module 109)
+16. **Recommended next** — Module 108: Staging Environment Wiring Evidence
 
-### 3. Static contract tests
+### 3. Create `docs/runtime/VERCEL_FRONTEND_DEPLOYMENT_EVIDENCE.md`
 
-Create `backend/tests/test_railway_postgresql_provisioning_runbook_contract.py`:
+Evidence doc with BLOCKED/PENDING if no Vercel project exists:
+- Purpose (accuracy policy; no fabricated evidence)
+- Current result (BLOCKED/PENDING if no Vercel URL available)
+- Preconditions available/missing
+- Evidence table (Vercel URL; build status; `NEXT_PUBLIC_API_BASE_URL` name; build log; commit SHA)
+- Blockers if pending
+- Next evidence needed
+
+### 4. Static contract tests
+
+Create `backend/tests/test_vercel_frontend_project_creation_runbook_contract.py`:
 - Runbook doc exists
-- Mentions Railway PostgreSQL
-- Mentions add-on or plugin
-- Mentions DATABASE_URL auto-injected
-- Mentions run_migrations.py
-- Mentions `python backend/scripts/run_migrations.py`
-- Mentions alembic upgrade head
-- Mentions db_smoke_test.py
-- Mentions /health/ready
-- Mentions staging fake clinic
-- Mentions doctor.staging@praximed.test
-- Mentions bcrypt
-- Mentions no local Docker DATABASE_URL
-- Mentions no production DATABASE_URL
+- Evidence doc exists
+- Mentions Vercel frontend project
+- Mentions fake/non-PHI staging
+- Mentions no Claude deployment
+- Mentions root directory `frontend`
+- Mentions Next.js auto-detect
+- Mentions `npm run build`
+- Mentions `NEXT_PUBLIC_API_BASE_URL`
+- Mentions Railway backend HTTPS URL
+- Mentions public build-time variable (not a secret)
+- Mentions no backend secrets in Vercel env
+- Mentions `FRONTEND_CORS_ORIGINS` dependency on Vercel URL
 - Mentions evidence capture
 - Mentions stop rules
-- Mentions Module 107 Vercel
-- No obvious real secrets
+- Mentions PASS/BLOCKED/PENDING states
+- Mentions Module 108
+- Evidence doc mentions BLOCKED/PENDING
+- No obvious real secrets in either doc
 
-### 4. Update docs
+### 5. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Module 105 and Module 106
-- `docs/claude/NEXT_MODULE.md` — Sprint 15 / Module 107: Vercel Frontend Project Creation Runbook
+- `docs/claude/CURRENT_STATE.md` — record Module 106 and Module 107
+- `docs/claude/NEXT_MODULE.md` — Sprint 15 / Module 108: Staging Environment Wiring Evidence
 
 ## What not to do
 
-- Do not provision a Railway PostgreSQL add-on
-- Do not run migrations against any database
+- Do not create a Vercel project
+- Do not run `npm install` or `npm run build`
 - Do not add real secrets
 - Do not implement httpOnly cookie auth
 - Do not change CORS implementation
 - Do not start Fabel 5/UX sprint
 - Do not change DB schema or migration files
-- Do not run npm install
 
 ## Acceptance
 
-- `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_RUNBOOK.md` created
+- `docs/deployment/VERCEL_FRONTEND_PROJECT_CREATION_RUNBOOK.md` created
+- `docs/runtime/VERCEL_FRONTEND_DEPLOYMENT_EVIDENCE.md` created (BLOCKED/PENDING if no Vercel project)
 - Contract tests pass
-- Full test suite passes (2135/2135 minimum)
-- Commit: `Sprint 15 / Module 106 — Railway PostgreSQL provisioning and migration evidence`
+- Full test suite passes (2160/2160 minimum)
+- Commit: `Sprint 15 / Module 107 — Vercel frontend project creation runbook`
