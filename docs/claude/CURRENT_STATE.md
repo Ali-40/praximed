@@ -1093,5 +1093,37 @@
 - Full backend tests: 1765/1765 passed
 - Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 starting
 
+93. Module 95 — Staging Deployment Target Selection and Topology Plan
+   - Commit: (see git log)
+   - `docs/deployment/STAGING_DEPLOYMENT_TOPOLOGY_PLAN.md` (new — 15-section plan: purpose, context from Checkpoint 12, pre-existing baseline, platform comparison table with 5 options scored, chosen topology Railway+Vercel with rationale, architecture diagram, environment variable mapping table, staging domain placeholders, CORS constraint, DB strategy with isolated fake clinic UUID, migration gate, Vapi staging configuration, n8n staging strategy, sessionStorage JWT note, risk/mitigation table, staging limitations, Module 96 next step)
+   - `backend/tests/test_staging_deployment_topology_plan_contract.py` (new — 33 static contract tests: plan exists, platforms compared Railway/Render/Fly.io/Vercel, managed PostgreSQL, chosen topology with rationale, fake/non-PHI data only, PHI no-go, HTTPS staging URLs, no ngrok in staging, no wildcard CORS, FRONTEND_CORS_ORIGINS, NEXT_PUBLIC_API_BASE_URL, Vapi endpoint vapi:tool singular, n8n strategy, isolated staging DB, migrations, secrets injection method, sessionStorage acceptable for fake-data staging only, no deployment executed, Module 96 mention, no real secrets)
+   - No production code changes; no runtime behavior changed
+   - Full backend tests: 1798/1798 passed
+   - Chosen topology: Railway (Backend + PostgreSQL) + Vercel (Frontend)
+   - Staging domains: https://staging-api.up.railway.app (backend), https://staging-app.vercel.app (frontend)
+   - FRONTEND_CORS_ORIGINS: https://staging-app.vercel.app (exact; no wildcard)
+   - sessionStorage JWT: acceptable for fake-data staging; not PHI-safe for production
+   - Vapi test assistant points at Railway stable URL (replaces ngrok)
+   - DATABASE_URL auto-injected by Railway PostgreSQL add-on
+   - No seed_local_data.py in staging; staging-specific fake clinic UUID required
+
+## Architecture checkpoints
+
+- Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
+  - Updated post-checkpoint (Module 90): all pending evidence gaps closed
+- Architecture Checkpoint 11 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_11_POST_VAPI_DIRECTION_REVIEW.md`
+  - Reviews Sprint 11 outcomes; decides next sprint direction
+  - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
+  - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
+- Architecture Checkpoint 12 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md`
+  - Production PHI launch: NO-GO (12 unresolved blockers)
+  - Staging/fake-data deployment prep: GO
+  - Auth/session hardening (httpOnly cookie): plan in Module 98; implement Sprint 14
+  - Fabel 5/frontend UX sprint: deferred until staging topology confirmed
+  - Appointment workflow expansion: deferred
+  - Next direction: Sprint 13 — Staging Deployment Target Selection and Topology Plan
+- Full backend tests: 1798/1798 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 in progress (Module 95 complete)
+
 ## Next module
-Sprint 13 / Module 95 — Staging Deployment Target Selection and Topology Plan.
+Sprint 13 / Module 96 — Staging Environment Variable Matrix.
