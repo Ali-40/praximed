@@ -1187,5 +1187,16 @@
   - Appointment workflow expansion: **DEFERRED**
 - Recommended Sprint 14 sequence: Module 100 (config file inventory) → 101 (Railway prep) → 102 (Vercel prep) → 103 (DB/migration strategy) → 104 (smoke execution evidence) → Checkpoint 14
 
+98. Module 100 — Staging Deployment Config File Inventory
+   - Commit: (see git log)
+   - `docs/deployment/STAGING_DEPLOYMENT_CONFIG_FILE_INVENTORY.md` (new — 13-section inventory: purpose, current repo layout (actual paths; missing files noted in tree diagram), Railway backend requirements table (requirements.txt MISSING/BLOCKER; Procfile MISSING/BLOCKER; runtime.txt MISSING; start command; app import path backend.app.main:app; $PORT/0.0.0.0 binding; health route; env vars; migration command; no DB-ready retry gap), Railway PostgreSQL inventory (managed add-on; DATABASE_URL auto-injection; migration target; seed_local_data.py must NOT run in staging; staging seed gap for Module 103), Vercel frontend requirements table (root directory=frontend/; package.json/build command; NEXT_PUBLIC_API_BASE_URL; no backend secrets in frontend env; frontend/.gitignore MISSING), cross-platform URL/domain inventory (FRONTEND_CORS_ORIGINS; no wildcard; no ngrok; HTTPS; SameSite cross-domain complication), migration/seed command inventory (run_migrations.py usable; seed_local_data.py local-only; smoke/sign scripts noted), Vapi/n8n inventory (capture-appointment-request; vapi:tool singular; no CORS dependency), required config files summary (existing/local-only/missing/not-needed), blockers table (12 items: requirements.txt BLOCKER; Procfile BLOCKER; Python version HIGH; staging seed HIGH; .gitignore gaps MEDIUM; no DB-ready retry MEDIUM; no Vapi test assistant HIGH; staging URLs unknown MEDIUM), recommended next actions (Module 101/102/103/104), non-goals)
+   - `backend/tests/test_staging_deployment_config_file_inventory_contract.py` (new — 41 static contract tests: inventory exists, Railway backend/uvicorn/import path/PORT/health/requirements.txt missing/Procfile/python version/Nixpacks, Railway PostgreSQL/DATABASE_URL injection/migrations/seed gap/seed_local_data must not run/no DB-ready retry, Vercel frontend/root directory/package.json build/NEXT_PUBLIC_API_BASE_URL/no backend secrets/frontend gitignore missing, FRONTEND_CORS_ORIGINS/no wildcard/no ngrok/HTTPS/SameSite cross-domain, Vapi endpoint/vapi:tool singular/n8n staging, sessionStorage JWT fake-data acceptable/PHI blocker, fake/non-PHI staging/production PHI no-go, no deployment in module, Module 101/Railway prep, no real secrets)
+   - Key findings: requirements.txt MISSING (BLOCKER); Procfile/railway.toml MISSING (BLOCKER); runtime.txt MISSING (HIGH); frontend/.gitignore MISSING (MEDIUM); backend uses PyJWT + bcrypt directly (not python-jose/passlib); no DB-ready retry in run_migrations.py; seed_local_data.py local-only; vercel.json not needed; next.config.js needs no output setting for Vercel
+   - No deployment executed; no production secrets; no runtime code changes
+   - Full backend tests: 1987/1987 passed
+
+- Full backend tests: 1987/1987 passed
+- Sprint 13 complete (Modules 95–99); Sprint 14 in progress (Module 100 complete)
+
 ## Next module
-Sprint 14 / Module 100 — Staging Deployment Config File Inventory.
+Sprint 14 / Module 101 — Railway Backend Deployment Prep.

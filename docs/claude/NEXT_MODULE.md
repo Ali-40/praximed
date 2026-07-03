@@ -1,100 +1,159 @@
-# Sprint 14 / Module 100 — Staging Deployment Config File Inventory
+# Sprint 14 / Module 101 — Railway Backend Deployment Prep
 
-Status: pending Architecture Checkpoint 13 review.
+Status: pending Module 100 review.
 
 ## Context
 
-Architecture Checkpoint 13 has approved:
-- Fake-data staging deployment attempt: GO
-- Actual staging deployment attempt: GO
-- Production PHI launch: NO-GO (all 12 blockers open)
+Module 100 (Staging Deployment Config File Inventory) identified two hard blockers before
+the Railway backend can deploy:
 
-Before creating real Railway or Vercel projects, inspect the repository for every
-deployment-relevant config file, start command, build command, and output assumption.
-The dry-run checklist (Module 97) assumes certain commands and file paths exist — this
-module verifies those assumptions against the actual repo state and documents what is
-present, what is missing, and what must be created before deployment.
+1. **No `backend/requirements.txt`** — Railway's Nixpacks cannot install Python packages
+2. **No `Procfile` (or `railway.toml`)** — Railway does not know the start command
 
-Module 100 is docs-first. No deployment execution. No real secrets. No runtime code changes
-unless a missing trivial config file (e.g., `railway.toml`) is added.
+Additional high-priority gaps:
+- No `runtime.txt` — Python version not pinned for Nixpacks
+- No `frontend/.gitignore` — `frontend/.next/`, `node_modules/`, `.env.local`, `next-env.d.ts` untracked
+- Root `.gitignore` does not cover `backend/.env` or `frontend/.env.local`
+- `run_migrations.py` has no DB-ready retry loop (Railway PostgreSQL may start after backend)
+
+Module 101 resolves the backend deployment blockers and `.gitignore` gaps. No actual
+Railway deployment. No real secrets. Minimal code/config additions only.
 
 ## Scope
 
-### 1. Inspect deployment config needs
+### 1. Read and audit current state
 
-Read and inventory:
+Read:
+- `docs/deployment/STAGING_DEPLOYMENT_CONFIG_FILE_INVENTORY.md` — full blocker list
+- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` — start command reference
+- `backend/scripts/run_migrations.py` — current migration runner
+- `backend/app/main.py` — import path and PORT binding confirmation
+- `backend/.env.example` — env var reference
+- `.gitignore` — current coverage
+- `frontend/package.json` — build/start commands
 
-**Backend:**
-- `backend/scripts/run_migrations.py` — does it exist? What does it do? Does it exit non-zero on failure?
-- Is there a `Procfile` or `railway.toml` in the repo root or backend directory?
-- What is the exact start command that Railway needs? (`python backend/scripts/run_migrations.py && python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`)
-- Does Railway need a `railway.toml` config file to know the start command?
-- What Python version does the backend require? Is there a `runtime.txt` or `pyproject.toml` version spec?
-- What is `backend/requirements.txt` or `backend/pyproject.toml`? Are all dependencies pinned?
+### 2. Create or update files
 
-**Frontend:**
-- `frontend/package.json` — what are the `build` and `start` scripts?
-- What is the `next.config.js` output setting? Does it need `output: 'standalone'` for Vercel?
-- Does Vercel's auto-detection handle Next.js 14.2.3 with `frontend/` as root? What is the Vercel root directory setting?
-- What is the build output directory? (`frontend/.next`)
-- Is there a `vercel.json` in the frontend directory or repo root?
-- Does the frontend `.gitignore` cover `frontend/.next/`, `frontend/node_modules/`?
+#### 2.1 Create `backend/requirements.txt`
 
-**Migrations:**
-- `backend/scripts/run_migrations.py` — does it run `alembic upgrade head`? Does it handle connection retries?
-- What happens if the database is not ready when the backend starts? Is there a retry loop?
-- What Alembic version is installed? Are all migration files committed?
+Must include all pinned packages the backend uses (from `pip show` inspection in Module 100):
+- `fastapi==0.138.2`
+- `uvicorn[standard]==0.49.0`
+- `asyncpg==0.31.0`
+- `alembic==1.18.5`
+- `pydantic==2.13.4`
+- `PyJWT==2.4.0`
+- `cryptography==42.0.2`
+- `bcrypt==3.2.0`
+- `httpx==0.26.0`
 
-**`.gitignore`:**
-- Does `.gitignore` cover `backend/.env`, `frontend/.env.local`, `frontend/node_modules/`, `frontend/.next/`, `frontend/package-lock.json`?
+Notes:
+- Backend uses `PyJWT` directly for JWT (not `python-jose`)
+- Backend uses `bcrypt` directly for password hashing (not `passlib`)
+- `uvicorn[standard]` installs uvloop and httptools for production performance
+- `httpx` is used by FastAPI's TestClient (test dependency; include for Railway build parity)
 
-### 2. Create `docs/deployment/STAGING_CONFIG_FILE_INVENTORY.md`
+#### 2.2 Create `Procfile` at repo root
 
-Sections:
-1. **Purpose** — inventory what exists vs. what is needed for Railway/Vercel staging deploy
-2. **Backend start command** — exact command; source (current recommendation from Module 97)
-3. **Railway config requirements** — does Railway auto-detect Python? Does it need `railway.toml`?
-4. **`run_migrations.py` review** — what it does; whether it exits non-zero on failure; whether it handles DB-not-ready
-5. **Python version and dependencies** — version spec; `requirements.txt` or `pyproject.toml`; any missing prod deps
-6. **Frontend build command** — `npm run build`; output directory; Next.js version
-7. **Vercel config requirements** — root directory setting; does it need `vercel.json`?
-8. **`.gitignore` coverage** — what is covered; any gaps that could leak secrets or build artifacts
-9. **Env var injection points** — where each var is consumed; confirms Module 96 matrix is complete
-10. **Gaps and action items** — list of missing files or changes needed before deployment
-11. **Module 101 next step**
+```
+web: python backend/scripts/run_migrations.py && python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+```
 
-### 3. Static contract tests
+Notes:
+- Must run from repo root (so `backend.app.main:app` import path resolves)
+- `$PORT` is auto-injected by Railway
+- `run_migrations.py` exits non-zero on failure → `&&` halts uvicorn start on migration failure
+- Process type is `web` (Railway expects this for HTTP services)
 
-Create `backend/tests/test_staging_config_file_inventory_contract.py`:
-- Inventory doc exists
-- Mentions backend start command
-- Mentions `run_migrations.py`
-- Mentions Railway config
-- Mentions Vercel config
-- Mentions frontend build command
-- Mentions `.gitignore`
-- Mentions Python version or dependencies
-- Mentions gaps or action items
-- Mentions Module 101
-- No obvious real secrets
+#### 2.3 Create `runtime.txt` at repo root
 
-### 4. Update docs
+```
+python-3.11
+```
 
-- `docs/claude/CURRENT_STATE.md` — record Module 100
-- `docs/claude/NEXT_MODULE.md` — Sprint 14 / Module 101: Railway Backend Deployment Prep
+Notes:
+- Pins Python 3.11 for Railway's Nixpacks auto-detection
+- Prevents Railway from using an unexpected Python version
+
+#### 2.4 Update `.gitignore`
+
+Add to root `.gitignore`:
+```
+# Backend local env
+backend/.env
+
+# Frontend local env and build artifacts
+frontend/.env.local
+frontend/.next/
+frontend/node_modules/
+frontend/package-lock.json
+frontend/next-env.d.ts
+```
+
+Notes:
+- `frontend/package-lock.json` — typically committed for reproducible builds; include in
+  .gitignore only if intentionally not committing; document the choice
+- After this update, `git status` should show no untracked files that risk leaking secrets
+
+#### 2.5 Assess `run_migrations.py` DB-ready retry
+
+Inspect whether Railway starts the PostgreSQL add-on before the backend service. If
+Railway guarantees PostgreSQL is ready before the backend starts (via healthcheck
+dependency), no retry is needed. If not, document the risk and optionally add a
+simple retry loop.
+
+**Action:** Document the Railway PostgreSQL startup order in the inventory update.
+Add a retry loop only if confirmed necessary. Do not add unnecessary complexity.
+
+### 3. Create `docs/deployment/STAGING_CONFIG_FILE_INVENTORY.md` updates (if needed)
+
+Update the inventory to reflect the new files created in this module.
+
+### 4. Static contract tests
+
+Create `backend/tests/test_railway_backend_deployment_prep_contract.py`:
+- `backend/requirements.txt` exists
+- `requirements.txt` mentions fastapi
+- `requirements.txt` mentions uvicorn
+- `requirements.txt` mentions asyncpg
+- `requirements.txt` mentions alembic
+- `requirements.txt` mentions pydantic
+- `requirements.txt` mentions PyJWT
+- `requirements.txt` mentions bcrypt
+- `Procfile` exists at repo root
+- `Procfile` mentions uvicorn
+- `Procfile` mentions backend.app.main
+- `Procfile` mentions $PORT or PORT
+- `Procfile` mentions run_migrations
+- `runtime.txt` exists at repo root
+- `runtime.txt` mentions python-3.11 or python-3
+- `.gitignore` covers `backend/.env`
+- `.gitignore` covers `frontend/.env.local`
+- `.gitignore` covers `frontend/.next/`
+- `.gitignore` covers `frontend/node_modules/`
+- No obvious real secrets in any new file
+
+### 5. Update docs
+
+- `docs/claude/CURRENT_STATE.md` — record Module 101
+- `docs/claude/NEXT_MODULE.md` — Sprint 14 / Module 102: Vercel Frontend Deployment Prep
 
 ## What not to do
 
-- Do not execute any deployment
-- Do not provision real Railway or Vercel projects
+- Do not create a real Railway service or Vercel project
 - Do not add real production secrets
-- Do not implement the httpOnly cookie auth (that is Module 105+ after staging smoke evidence)
-- Do not change backend/frontend runtime code
-- Do not start the Fabel 5/UX sprint
+- Do not implement httpOnly cookie auth
+- Do not change backend/frontend runtime behavior
+- Do not change CORS implementation
+- Do not change DB schema or migration files
+- Do not start Fabel 5/UX sprint
 
 ## Acceptance
 
-- `docs/deployment/STAGING_CONFIG_FILE_INVENTORY.md` created
+- `backend/requirements.txt` created with all pinned dependencies
+- `Procfile` created at repo root with correct start command
+- `runtime.txt` created at repo root with Python 3.11
+- `.gitignore` updated to cover all identified gaps
 - Contract tests pass
-- Full test suite passes (1946/1946 minimum)
-- Commit: `Sprint 14 / Module 100 — Staging deployment config file inventory`
+- Full test suite passes (1987/1987 minimum)
+- Commit: `Sprint 14 / Module 101 — Railway backend deployment prep`
