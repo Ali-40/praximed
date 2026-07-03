@@ -108,9 +108,16 @@ Railway will attempt to auto-detect the project type using Nixpacks:
 2. Railway reads `requirements.txt` at repo root → this file contains `-r backend/requirements.txt`, which causes pip to install the 7 pinned runtime deps from `backend/requirements.txt`
 3. Railway reads `Procfile` at repo root → sets the start command to `web: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
 
-**Root `requirements.txt` is a Nixpacks detection bridge.** Nixpacks looks for `requirements.txt`
-at the service root. The repo root `requirements.txt` contains only `-r backend/requirements.txt`
-and delegates all dependency pins to `backend/requirements.txt`. Do not duplicate pins.
+**Root `requirements.txt` contains the direct pinned dependencies for Railway/Railpack.**
+Railway (Railpack/Nixpacks) looks for `requirements.txt` at the service root. It installs
+from this file during a cached build step. Using `-r backend/requirements.txt` inside this
+file causes a Railway build failure because Railway cannot resolve the nested include
+during its install cache step. The root `requirements.txt` must list all dependencies
+directly; `backend/requirements.txt` remains the reference source for documentation.
+
+**Do not use `-r backend/requirements.txt` in the root `requirements.txt`.** This was
+confirmed by a real Railway build failure where the nested include caused Railway/Railpack
+to fail during dependency resolution.
 
 **Verify Nixpacks detected the correct settings before first deploy.** If Railway
 asks you to confirm a build command or start command, verify it matches exactly:

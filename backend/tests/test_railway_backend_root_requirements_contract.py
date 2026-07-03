@@ -75,10 +75,9 @@ def test_root_requirements_exists() -> None:
     )
 
 
-def test_root_requirements_references_backend_requirements() -> None:
-    text = _root_req()
-    assert "-r backend/requirements.txt" in text, (
-        "Root requirements.txt must contain '-r backend/requirements.txt'"
+def test_root_requirements_contains_fastapi() -> None:
+    assert "fastapi" in _root_req().lower(), (
+        "Root requirements.txt must list fastapi directly for Railway/Railpack build"
     )
 
 

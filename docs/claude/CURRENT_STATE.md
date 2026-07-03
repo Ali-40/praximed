@@ -1357,3 +1357,19 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Full backend tests: 2282/2282 passed
 - Sprint 15 complete; Sprint 16 in progress (Module 110 config fix complete)
 - Railway backend redeploy required: push `requirements.txt` to Railway; set root directory to blank (repo root) in Railway service settings; redeploy
+
+109. Module 111 — Railway Root Requirements Direct Dependency Fix
+   - Commit: (see git log)
+   - Railway build retest failed: root `requirements.txt` used `-r backend/requirements.txt`; Railway/Railpack cannot resolve nested includes during install cache step
+   - Fix: `requirements.txt` (repo root) — replaced `-r backend/requirements.txt` with direct pinned dependency list (fastapi/uvicorn/asyncpg/alembic/pydantic/PyJWT/bcrypt); matches `backend/requirements.txt` exactly; no nested includes
+   - `backend/requirements.txt` unchanged (remains source reference)
+   - `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` — Step 4.2 updated: direct dependencies explanation; explicit "do not use -r backend/requirements.txt" note with real Railway build failure reason
+   - `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` — Section 3.0 updated: flat direct dependency list; real failure reason documented
+   - `backend/tests/test_railway_root_requirements_direct_dependencies_contract.py` (new — 22 tests: root req exists/no nested include; fastapi/uvicorn/asyncpg/alembic/pydantic/PyJWT/bcrypt in root req; backend/requirements.txt exists; Procfile exists/backend.app.main; runtime.txt/python-3.11; runbook repo root/not backend root/direct deps/Railpack cannot resolve nested/no secrets/fake non-PHI; prep doc repo root/direct or flat deps)
+   - `backend/tests/test_railway_backend_root_requirements_contract.py` — updated: replaced stale `test_root_requirements_references_backend_requirements` with `test_root_requirements_contains_fastapi` (reflects direct-dep approach)
+   - No runtime app logic changed; no auth changes; no DB schema changes; no real secrets
+   - Full backend tests: 2304/2304 passed
+
+- Full backend tests: 2304/2304 passed
+- Sprint 16 in progress (Modules 110–111 complete)
+- Railway backend redeploy required: push this commit; confirm root directory is blank; redeploy

@@ -41,15 +41,25 @@ Staging uses fake/non-PHI data only. No deployment is executed in this module.
 
 ## 3. Config Files Created in Module 101
 
-### 3.0 `requirements.txt` (repo root — Nixpacks bridge)
+### 3.0 `requirements.txt` (repo root — Railway/Railpack direct dependencies)
 
 ```
--r backend/requirements.txt
+fastapi==0.138.2
+uvicorn[standard]==0.49.0
+asyncpg==0.31.0
+alembic==1.18.5
+pydantic==2.13.4
+PyJWT==2.4.0
+bcrypt==3.2.0
 ```
 
-Nixpacks looks for `requirements.txt` at the service root. This one-line file delegates
-all pinned dependencies to `backend/requirements.txt`. Without this file at repo root,
-Nixpacks may not detect Python and will not install dependencies.
+Railway (Railpack/Nixpacks) looks for `requirements.txt` at the service root and installs
+from it during a cached build step. The root file must list all dependencies directly.
+
+**Do not use `-r backend/requirements.txt` in the root `requirements.txt`.** A nested
+include reference causes a Railway build failure because Railway cannot resolve it during
+its install cache step. This was confirmed by a real Railway build failure. The root file
+must be a flat list of pinned packages matching `backend/requirements.txt`.
 
 **Do not set Railway root directory to `backend/`.** Setting root to `backend/` causes:
 ```
