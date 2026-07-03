@@ -1024,7 +1024,7 @@
    - Direct real Vapi assistant call logs: PENDING — not captured in this module
 
 88. Module 90 — Direct real Vapi assistant tool-call log capture
-   - Commit: (see git log)
+   - Commit: 5155d65
    - `docs/runtime/VAPI_DIRECT_ASSISTANT_TOOL_CALL_LOG_RESULTS.md` (new — full evidence: real Vapi test assistant tool call, ngrok POST, backend row creation, dashboard Confirm, verdict PASS)
    - `docs/runtime/VAPI_REAL_TOOL_CALL_LIVE_SMOKE_RESULTS.md` (updated — direct assistant log evidence upgraded from PENDING to PASS)
    - `docs/integrations/VAPI_TO_APPOINTMENT_WORKFLOW_PREP.md` (updated — direct Vapi assistant logs marked RESOLVED; integration loop status section added; next focus options listed)
@@ -1033,15 +1033,16 @@
    - Full backend tests: 1625/1625 passed (unchanged)
    - Evidence: real Vapi test assistant fired `capture_appointment_request`; Vapi tool logs success; ngrok POST confirmed; backend created row; dashboard row confirmed by staff; no real data; no auto-confirmation
 
-## Architecture checkpoint
+## Architecture checkpoints
 
 - Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
-- Updated post-checkpoint (Module 90): all pending evidence gaps closed
+  - Updated post-checkpoint (Module 90): all pending evidence gaps closed
+- Architecture Checkpoint 11 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_11_POST_VAPI_DIRECTION_REVIEW.md`
+  - Reviews Sprint 11 outcomes; decides next sprint direction
+  - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
+  - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
 - Full backend tests: 1625/1625 passed
-- Sprint 11 complete (Modules 81–90)
-- Full integration loop proven: real Vapi assistant → ngrok → adapter → DB → dashboard → staff Confirm
-- Security boundaries reviewed: no auto-confirm, clinic_ref from machine auth, staff confirmation required
-- Frontend UX opportunity noted: evaluate Fabel 5 / Claude frontend tooling after Checkpoint 11
+- Sprint 11 complete (Modules 81–90); Sprint 12 starting
 
 ## Next module
-Architecture Checkpoint 11 — Post-Vapi Integration Direction Review.
+Sprint 12 / Module 91 — Production Deployment Readiness Inventory.
