@@ -1171,5 +1171,21 @@
 - Full backend tests: 1946/1946 passed
 - Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 complete (Modules 95–99)
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 13 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_13_STAGING_DEPLOYMENT_GO_NO_GO_REVIEW.md`
+- Commit: (see git log)
+- Full backend tests: 1946/1946 passed
+- Sprint 13 complete (Modules 95–99)
+- Key decisions:
+  - Fake-data staging deployment attempt: **GO**
+  - Actual staging deployment attempt: **GO** — proceed in Sprint 14 per Module 97 checklist
+  - Production PHI launch: **NO-GO** — all 12 blockers remain open
+  - Auth/session hardening (httpOnly cookie): **GO** for Sprint 14; implement after M1/M2 evidence; before production PHI
+  - SameSite=None required for Railway+Vercel staging (cross-domain); SameSite=Lax for production (same registrable domain)
+  - Fabel 5/UX sprint: **DEFERRED** — wait until staging confirmed and auth hardened
+  - Appointment workflow expansion: **DEFERRED**
+- Recommended Sprint 14 sequence: Module 100 (config file inventory) → 101 (Railway prep) → 102 (Vercel prep) → 103 (DB/migration strategy) → 104 (smoke execution evidence) → Checkpoint 14
+
 ## Next module
-Architecture Checkpoint 13: Sprint 13 Go/No-Go Review.
+Sprint 14 / Module 100 — Staging Deployment Config File Inventory.

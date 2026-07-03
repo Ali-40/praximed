@@ -1,85 +1,100 @@
-# Architecture Checkpoint 13 — Sprint 13 Go/No-Go Review
+# Sprint 14 / Module 100 — Staging Deployment Config File Inventory
 
-Status: pending Module 99 review.
+Status: pending Architecture Checkpoint 13 review.
 
 ## Context
 
-Sprint 13 documentation set is now complete:
-- Module 95: Staging topology (Railway + Vercel)
-- Module 96: Staging environment variable matrix
-- Module 97: Staging deployment dry-run checklist
-- Module 98: Auth/session hardening implementation plan
-- Module 99: Production deployment execution plan
+Architecture Checkpoint 13 has approved:
+- Fake-data staging deployment attempt: GO
+- Actual staging deployment attempt: GO
+- Production PHI launch: NO-GO (all 12 blockers open)
 
-The staging dry-run checklist (Module 97) is ready to execute. The auth hardening plan
-(Module 98) is ready for Sprint 14 implementation. The production deployment execution
-plan (Module 99) sequences all remaining milestones from staging through production PHI launch.
+Before creating real Railway or Vercel projects, inspect the repository for every
+deployment-relevant config file, start command, build command, and output assumption.
+The dry-run checklist (Module 97) assumes certain commands and file paths exist — this
+module verifies those assumptions against the actual repo state and documents what is
+present, what is missing, and what must be created before deployment.
 
-Architecture Checkpoint 13 reviews Sprint 13 deliverables and makes the formal go/no-go
-decision for staging deployment execution (Milestone 1) and Sprint 14 planning.
+Module 100 is docs-first. No deployment execution. No real secrets. No runtime code changes
+unless a missing trivial config file (e.g., `railway.toml`) is added.
 
 ## Scope
 
-### 1. Read and audit current state
+### 1. Inspect deployment config needs
 
-Read:
-- `docs/deployment/PRODUCTION_DEPLOYMENT_EXECUTION_PLAN.md` — the sequenced milestone plan
-- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` — staging gate
-- `docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md` — staging env vars
-- `docs/deployment/STAGING_DEPLOYMENT_TOPOLOGY_PLAN.md` — topology rationale
-- `docs/security/AUTH_SESSION_HARDENING_IMPLEMENTATION_PLAN.md` — auth migration plan
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md` — 12 blockers
-- `docs/claude/CURRENT_STATE.md`
+Read and inventory:
 
-### 2. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_13_SPRINT_13_GO_NO_GO_REVIEW.md`
+**Backend:**
+- `backend/scripts/run_migrations.py` — does it exist? What does it do? Does it exit non-zero on failure?
+- Is there a `Procfile` or `railway.toml` in the repo root or backend directory?
+- What is the exact start command that Railway needs? (`python backend/scripts/run_migrations.py && python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`)
+- Does Railway need a `railway.toml` config file to know the start command?
+- What Python version does the backend require? Is there a `runtime.txt` or `pyproject.toml` version spec?
+- What is `backend/requirements.txt` or `backend/pyproject.toml`? Are all dependencies pinned?
+
+**Frontend:**
+- `frontend/package.json` — what are the `build` and `start` scripts?
+- What is the `next.config.js` output setting? Does it need `output: 'standalone'` for Vercel?
+- Does Vercel's auto-detection handle Next.js 14.2.3 with `frontend/` as root? What is the Vercel root directory setting?
+- What is the build output directory? (`frontend/.next`)
+- Is there a `vercel.json` in the frontend directory or repo root?
+- Does the frontend `.gitignore` cover `frontend/.next/`, `frontend/node_modules/`?
+
+**Migrations:**
+- `backend/scripts/run_migrations.py` — does it run `alembic upgrade head`? Does it handle connection retries?
+- What happens if the database is not ready when the backend starts? Is there a retry loop?
+- What Alembic version is installed? Are all migration files committed?
+
+**`.gitignore`:**
+- Does `.gitignore` cover `backend/.env`, `frontend/.env.local`, `frontend/node_modules/`, `frontend/.next/`, `frontend/package-lock.json`?
+
+### 2. Create `docs/deployment/STAGING_CONFIG_FILE_INVENTORY.md`
 
 Sections:
-1. **Status line** — date, sprint, test count, go/no-go decisions
-2. **Sprint 13 completed work** — table of Modules 95–99 with key output per module
-3. **Proven baseline (all prior sprints)** — what is proven locally; no regressions
-4. **Sprint 13 deliverables assessment** — quality review of each module; gaps; risks
-5. **Production blockers tracker** — all 12 blockers; Sprint 13 progress; resolved / open
-6. **Go/no-go decisions**
-   - Staging deployment (Milestone 1): GO or NO-GO with rationale
-   - Sprint 14 auth/session hardening implementation: GO or NO-GO with rationale
-   - Production PHI launch: NO-GO with list of all open blockers
-7. **Security review** — what is enforced; what is unresolved; no regressions
-8. **Sprint 13 test summary** — 1946 tests; breakdown by module
-9. **Direction options** — what Sprint 14 should focus on
-10. **Next step** — Sprint 14 Module 100: Auth/Session Hardening Implementation
+1. **Purpose** — inventory what exists vs. what is needed for Railway/Vercel staging deploy
+2. **Backend start command** — exact command; source (current recommendation from Module 97)
+3. **Railway config requirements** — does Railway auto-detect Python? Does it need `railway.toml`?
+4. **`run_migrations.py` review** — what it does; whether it exits non-zero on failure; whether it handles DB-not-ready
+5. **Python version and dependencies** — version spec; `requirements.txt` or `pyproject.toml`; any missing prod deps
+6. **Frontend build command** — `npm run build`; output directory; Next.js version
+7. **Vercel config requirements** — root directory setting; does it need `vercel.json`?
+8. **`.gitignore` coverage** — what is covered; any gaps that could leak secrets or build artifacts
+9. **Env var injection points** — where each var is consumed; confirms Module 96 matrix is complete
+10. **Gaps and action items** — list of missing files or changes needed before deployment
+11. **Module 101 next step**
 
 ### 3. Static contract tests
 
-Create `backend/tests/test_architecture_checkpoint_13_contract.py`:
-- Checkpoint doc exists
-- Mentions Sprint 13 complete (Modules 95–99)
-- Mentions 12 production blockers
-- Mentions staging deployment go/no-go
-- Mentions production PHI launch NO-GO
-- Mentions auth/session hardening Sprint 14
-- Mentions all 12 blockers remain open
-- Mentions test count (1946)
-- Mentions Architecture Checkpoint 12 as prior checkpoint
-- Mentions Module 100 or Sprint 14 as next step
-- Confirms no obvious real secrets in doc
+Create `backend/tests/test_staging_config_file_inventory_contract.py`:
+- Inventory doc exists
+- Mentions backend start command
+- Mentions `run_migrations.py`
+- Mentions Railway config
+- Mentions Vercel config
+- Mentions frontend build command
+- Mentions `.gitignore`
+- Mentions Python version or dependencies
+- Mentions gaps or action items
+- Mentions Module 101
+- No obvious real secrets
 
 ### 4. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 13
-- `docs/claude/NEXT_MODULE.md` — Sprint 14 Module 100: Auth/Session Hardening Implementation
+- `docs/claude/CURRENT_STATE.md` — record Module 100
+- `docs/claude/NEXT_MODULE.md` — Sprint 14 / Module 101: Railway Backend Deployment Prep
 
 ## What not to do
 
 - Do not execute any deployment
-- Do not provision real infrastructure
-- Do not add real production secrets or real domain names
-- Do not change backend/frontend code
-- Do not implement the httpOnly cookie auth (that is Module 100, Sprint 14)
+- Do not provision real Railway or Vercel projects
+- Do not add real production secrets
+- Do not implement the httpOnly cookie auth (that is Module 105+ after staging smoke evidence)
+- Do not change backend/frontend runtime code
 - Do not start the Fabel 5/UX sprint
 
 ## Acceptance
 
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_13_SPRINT_13_GO_NO_GO_REVIEW.md` created
+- `docs/deployment/STAGING_CONFIG_FILE_INVENTORY.md` created
 - Contract tests pass
 - Full test suite passes (1946/1946 minimum)
-- Commit: `Architecture Checkpoint 13 — Sprint 13 go/no-go review`
+- Commit: `Sprint 14 / Module 100 — Staging deployment config file inventory`
