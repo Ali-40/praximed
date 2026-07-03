@@ -1033,6 +1033,16 @@
    - Full backend tests: 1625/1625 passed (unchanged)
    - Evidence: real Vapi test assistant fired `capture_appointment_request`; Vapi tool logs success; ngrok POST confirmed; backend created row; dashboard row confirmed by staff; no real data; no auto-confirmation
 
+89. Module 91 — Production Deployment Readiness Inventory
+   - Commit: (see git log)
+   - `docs/deployment/PRODUCTION_READINESS_INVENTORY.md` (new — 12-section inventory: purpose, required env vars, infrastructure components, DB strategy, secrets handling, CORS/domain strategy, auth hardening gaps, Vapi production config, n8n production config, health and readiness, production blockers, not in scope)
+   - `backend/.env.example` (updated — added JWT_SECRET_KEY, VAPI_WEBHOOK_SECRET, N8N_WEBHOOK_SECRET, INTERNAL_WEBHOOK_SECRET, FRONTEND_CORS_ORIGINS with placeholder values)
+   - `backend/tests/test_production_readiness_inventory_contract.py` (new — 29 static contract tests: inventory exists, .env.example completeness, no real secrets, all required env vars covered, critical components mentioned)
+   - No production code changes
+   - Full backend tests: 1654/1654 passed
+   - Env var audit: 7 backend vars + 1 frontend var documented; 5 were missing from .env.example and added
+   - Production blockers: 13 explicit blockers documented before first real deployment
+
 ## Architecture checkpoints
 
 - Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
@@ -1041,8 +1051,8 @@
   - Reviews Sprint 11 outcomes; decides next sprint direction
   - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
   - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
-- Full backend tests: 1625/1625 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 starting
+- Full backend tests: 1654/1654 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 started (Module 91 complete)
 
 ## Next module
-Sprint 12 / Module 91 — Production Deployment Readiness Inventory.
+Sprint 12 / Module 92 — Environment and Secrets Contract.
