@@ -1305,5 +1305,16 @@
 - Full backend tests: 2237/2237 passed
 - Sprint 13 complete (Modules 95–99); Sprint 14 complete (Modules 100–104); Sprint 15 in progress (Modules 105–108 complete)
 
+107. Module 109 — Staging Smoke Execution PASS/BLOCKED Evidence
+   - Commit: (see git log)
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (new — 10-section smoke evidence doc: purpose (final Sprint 15 smoke evidence; fake/non-PHI; no fabricated evidence; accuracy policy), current result (BLOCKED/PENDING — Railway/Vercel/PostgreSQL/Vapi staging services or evidence not available yet), evidence status summary (17-row table: Railway backend URL/health/PostgreSQL/migrations/fake clinic+user/Vercel URL/login/CORS browser call/dashboard login/dashboard protected route/appointment Confirm/Vapi test assistant call/Vapi-created row/staff Confirm Vapi row/n8n staging NOT ENABLED DEFERRED/logs sanitized/rollback path — all "Not available yet"/"PENDING"), smoke checklist status (15 checks with PENDING/NOT ENABLED/DEFERRED; each has expected pass signal and blocker; all PENDING because no staging services), repo-side readiness (17 items all READY: Procfile/runtime.txt/requirements/run_migrations.py/db_smoke_test.py/migration files/frontend build/next.config.js/.env.example/CORS impl/all 4 Sprint 15 runbooks/DB migration strategy/smoke runbook/2237 tests), external blockers (14 items HIGH/MEDIUM/LOW — all same external blockers as Module 108), PASS criteria (16 explicit pass requirements: /health 200/migrations exit 0/alembic current head/fake clinic row/fake user row/Vercel /login loads/CORS preflight passes no wildcard/fake login JWT/dashboard renders/Vapi test call 200/Vapi row in DB/staff Confirm PATCH/no auto-confirm/n8n PASS or NOT ENABLED/logs no secrets/rollback path documented), safety constraints (12 rules: fake/non-PHI/no production secrets/no production DB/no real patients/no local-dev password/no ngrok/no wildcard CORS/HTTPS only/Vapi test assistant only/no auto-confirm/staff Confirm required/sessionStorage JWT fake-data-only risk), next human actions (12 ordered steps from Railway service creation through Checkpoint 15), recommended next Architecture Checkpoint 15)
+   - `backend/tests/test_staging_smoke_execution_pass_blocked_evidence_contract.py` (new — 29 static contract tests: evidence doc exists/non-empty; PASS/BLOCKED/PENDING; no fabricated evidence; Railway backend/PostgreSQL; Vercel frontend; /health; DATABASE_URL; migrations; fake staging clinic/user; /login; CORS; dashboard; appointment Confirm; Vapi test assistant; Vapi-created appointment row; status=new/action_required; staff Confirm/no auto-confirm; n8n staging NOT ENABLED/DEFERRED; logs sanitized; rollback; no real patient data; no production secrets; no ngrok; no wildcard CORS; sessionStorage JWT fake-data-only risk; Architecture Checkpoint 15; no real secrets in doc)
+   - Result: BLOCKED/PENDING (accurate; no staging smoke evidence provided; no fabricated success)
+   - No deployment executed; no real secrets; no runtime code changes
+   - Full backend tests: 2266/2266 passed
+
+- Full backend tests: 2266/2266 passed
+- Sprint 13 complete (Modules 95–99); Sprint 14 complete (Modules 100–104); Sprint 15 complete (Modules 105–109 all complete)
+
 ## Next module
-Sprint 15 / Module 109 — Staging Smoke Execution Evidence.
+Architecture Checkpoint 15 — Staging Deployment Evidence Review.
