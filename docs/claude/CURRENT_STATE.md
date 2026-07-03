@@ -1316,5 +1316,28 @@
 - Full backend tests: 2266/2266 passed
 - Sprint 13 complete (Modules 95–99); Sprint 14 complete (Modules 100–104); Sprint 15 complete (Modules 105–109 all complete)
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 15 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_15_STAGING_DEPLOYMENT_EVIDENCE_REVIEW.md`
+- Commit: (see git log)
+- Full backend tests: 2266/2266 passed
+- Sprint 15 complete (Modules 105–109)
+- Key decisions:
+  - More planning before manual setup: **NO** — Sprint 15 produced the complete runbook set; no further docs needed
+  - Manual Railway backend service creation: **GO** — repo fully ready; runbook complete; this is the exact next step
+  - Railway PostgreSQL creation: **GO** — after Railway backend URL confirmed (Module 106 runbook)
+  - Vercel frontend creation: **GO** — after Railway backend URL confirmed (Module 107 runbook)
+  - Staging smoke execution: **GO** — after wiring complete (Module 108/109 runbooks)
+  - Production PHI launch: **NO-GO** — staging smoke evidence not captured; 12 production blockers open; auth hardening not implemented
+  - Auth/session hardening (httpOnly cookie): **GO — after staging smoke PASS** — Module 98 plan complete; implement after smoke evidence
+  - Fabel 5/UX sprint: **DEFER** — wait until staging confirmed and auth hardened
+  - Appointment workflow expansion: **DEFER**
+- Repo-side readiness: 19 items confirmed READY; no code changes or planning docs needed before manual service creation
+- External blockers: 15 items require manual developer action (Railway/Vercel/Vapi service creation)
+- First manual action: follow `RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` to create Railway project and backend service
+- Evidence to capture after Railway backend creation: 16 items (service URL; commit SHA; build status; env var names; /health response; no secret values)
+- Safety rules documented: no real patients; no production secrets; no local-dev password; no ngrok; no wildcard CORS; stop if secrets in logs
+- Recommended Sprint 16 sequence: Module 110 (Railway backend evidence) → 111 (PostgreSQL evidence) → 112 (Vercel evidence) → 113 (wiring + smoke evidence) → Checkpoint 16
+
 ## Next module
-Architecture Checkpoint 15 — Staging Deployment Evidence Review.
+Sprint 16 / Module 110 — Railway Backend Service Creation Evidence.
