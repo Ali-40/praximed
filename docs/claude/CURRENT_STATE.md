@@ -1195,8 +1195,21 @@
    - No deployment executed; no production secrets; no runtime code changes
    - Full backend tests: 1987/1987 passed
 
-- Full backend tests: 1987/1987 passed
-- Sprint 13 complete (Modules 95–99); Sprint 14 in progress (Module 100 complete)
+   - Commit: 3312049
+
+99. Module 101 — Railway Backend Deployment Prep
+   - Commit: (see git log)
+   - `backend/requirements.txt` (new — 7 pinned runtime deps: fastapi==0.138.2, uvicorn[standard]==0.49.0, asyncpg==0.31.0, alembic==1.18.5, pydantic==2.13.4, PyJWT==2.4.0, bcrypt==3.2.0; no python-jose/passlib/httpx/pytest; Python 3.11; test deps excluded)
+   - `runtime.txt` (new — `python-3.11`; pins Python version for Railway Nixpacks)
+   - `Procfile` (new — `web: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`; migrations NOT in web command; migration is manual predeploy step)
+   - `.gitignore` (updated — added backend/.env, frontend/.env.local, frontend/.next/, frontend/next-env.d.ts, frontend/node_modules/, frontend/package-lock.json)
+   - `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` (new — 12-section prep doc: purpose, selected Railway approach/Nixpacks/Procfile, config files created in M101, required Railway env vars table (DATABASE_URL auto-injected; JWT_SECRET_KEY/VAPI/N8N/INTERNAL secrets; FRONTEND_CORS_ORIGINS; APP_ENV), Railway PostgreSQL binding, migration strategy (manual run via Railway "Run Command" or railway.toml preDeployCommand; NOT in Procfile web command; run_migrations.py notes including no retry loop), health check routes, log safety rules, Vapi integration (capture-appointment-request; vapi:tool; no ngrok; no auto-confirm; staff Confirm required), CORS/domain safety (no wildcard; HTTPS; no ngrok), blockers remaining before actual deploy (10 items), non-goals)
+   - `backend/tests/test_railway_backend_deployment_prep_contract.py` (new — 37 static contract tests: requirements.txt exists/fastapi/uvicorn/asyncpg/alembic/pydantic/PyJWT/bcrypt/no secrets; runtime.txt exists/python-3.11; Procfile exists/backend.app.main/0.0.0.0/$PORT/web process/uvicorn; prep doc exists/Railway backend/fake-non-PHI/no deployment/DATABASE_URL/JWT_SECRET_KEY/FRONTEND_CORS_ORIGINS/health/migration/Vapi endpoint/vapi:tool/no ngrok/no wildcard/HTTPS/staff Confirm/PORT binding/blockers remaining/no real secrets)
+   - No deployment executed; no production secrets; no runtime behavior changed; migrations NOT in Procfile (manual predeploy step)
+   - Full backend tests: 2024/2024 passed
+
+- Full backend tests: 2024/2024 passed
+- Sprint 13 complete (Modules 95–99); Sprint 14 in progress (Modules 100–101 complete)
 
 ## Next module
-Sprint 14 / Module 101 — Railway Backend Deployment Prep.
+Sprint 14 / Module 102 — Vercel Frontend Deployment Prep.

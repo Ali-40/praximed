@@ -5,3 +5,20 @@ __pycache__/
 .env
 .venv/
 venv/
+
+# Backend local env — never commit real secrets
+backend/.env
+
+# Frontend local env — contains API URL overrides; not a secret but not committed
+frontend/.env.local
+
+# Frontend build artifacts
+frontend/.next/
+frontend/next-env.d.ts
+
+# Frontend dependencies — installed via npm install; not committed
+frontend/node_modules/
+
+# Frontend lockfile — committed in most projects; listed here as explicit reference
+# Remove this line if package-lock.json should be committed for reproducible installs
+frontend/package-lock.json
