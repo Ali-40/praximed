@@ -1340,4 +1340,20 @@
 - Recommended Sprint 16 sequence: Module 110 (Railway backend evidence) → 111 (PostgreSQL evidence) → 112 (Vercel evidence) → 113 (wiring + smoke evidence) → Checkpoint 16
 
 ## Next module
-Sprint 16 / Module 110 — Railway Backend Service Creation Evidence.
+Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Retest.
+
+108. Module 110 — Railway Backend Root Requirements Fix
+   - Commit: (see git log)
+   - Real Railway deploy attempted: **FAILED** — `ModuleNotFoundError: No module named 'backend'`
+   - Root cause: Railway root directory was set to `backend/`; start command `backend.app.main:app` resolves from inside `backend/` where the `backend` package does not exist; this is a Railway monorepo/root configuration issue
+   - Fix:
+     - `requirements.txt` (repo root, new) — one-line Nixpacks bridge: `-r backend/requirements.txt`; Nixpacks detects Python from this file at repo root; no duplicate pins
+     - `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` — corrected root directory row (blank = repo root; NOT `backend/`); added Section 5.4 explaining exactly why `root=backend` causes `ModuleNotFoundError`; updated Step 4.2 to explain root `requirements.txt` bridge; updated failure triage with exact real error and fix
+     - `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` — updated build system row; added Section 3.0 for root `requirements.txt` bridge with explicit `do not set root to backend` warning
+   - `backend/tests/test_railway_backend_root_requirements_contract.py` (new — 16 static contract tests: root requirements.txt exists/references backend; Procfile exists/backend.app.main/0.0.0.0/$PORT; runtime.txt exists/python-3.11; runbook mentions repo root/warns not to set root to backend/ModuleNotFoundError No module named backend/root requirements bridge/no secrets/fake non-PHI staging; prep doc mentions repo root/ModuleNotFoundError)
+   - No runtime app logic changed; no auth changes; no DB schema changes; no real secrets
+   - Full backend tests: 2282/2282 passed
+
+- Full backend tests: 2282/2282 passed
+- Sprint 15 complete; Sprint 16 in progress (Module 110 config fix complete)
+- Railway backend redeploy required: push `requirements.txt` to Railway; set root directory to blank (repo root) in Railway service settings; redeploy

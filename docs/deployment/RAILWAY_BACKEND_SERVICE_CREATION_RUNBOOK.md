@@ -104,9 +104,13 @@ Run this four times; store each value securely before proceeding.
 
 Railway will attempt to auto-detect the project type using Nixpacks:
 
-1. Railway reads `runtime.txt` → detects Python 3.11
-2. Railway reads `backend/requirements.txt` → installs the 7 pinned runtime deps
-3. Railway reads `Procfile` → sets the start command to `web: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+1. Railway reads `runtime.txt` at repo root → detects Python 3.11
+2. Railway reads `requirements.txt` at repo root → this file contains `-r backend/requirements.txt`, which causes pip to install the 7 pinned runtime deps from `backend/requirements.txt`
+3. Railway reads `Procfile` at repo root → sets the start command to `web: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+
+**Root `requirements.txt` is a Nixpacks detection bridge.** Nixpacks looks for `requirements.txt`
+at the service root. The repo root `requirements.txt` contains only `-r backend/requirements.txt`
+and delegates all dependency pins to `backend/requirements.txt`. Do not duplicate pins.
 
 **Verify Nixpacks detected the correct settings before first deploy.** If Railway
 asks you to confirm a build command or start command, verify it matches exactly:
@@ -139,9 +143,9 @@ Configure these settings in the Railway service → **Settings** panel:
 | Setting | Value | Notes |
 |---|---|---|
 | **Service name** | `praxismed-backend-staging` (or similar) | Displayed in Railway dashboard |
-| **Root directory** | Leave as repo root (empty) | Railway must see `Procfile`, `runtime.txt`, `backend/requirements.txt` at root level |
+| **Root directory** | **Leave as repo root (empty / blank)** — do NOT set to `backend` | Setting root to `backend` causes `ModuleNotFoundError: No module named 'backend'` because `backend.app.main:app` is resolved from inside `backend/`, where the `backend` package does not exist |
 | **Start command** | (from Procfile — Railway reads automatically) `python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT` | Do NOT override unless Railway fails to read Procfile |
-| **Build command** | (Nixpacks automatic — `pip install -r backend/requirements.txt`) | Do NOT override |
+| **Build command** | (Nixpacks automatic — `pip install -r requirements.txt` → delegates to `backend/requirements.txt`) | Do NOT override |
 | **Python version** | 3.11 (from `runtime.txt`) | Railway Nixpacks reads `runtime.txt` at repo root |
 | **Health check path** | `/health` | Set in Railway service → Settings → Health Check; Railway uses this to determine if the deploy succeeded |
 | **Source branch** | `master` | The current working branch |
@@ -167,6 +171,25 @@ The FastAPI `app` object lives at `backend/app/main.py`. Because Railway runs th
 service from the repo root (not from `backend/`), the module must be referenced as
 `backend.app.main:app`. Running `python -m uvicorn app.main:app` (without the
 `backend.` prefix) would fail with `ModuleNotFoundError`.
+
+### 5.4 Why Root Directory Must NOT Be Set to `backend`
+
+Setting the Railway service root directory to `backend/` causes a fatal import error:
+
+```
+ModuleNotFoundError: No module named 'backend'
+```
+
+This happens because:
+- The start command is `python -m uvicorn backend.app.main:app`
+- When the working directory is `backend/`, Python resolves `backend` as a top-level package
+  relative to `backend/` — but the `backend` package does not exist inside `backend/`
+- The `backend` package exists at repo root (`/backend/app/main.py`)
+- Only when the working directory is the repo root can Python find `backend.app.main`
+
+**Always leave the Railway root directory blank (repo root).** This was confirmed by a real
+failed deployment where root was set to `backend`: the app crashed immediately on startup
+with `ModuleNotFoundError: No module named 'backend'`.
 
 ---
 
@@ -323,8 +346,9 @@ completes. Record only sanitized information — no secret values, no `DATABASE_
 
 | Symptom | Likely Cause | Where to Inspect | Safe Next Action |
 |---|---|---|---|
-| Build fails: `ModuleNotFoundError` | Railway running from wrong directory or wrong import path | Railway build log | Confirm root directory is repo root; confirm Procfile has `backend.app.main:app` |
-| Build fails: `No module named 'fastapi'` | `backend/requirements.txt` not found at expected path | Railway build log | Confirm `backend/requirements.txt` exists in repo root; check Railway root directory setting |
+| App crashes: `ModuleNotFoundError: No module named 'backend'` | Railway root directory set to `backend/` instead of repo root — uvicorn runs from inside `backend/` where `backend` package does not exist | Railway runtime log | Set root directory to blank (repo root) in Railway service settings; redeploy |
+| Build fails: `ModuleNotFoundError` at import | Wrong import path in start command | Railway build log | Confirm Procfile has `backend.app.main:app`; confirm root is repo root |
+| Build fails: `No module named 'fastapi'` | `requirements.txt` at repo root missing or not referencing `backend/requirements.txt` | Railway build log | Confirm repo root `requirements.txt` exists with `-r backend/requirements.txt`; check Railway root directory setting |
 | Build fails: Python version mismatch | `runtime.txt` not detected | Railway build log | Confirm `runtime.txt` is at repo root; contains `python-3.11` |
 | Service starts but all requests time out | Process bound to `127.0.0.1` instead of `0.0.0.0` | Railway deployment settings / Procfile | Confirm Procfile has `--host 0.0.0.0` |
 | Service starts but health check fails: "connection refused" | Process not listening on Railway-assigned `$PORT` | Railway deployment log | Confirm Procfile has `--port $PORT` (not `--port 8000`) |

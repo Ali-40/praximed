@@ -32,7 +32,7 @@ Staging uses fake/non-PHI data only. No deployment is executed in this module.
 | Decision | Choice | Rationale |
 |---|---|---|
 | Platform | Railway | PaaS; managed PostgreSQL add-on; Nixpacks Python auto-detection; no Docker required |
-| Build system | Nixpacks (Railway default) | Auto-detects Python from `runtime.txt` + `backend/requirements.txt` |
+| Build system | Nixpacks (Railway default) | Auto-detects Python from `runtime.txt` + `requirements.txt` at repo root (which references `backend/requirements.txt`) |
 | Start command source | `Procfile` at repo root | Simplest Railway config; Railway reads `web:` process type automatically |
 | Migration strategy | Manual predeploy step | Web process does not auto-run migrations; avoids unintended DB mutations on every restart |
 | Service root | Repo root | Required so `backend.app.main:app` import path resolves correctly |
@@ -40,6 +40,23 @@ Staging uses fake/non-PHI data only. No deployment is executed in this module.
 ---
 
 ## 3. Config Files Created in Module 101
+
+### 3.0 `requirements.txt` (repo root — Nixpacks bridge)
+
+```
+-r backend/requirements.txt
+```
+
+Nixpacks looks for `requirements.txt` at the service root. This one-line file delegates
+all pinned dependencies to `backend/requirements.txt`. Without this file at repo root,
+Nixpacks may not detect Python and will not install dependencies.
+
+**Do not set Railway root directory to `backend/`.** Setting root to `backend/` causes:
+```
+ModuleNotFoundError: No module named 'backend'
+```
+because the start command `backend.app.main:app` resolves from inside `backend/` where
+the `backend` package does not exist. Always leave root directory blank (repo root).
 
 ### 3.1 `backend/requirements.txt`
 

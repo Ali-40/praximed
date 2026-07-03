@@ -1,60 +1,61 @@
-# Sprint 16 / Module 110 — Railway Backend Service Creation Evidence
+# Sprint 16 / Module 111 — Railway Backend Service Creation Evidence
 
-Status: pending manual Railway backend service creation.
+Status: pending Railway backend redeploy with root directory fix.
 
 ## Context
 
-Architecture Checkpoint 15 complete:
-- Sprint 15 reviewed (Modules 105–109 all complete)
-- Planning phase declared complete — no further runbooks needed
-- Manual Railway backend service creation: GO
-- Production PHI launch: NO-GO
-- Full suite: 2266/2266 passed
+Module 110 complete:
+- `requirements.txt` created at repo root (Nixpacks bridge: `-r backend/requirements.txt`)
+- `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` updated: root directory must be blank (repo root); Section 5.4 added documenting `ModuleNotFoundError: No module named 'backend'` when root=`backend`
+- `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` updated: Section 3.0 added for root requirements bridge
+- 16 contract tests; full suite: 2282/2282 passed
+- Commit: (see git log)
 
-Module 110 records the actual evidence from creating the Railway backend service for
-PraxisMed fake-data staging.
+Real deployment failure confirmed:
+- Initial Railway deploy with `root=backend` caused `ModuleNotFoundError: No module named 'backend'`
+- Root cause: Python resolves `backend.app.main:app` relative to the working directory;
+  when root is `backend/`, the `backend` package cannot be found inside itself
+- Fix applied: root `requirements.txt` + root directory must be blank
 
-**The developer must complete Railway backend service creation first** by following
-`docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md`. Claude does not deploy.
+**The developer must:**
+1. Push the `requirements.txt` commit to the Railway-tracked branch
+2. In Railway service settings → Root Directory: **clear/blank** (repo root)
+3. Redeploy the Railway backend service
+4. Confirm `GET /health` → 200
 
 ## Scope
 
-Evidence doc update / new evidence doc only. No deployment by Claude.
-No real secrets. No production data. No runtime code changes.
+Evidence doc only. No code changes. No deployment by Claude.
+No real secrets. No production data.
 
-### If real Railway backend evidence is provided by the developer:
+### If real Railway backend `/health` → 200 evidence is provided:
 
-1. Update or create `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md`
-   - Record Railway service name
-   - Record Railway service URL (HTTPS)
-   - Record source branch and commit SHA
-   - Record build status
+1. Create `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md`
+   - Set result: PASS
+   - Record Railway service name, URL, branch, commit SHA, build status
    - Record Nixpacks Python version detected
-   - Record start command detected
-   - Record env var names set (not values)
-   - Record `DATABASE_URL` status (absent at this stage — expected)
-   - Record `FRONTEND_CORS_ORIGINS` status (absent at this stage — expected)
-   - Record `GET /health` HTTP status (expected: 200)
-   - Record `GET /health` response body (expected: `{"status": "ok", "service": "PraxisMed API"}`)
-   - Record `GET /health/ready` HTTP status (expected: 503 — no DB yet)
+   - Record start command detected (from Procfile)
+   - Record root directory confirmed as blank/repo root
+   - Record `requirements.txt` bridge confirmed
+   - Record env var names set (not values): `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `APP_ENV`
+   - Record `DATABASE_URL` status: absent (expected)
+   - Record `FRONTEND_CORS_ORIGINS` status: absent (expected)
+   - Record `GET /health` → 200 and response body
+   - Record `GET /health/ready` → 503 (expected; no DB yet)
    - Record sanitized build log snippet (no secrets)
-   - Set result to PASS if `/health` → 200; otherwise BLOCKED/PENDING with exact blocker
 2. Add contract tests for the evidence doc
 3. Update CURRENT_STATE.md
-4. Update NEXT_MODULE.md → Module 111 (Railway PostgreSQL evidence)
+4. Update NEXT_MODULE.md → Module 112: Railway PostgreSQL Provisioning Evidence
 
-### If no evidence is provided:
+### If no evidence or if redeploy still fails:
 
-1. Create `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md` with:
-   - Result: BLOCKED/PENDING
-   - Accurate preconditions table
-   - Evidence table (all PENDING)
-   - Blockers list
-   - Next evidence needed
+1. Create `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md`
+   - Set result: BLOCKED/PENDING (or FAIL with exact error)
+   - Document the exact error from Railway logs
+   - List exact fix steps
 2. Add contract tests
 3. Update CURRENT_STATE.md
-4. Update NEXT_MODULE.md → Module 111 (Railway PostgreSQL evidence)
-5. Commit: `Sprint 16 / Module 110 — Railway backend service creation evidence`
+4. Update NEXT_MODULE.md accordingly
 
 ## What not to do
 
@@ -65,12 +66,11 @@ No real secrets. No production data. No runtime code changes.
 - Do not change CORS implementation
 - Do not start Fabel 5/UX sprint
 - Do not change DB schema or migration files
-- Do not expand appointment workflow
 
 ## Acceptance
 
 - `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md` created (PASS or BLOCKED/PENDING)
 - PASS only with real `/health` → 200 evidence
 - Contract tests pass
-- Full test suite passes (2266/2266 minimum)
-- Commit: `Sprint 16 / Module 110 — Railway backend service creation evidence`
+- Full test suite passes (2282/2282 minimum)
+- Commit: `Sprint 16 / Module 111 — Railway backend service creation evidence`
