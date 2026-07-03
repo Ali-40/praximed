@@ -1,81 +1,103 @@
-# Architecture Checkpoint 14 — Staging Deployment Review
+# Sprint 15 / Module 105 — Railway Backend Service Creation Runbook
 
-Status: pending Module 104 review.
+Status: pending Architecture Checkpoint 14 review.
 
 ## Context
 
-Sprint 14 complete (Modules 100–104):
-- Module 100: Staging deployment config file inventory (41 tests)
-- Module 101: Railway backend deployment prep — requirements.txt, Procfile, runtime.txt, .gitignore (37 tests)
-- Module 102: Vercel frontend deployment prep documentation (26 tests)
-- Module 103: Staging DB migration and seed strategy (27 tests)
-- Module 104: Staging smoke execution results — BLOCKED/PENDING (26 tests; no staging services exist)
+Architecture Checkpoint 14 decisions:
+- Actual fake-data staging service creation: GO
+- Production PHI launch: NO-GO
+- Auth/session hardening: after staging smoke evidence
+- Fabel 5/UX: deferred
+- Appointment workflow expansion: deferred
 
-Full suite: 2103/2103 passed.
+Sprint 14 complete (Modules 100–104). Repo-side staging prep is fully READY.
+External blockers are the only remaining items before staging smoke.
 
-The repo is fully prepared for staging deployment. All external blockers preventing actual
-staging service creation are documented in `docs/runtime/STAGING_SMOKE_EXECUTION_RESULTS.md`.
+The immediate next external blocker is Railway backend service creation.
 
-Architecture Checkpoint 14 reviews Sprint 14 outcomes and decides next actions.
+Module 105 creates a human-executable runbook for the Railway backend service creation step.
+It does not execute any Railway commands. It does not create a Railway service.
+It does not claim any service was created. It provides exact steps the developer can follow.
 
 ## Scope
 
-This is a review/documentation-only module. No deployment execution. No runtime changes.
-No real secrets. No fabricated evidence.
+Docs/static tests only. No deployment. No real secrets. No runtime changes.
 
 ### 1. Read and audit current state
 
 Read:
-- All Sprint 14 deliverables (Modules 100–104)
-- `docs/runtime/STAGING_SMOKE_EXECUTION_RESULTS.md` — Module 104 BLOCKED/PENDING result
-- `docs/deployment/STAGING_DB_MIGRATION_AND_SEED_STRATEGY.md` — Module 103 strategy
-- `docs/deployment/VERCEL_FRONTEND_DEPLOYMENT_PREP.md` — Module 102
-- `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` — Module 101
-- `docs/deployment/STAGING_DEPLOYMENT_CONFIG_FILE_INVENTORY.md` — Module 100
-- Previous checkpoint: `docs/architecture/ARCHITECTURE_CHECKPOINT_13_STAGING_DEPLOYMENT_GO_NO_GO_REVIEW.md`
-- `docs/claude/CURRENT_STATE.md`
+- docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md — Module 101 prep doc
+- docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md — Module 97 checklist
+- docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md — Module 96 env matrix
+- docs/runtime/STAGING_SMOKE_EXECUTION_RESULTS.md — Module 104 blocker list
+- Procfile — confirm start command
+- runtime.txt — confirm Python version
+- backend/requirements.txt — confirm deps
+- backend/.env.example — confirm env var names
 
-### 2. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_14_STAGING_DEPLOYMENT_REVIEW.md`
+### 2. Create `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md`
 
 Sections:
-1. **Purpose and date**
-2. **Sprint 14 modules reviewed** — 100–104; what each delivered
-3. **Staging deployment readiness assessment** — what is ready vs. missing
-4. **Module 104 BLOCKED/PENDING review** — acknowledge accurate status; not a failure
-5. **Decision: proceed to actual staging service creation** — YES/NO/CONDITIONAL
-6. **Decision: Module 104 rerun scope** — module 104 remains PENDING; rerun once services exist
-7. **Decision: auth/session hardening timing** — implement after staging smoke evidence
-8. **Decision: production PHI launch** — remains NO-GO
-9. **Decision: Fabel 5/UX sprint** — remains deferred
-10. **Decision: appointment workflow expansion** — remains deferred
-11. **Remaining open blockers** — from Module 104; external actions only
-12. **Recommended Sprint 15 sequence** — actual staging service creation and smoke
-13. **Non-goals**
+1. **Purpose** — human-executable runbook for Railway backend service creation; no actual deployment in this module
+2. **Prerequisites** — Railway account; GitHub repo access; secrets generated with `openssl rand -hex 32`
+3. **Step 1: Create Railway project and backend service** — exact Railway dashboard UI steps; GitHub repo connection; service settings
+4. **Step 2: Configure Railway service settings** — root directory (repo root, not `backend/`); start command confirmation (reads from Procfile); Python version (from runtime.txt)
+5. **Step 3: Set environment variables** — exact variable names and generation commands for all 6 Railway env vars (`DATABASE_URL` auto-injected; `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET` via `openssl rand -hex 32`; `FRONTEND_CORS_ORIGINS` placeholder until Vercel URL known; `APP_ENV=staging`)
+6. **Step 4: Configure health check** — set health check path to `/health` in Railway service settings
+7. **Step 5: Trigger initial deploy** — Railway auto-deploys on push or manual trigger; what Nixpacks does (installs Python 3.11; runs `pip install -r backend/requirements.txt`; starts with Procfile `web:` command)
+8. **Step 6: Verify deploy** — Railway build logs to check; expected success indicators; common failure modes
+9. **Step 7: Capture evidence** — Railway service URL; deploy log screenshot; `GET /health` curl result; sanitized output only (no DATABASE_URL value in evidence)
+10. **Start command reference** — exact Procfile line: `web: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`; why `--host 0.0.0.0` (not 127.0.0.1); why `$PORT` (Railway injects it)
+11. **Common failure modes and triage** — missing `requirements.txt` (should not happen); wrong root directory; `$PORT` not used; 503 on `/health` before DB is ready (health is DB-independent); wrong import path
+12. **Safety constraints** — no real patient data; no production secrets; no local-dev placeholders; no ngrok; staging-only secrets
+13. **Evidence checklist** — items to capture before proceeding to Module 106
+14. **What Module 106 covers** — Railway PostgreSQL provisioning and migration evidence (next step after this runbook)
 
-### 3. No new contract tests
+### 3. Static contract tests
 
-Architecture Checkpoint 14 follows the same pattern as Checkpoint 13 — no new contract
-tests are required for a checkpoint review document.
+Create `backend/tests/test_railway_backend_service_creation_runbook_contract.py`:
+- Runbook doc exists
+- Mentions Railway backend service
+- Mentions GitHub repo connection
+- Mentions Procfile or start command
+- Mentions `--host 0.0.0.0`
+- Mentions `$PORT`
+- Mentions `python -m uvicorn backend.app.main:app`
+- Mentions runtime.txt or Python 3.11
+- Mentions backend/requirements.txt
+- Mentions JWT_SECRET_KEY
+- Mentions VAPI_WEBHOOK_SECRET
+- Mentions `openssl rand -hex 32`
+- Mentions FRONTEND_CORS_ORIGINS
+- Mentions health check or `/health`
+- Mentions DATABASE_URL auto-injected
+- Mentions no deployment executed in this module
+- Mentions fake/non-PHI staging
+- Mentions no production secrets
+- Mentions evidence capture
+- Mentions Module 106
+- No obvious real secrets
 
 ### 4. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Checkpoint 14
-- `docs/claude/NEXT_MODULE.md` — Sprint 15 / Module 105 (actual staging service creation
-  and smoke, or auth hardening implementation, depending on Checkpoint 14 decisions)
+- `docs/claude/CURRENT_STATE.md` — record Checkpoint 14 and Module 105
+- `docs/claude/NEXT_MODULE.md` — Sprint 15 / Module 106: Railway PostgreSQL Provisioning and Migration Evidence
 
 ## What not to do
 
-- Do not create Railway or Vercel services
-- Do not execute any staging deployment commands
-- Do not add real secrets
+- Do not create a Railway service
+- Do not add real production or staging secrets
 - Do not implement httpOnly cookie auth
+- Do not change backend/frontend runtime behavior
 - Do not change CORS implementation
 - Do not start Fabel 5/UX sprint
 - Do not change DB schema or migration files
-- Do not fabricate staging smoke evidence
+- Do not run npm install
 
 ## Acceptance
 
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_14_STAGING_DEPLOYMENT_REVIEW.md` created
+- `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` created
+- Contract tests pass
 - Full test suite passes (2103/2103 minimum)
-- Commit: `Architecture Checkpoint 14 — Staging deployment review`
+- Commit: `Sprint 15 / Module 105 — Railway backend service creation runbook`

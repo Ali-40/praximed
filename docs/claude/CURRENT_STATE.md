@@ -1243,5 +1243,21 @@
 - Full backend tests: 2103/2103 passed
 - Sprint 13 complete (Modules 95–99); Sprint 14 complete (Modules 100–104)
 
+## Architecture checkpoint
+
+- Architecture Checkpoint 14 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_14_STAGING_DEPLOYMENT_REVIEW.md`
+- Commit: (see git log)
+- Full backend tests: 2103/2103 passed
+- Sprint 14 complete (Modules 100–104)
+- Key decisions:
+  - Actual fake-data staging service creation: **GO** — repo is fully ready; no further planning modules needed before Railway/Vercel service creation
+  - Production PHI launch: **NO-GO** — 12 production blockers open; staging smoke not yet executed; auth hardening not yet implemented
+  - Auth/session hardening (httpOnly cookie): **GO — after staging smoke evidence** — Module 98 plan complete; implement after M1/M2 staging evidence; SameSite=None required for Railway+Vercel cross-domain staging
+  - Fabel 5/UX sprint: **DEFERRED** — wait until staging confirmed and auth hardened
+  - Appointment workflow expansion: **DEFERRED**
+- Repo-side readiness: 24 items confirmed READY; no runtime changes required before service creation
+- External blockers: 18 items require manual developer action (Railway/Vercel service creation)
+- Recommended Sprint 15 sequence: Module 105 (Railway backend runbook) → 106 (PostgreSQL provisioning/migration evidence) → 107 (Vercel frontend runbook) → 108 (staging environment wiring evidence) → 109 (staging smoke PASS/BLOCKED evidence) → Checkpoint 15
+
 ## Next module
-Architecture Checkpoint 14 — Staging Deployment Review.
+Sprint 15 / Module 105 — Railway Backend Service Creation Runbook.
