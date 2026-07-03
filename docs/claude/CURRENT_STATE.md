@@ -1056,7 +1056,7 @@
    - Logging safety: PHI and secret values that must never appear in logs enumerated
 
 91. Module 93 — Production CORS/Auth/Domain Plan
-   - Commit: (see git log)
+   - Commit: 9d087f5
    - `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` (new — 13-section plan: purpose, current local state, production domain topology, CORS policy per tier, sessionStorage JWT risk assessment, httpOnly Secure SameSite cookie migration path with options A/B/C, domain/auth interaction, Vapi/n8n server-to-server domain plan, security headers plan, env var mapping per tier, implementation sequence, risks and decisions table, go/no-go verdict)
    - `backend/tests/test_production_cors_auth_domain_plan_contract.py` (new — 32 static contract tests)
    - No production code changes; no runtime behavior changed
@@ -1066,6 +1066,15 @@
    - Machine auth headers (Vapi/n8n) are server-to-server; not browser CORS — correctly excluded from allow_headers
    - Go/no-go: Not ready for production launch; 6 blockers remain; ready to proceed to deployment smoke runbook
 
+92. Module 94 — Deployment Smoke Runbook
+   - Commit: (see git log)
+   - `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` (new — 17-section runbook: purpose, scope, prerequisites, 4 smoke tiers, local smoke steps with exact commands, staging smoke steps with placeholders, production-like pre-traffic smoke, Vapi smoke, n8n smoke, CORS smoke, auth/session smoke with PHI note, DB/migration smoke, logging safety, failure triage table with 14 scenarios, pass/fail checklist, production launch gate, appendix of local commands)
+   - `backend/tests/test_deployment_smoke_runbook_contract.py` (new — 36 static contract tests)
+   - No production code changes; no runtime behavior changed
+   - Full backend tests: 1765/1765 passed
+   - Covers local/staging/production-like tiers; Vapi, n8n, CORS, auth, DB, frontend, backend, logging
+   - Production launch gate explicitly states smoke runbook alone does not approve launch; Architecture Checkpoint 12 required
+
 ## Architecture checkpoints
 
 - Architecture Checkpoint 10 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_10_VAPI_APPOINTMENT_INTAKE_LOOP_REVIEW.md`
@@ -1074,8 +1083,8 @@
   - Reviews Sprint 11 outcomes; decides next sprint direction
   - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
   - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
-- Full backend tests: 1729/1729 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 in progress (Modules 91–93 complete)
+- Full backend tests: 1765/1765 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 in progress (Modules 91–94 complete)
 
 ## Next module
-Sprint 12 / Module 94 — Deployment Smoke Runbook.
+Architecture Checkpoint 12 — Production Readiness Review.

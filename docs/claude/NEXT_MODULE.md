@@ -1,79 +1,62 @@
-# Sprint 12 / Module 94 — Deployment Smoke Runbook
+# Architecture Checkpoint 12 — Production Readiness Review
 
-Status: pending Module 93 commit.
+Status: pending Module 94 commit.
 
 ## Context
 
-Modules 91–93 produced:
-- A production readiness inventory (13 deployment blockers)
-- An environment and secrets contract (4 tiers; all env vars defined)
-- A CORS/auth/domain plan (domain topology; sessionStorage risk; cookie migration path)
+Sprint 12 (Modules 91–94) produced a complete production readiness documentation set:
+- Module 91: Production Deployment Readiness Inventory (13 blockers)
+- Module 92: Environment and Secrets Contract (4 tiers; all env vars defined)
+- Module 93: Production CORS/Auth/Domain Plan (domain topology; sessionStorage risk; cookie migration path)
+- Module 94: Deployment Smoke Runbook (local/staging/production-like verification steps)
 
-The remaining Sprint 12 step before Architecture Checkpoint 12 is a concrete runbook
-that describes how to smoke-test a deployment once the blockers are resolved. This module
-creates the runbook document. No deployment occurs in this module.
+Architecture Checkpoint 12 reviews Sprint 12 outcomes, documents the current go/no-go
+state for staging deployment, and decides the next sprint direction.
 
 ## Scope
 
-### 1. Read and audit current state
+This is a docs-only architecture checkpoint. No code changes.
 
-Read:
-- `docs/deployment/PRODUCTION_READINESS_INVENTORY.md` — 13 blockers
-- `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` — env vars per tier
-- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` — domain topology; CORS plan
-- `docs/integrations/LOCAL_INTEGRATION_RUNBOOK.md` — existing local runbook pattern
-- `backend/scripts/` — what scripts exist (run_migrations.py, seed_local_data.py, db_smoke_test.py)
-- `backend/app/api/routes/health.py` — current health endpoint
+### 1. Read and review
 
-### 2. Create `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md`
+- All four Sprint 12 deployment docs
+- `docs/architecture/ARCHITECTURE_CHECKPOINT_11_POST_VAPI_DIRECTION_REVIEW.md`
+- `docs/claude/CURRENT_STATE.md`
+- Full test count
+
+### 2. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md`
 
 Sections:
-1. **Purpose** — when to use this runbook; what it does not cover
-2. **Pre-smoke checklist** — verify all env vars set; domain live; HTTPS working; DB migrated
-3. **Backend smoke steps** — start backend; hit `/health`; verify DB pool; check logs
-4. **Frontend smoke steps** — build with `npm run build`; start with `next start`; load login page; verify NEXT_PUBLIC_API_BASE_URL
-5. **Auth smoke** — log in with a test user; verify JWT returned; verify dashboard loads
-6. **CORS smoke** — verify browser does not show CORS errors in console; verify preflight passes
-7. **Vapi tool smoke** — trigger a test Vapi tool call to production URL; verify appointment row created; verify staff Confirm works
-8. **n8n webhook smoke** — trigger a test n8n webhook; verify HMAC signature passes
-9. **DB smoke** — verify migration version in alembic_version table; verify seed table absent; verify a real row can be written and read
-10. **Secrets sanity check** — confirm no local placeholder values in production env; confirm no ngrok URLs
-11. **Rollback steps** — what to do if smoke fails; how to take the backend offline without data loss
-12. **Post-smoke sign-off** — what counts as pass; who signs off
+1. **Date / Sprint / Test count**
+2. **Sprint 12 deliverables summary** — what was documented in Modules 91–94
+3. **Current production readiness state** — what is blocking, what is proven
+4. **Remaining blockers table** — from the inventory; which are resolved by docs, which require implementation
+5. **Auth/session decision** — sessionStorage risk summary; decision options from Module 93
+6. **Recommended next sprint direction** (Options A/B/C/D):
+   A. Staging deployment setup (infrastructure)
+   B. Auth/session hardening implementation (httpOnly cookie migration)
+   C. Fabel 5 / premium frontend UX sprint
+   D. Appointment workflow expansion (Reject, Assign, Archive)
+7. **Decision** — which option is recommended and why
+8. **Deferred items** — what remains after this checkpoint
+9. **Sprint summary table** (all sprints)
 
-### 3. Static contract tests
+### 3. Update docs
 
-Create `backend/tests/test_deployment_smoke_runbook_contract.py`:
-- Runbook doc exists
-- Mentions pre-smoke checklist
-- Mentions `/health` endpoint
-- Mentions `npm run build`
-- Mentions auth smoke / login
-- Mentions CORS smoke
-- Mentions Vapi tool smoke
-- Mentions n8n webhook smoke
-- Mentions DB migration check
-- Mentions no local placeholder values in production
-- Mentions no ngrok in production
-- Mentions rollback steps
-- Does not contain real secrets or real domain names with passwords
-
-### 4. Update docs
-
-- `docs/claude/CURRENT_STATE.md` — record Module 93 commit; record Module 94
-- `docs/claude/NEXT_MODULE.md` — Architecture Checkpoint 12: Production Readiness Review
+- `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 12
+- `docs/claude/NEXT_MODULE.md` — first module of the next sprint (based on decision)
 
 ## What not to do
 
-- Do not execute any deployment steps
-- Do not create CI/CD pipeline files
-- Do not change backend routes, auth, or CORS config
-- Do not add real secrets or real domain names
-- Do not start the Fabel 5 / UX sprint
+- Do not deploy
+- Do not implement auth changes
+- Do not start Fabel 5 sprint
+- Do not add real secrets or domain names
 
 ## Acceptance
 
-- `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` created
-- Contract tests pass
-- Full test suite passes (1729/1729 minimum)
-- Commit: `Sprint 12 / Module 94 — Deployment smoke runbook`
+- Checkpoint doc created
+- Clear go/no-go decision documented
+- Next sprint direction decided
+- Full test suite passes (1765/1765 minimum)
+- Commit: `Architecture Checkpoint 12 — Production readiness review`
