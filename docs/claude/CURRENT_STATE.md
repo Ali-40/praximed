@@ -1121,7 +1121,7 @@
    - Staging fake clinic UUID: distinct from local 11111111-... UUID; assigned at DB provisioning time
 
 95. Module 97 — Staging Deployment Dry-Run Checklist
-   - Commit: (see git log)
+   - Commit: 5f7122d
    - `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` (new — 19-section dry-run checklist: purpose, preconditions, target topology, repository readiness, Railway backend setup, Railway PostgreSQL, Vercel frontend, domain/CORS, env var checklist, migration gate, auth/dashboard, Vapi staging, n8n staging, smoke execution order, evidence capture, failure stop rules, rollback, go/no-go, Module 98 next step)
    - `backend/tests/test_staging_deployment_dry_run_checklist_contract.py` (new — 33 static contract tests: checklist exists, Railway/Vercel/PostgreSQL covered, fake/non-PHI data, PHI no-go, no deployment in module, no ngrok, no wildcard CORS, HTTPS, DATABASE_URL/JWT_SECRET_KEY/FRONTEND_CORS_ORIGINS/NEXT_PUBLIC_API_BASE_URL, migrations, Vapi vapi:tool singular/no auto-confirm/staff Confirm, n8n staging, no real patient data, no secrets in logs, rollback, evidence capture, failure stop rules, sessionStorage JWT fake-data-only/not PHI-safe, Module 98 mention, no real secrets in doc)
    - No production code changes; no runtime behavior changed
@@ -1146,8 +1146,20 @@
   - Fabel 5/frontend UX sprint: deferred until staging topology confirmed
   - Appointment workflow expansion: deferred
   - Next direction: Sprint 13 — Staging Deployment Target Selection and Topology Plan
-- Full backend tests: 1865/1865 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 in progress (Modules 95–97 complete)
+96. Module 98 — Auth/Session Hardening Implementation Plan
+   - Commit: (see git log)
+   - `docs/security/AUTH_SESSION_HARDENING_IMPLEMENTATION_PLAN.md` (new — 15-section implementation plan: current auth architecture with exact code locations, production target architecture, cookie strategy with SameSite tier matrix, access token lifecycle, refresh token lifecycle (deferred), CSRF protection per-tier, logout flow with target backend route, browser behavior per scenario, backend changes (auth.py login cookie, logout route, get_current_user cookie read + Bearer fallback), frontend changes (auth.ts/api.ts/login/dashboard), testing strategy, rollback strategy, 13-step migration sequence, 10-scenario risk matrix, final recommendation + Sprint 14 scope)
+   - `backend/tests/test_auth_session_hardening_plan_contract.py` (new — 27 static contract tests: plan exists, sessionStorage risk, XSS, HttpOnly, Secure, SameSite, Set-Cookie on login, POST /auth/logout, delete_cookie on logout, credentials: include, remove Authorization header, CSRF, SameSite=Lax CSRF protection, allow_credentials, get_current_user reads cookie, Bearer fallback, clinic_id from login body, staging cross-domain SameSite=None risk, refresh deferred, PHI blocker, testing strategy, planning only, Sprint 14, no real secrets)
+   - No production code changes; no runtime behavior changed; no auth code modified
+   - Full backend tests: 1892/1892 passed
+   - Key finding: staging (Railway + Vercel) requires SameSite=None; Secure for cookie auth (cross-domain); production on same registrable domain uses SameSite=Lax
+   - clinic_id resolution: after cookie migration, frontend reads clinic_id from login JSON response body (user.clinic_id); stores in localStorage
+   - Bearer header fallback: keep in get_current_user during migration window; remove after full rollout
+   - Refresh tokens: deferred to Sprint 14 or later; 60-min expiry accepted for initial production launch
+   - Sprint 14 scope: implement cookie login/logout/get_current_user + frontend auth.ts/api.ts/pages update
+
+- Full backend tests: 1892/1892 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 in progress (Modules 95–98 complete)
 
 ## Next module
-Sprint 13 / Module 98 — Auth/Session Hardening Implementation Plan.
+Sprint 13 / Module 99 — Production Deployment Execution Plan.

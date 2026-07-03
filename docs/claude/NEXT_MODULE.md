@@ -1,110 +1,96 @@
-# Sprint 13 / Module 98 — Auth/Session Hardening Implementation Plan
+# Sprint 13 / Module 99 — Production Deployment Execution Plan
 
-Status: pending Module 97 review.
+Status: pending Module 98 review.
 
 ## Context
 
-Module 97 completed the staging deployment dry-run checklist. The Sprint 13 staging
-documentation set is now complete:
-- Module 95: Staging topology chosen (Railway + Vercel)
+Sprint 13 documentation set is now complete:
+- Module 95: Staging topology (Railway + Vercel)
 - Module 96: Staging environment variable matrix
 - Module 97: Staging deployment dry-run checklist
+- Module 98: Auth/session hardening implementation plan
 
-The largest remaining production blocker is the `sessionStorage` JWT. The frontend
-stores the JWT access token in `sessionStorage`, explicitly labeled "local-dev only"
-in `frontend/lib/auth.ts`. This is acceptable for fake-data staging (no PHI) but
-is PHI-incompatible for any production launch.
+The staging dry-run checklist (Module 97) is ready to execute. The auth hardening plan
+(Module 98) is ready for Sprint 14 implementation.
 
-Module 98 produces a detailed **implementation plan** for httpOnly Secure SameSite
-cookie auth migration. No implementation is performed in this module — plan only.
-Execution is Sprint 14.
+Before the Sprint 13 Checkpoint, there is one remaining planning artifact: a
+**production deployment execution plan** that sequences the remaining milestones from
+staging deployment through production PHI launch, covering what must happen in what
+order and what gate each step requires.
+
+Module 99 is docs-first. No deployment execution. No code changes. No production secrets.
 
 ## Scope
 
 ### 1. Read and audit current state
 
 Read:
-- `frontend/lib/auth.ts` — current sessionStorage JWT implementation
-- `frontend/lib/api.ts` — current manual Authorization header injection
-- `frontend/app/login/page.tsx` — current login form
-- `frontend/app/dashboard/page.tsx` — current auth guard
-- `backend/app/api/routes/auth.py` — current login route
-- `backend/app/api/dependencies/auth.py` — current JWT dependency
-- `backend/app/core/jwt_tokens.py` — token creation and decode
-- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` — Option B cookie migration path (Module 93)
-- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` — sessionStorage risk acknowledgment
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md` — production blockers
+- `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md` — 12 production blockers
+- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` — staging gate
+- `docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md` — staging env vars
+- `docs/security/AUTH_SESSION_HARDENING_IMPLEMENTATION_PLAN.md` — auth migration plan
+- `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` — all-tier env contract
+- `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` — smoke runbook
+- `docs/claude/CURRENT_STATE.md`
 
-### 2. Create `docs/deployment/AUTH_SESSION_HARDENING_PLAN.md`
+### 2. Create `docs/deployment/PRODUCTION_DEPLOYMENT_EXECUTION_PLAN.md`
 
 Sections:
-1. **Purpose** — implementation plan only; no auth code changed in this module; production PHI blocker
-2. **Current state assessment** — exact code locations for `storeToken`, `getToken`, `clearToken`, `sessionStorage`, `Authorization: Bearer`, auth guard
-3. **Risk assessment** — XSS attack surface; 60-minute expiry window; no CSP; client-side guard only
-4. **Migration target: httpOnly Secure SameSite cookie** — Option B from Module 93
-5. **Backend changes required**
-   - `POST /auth/login` response: add `Set-Cookie` header
-   - New `POST /auth/logout` route: clear cookie
-   - Auth dependency: read from `request.cookies` instead of `Authorization` header
-   - Staging/production cookie attributes: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, `Domain=` policy
-6. **Frontend changes required**
-   - Remove `storeToken`, `getToken`, `clearToken` from `auth.ts`
-   - Remove manual `Authorization: Bearer` header injection from `api.ts`
-   - Add `credentials: "include"` to all fetch calls
-   - Add `POST /auth/logout` call on logout
-   - Server-side auth guard option (Next.js middleware)
-7. **CORS changes required for cookie auth**
-   - `allow_credentials=True` (already set)
-   - `FRONTEND_CORS_ORIGINS` must be an exact origin (not wildcard) — already enforced
-   - Cookie `Domain` attribute policy for staging vs production
-8. **CSRF risk and mitigation** — SameSite=Lax protects cross-site POSTs; same-domain subdomains require care; no custom CSRF token needed for SameSite=Lax with same registrable domain
-9. **Token expiry and refresh** — current 60-minute expiry; refresh token strategy (out of scope for this plan; defer)
-10. **Test plan for the cookie migration** — unit tests for `Set-Cookie` on login; unit tests for cookie-based auth dependency; contract tests for logout route; frontend contract tests for credentials: include; regression tests for all PHI routes
-11. **Implementation sequence** — order of changes; which parts are backend-first vs frontend-first; rollback point
-12. **Staging dry-run with cookie auth** — after implementation, re-run staging smoke with cookie auth enabled
-13. **Production gate** — cookie auth is a prerequisite for production PHI launch; completes one of the 12 Checkpoint 12 blockers
-14. **What not to implement in this module** — no backend code change; no frontend code change; no cookie implementation; plan only
-15. **Next step** — Sprint 14: implement httpOnly cookie auth (backend + frontend + tests)
+1. **Purpose** — sequence-of-events plan from staging deployment to production PHI launch; no execution in this module
+2. **Current status** — what is complete (local loop proven; staging docs complete); what is NOT done (staging not deployed; auth not hardened; production not ready)
+3. **Production blockers tracker** — the 12 blockers from Checkpoint 12; track which are resolved by Sprint 13 docs; which remain open
+4. **Milestone sequence** — table of milestones from staging deployment to production PHI launch; each with go/no-go gate and sprint estimate
+5. **Milestone 1: Staging deployment** — execute Module 97 dry-run checklist; confirm staging smoke passes; go/no-go gate
+6. **Milestone 2: Staging smoke validation** — run smoke runbook against staging; capture evidence; go/no-go gate
+7. **Milestone 3: Auth/session hardening** — implement Module 98 plan; cookie auth on staging; re-run smoke; go/no-go gate
+8. **Milestone 4: Production domain and TLS** — stable production HTTPS domains; TLS certs; DNS; go/no-go gate
+9. **Milestone 5: Production secrets provisioning** — production high-entropy secrets in production secret manager; go/no-go gate
+10. **Milestone 6: Production database** — managed PostgreSQL with backups and PITR; migrations applied; go/no-go gate
+11. **Milestone 7: Production Vapi assistant** — production Vapi assistant pointing at production HTTPS URL; no ngrok; go/no-go gate
+12. **Milestone 8: Legal/GDPR/compliance review** — Austrian healthcare data protection review; `raw_payload` PHI policy; go/no-go gate (hard blocker)
+13. **Milestone 9: CI/CD pipeline** — automated test gate on push; deployment automation; go/no-go gate
+14. **Milestone 10: Production monitoring** — APM, structured logs, alerting, on-call; go/no-go gate
+15. **Milestone 11: Production PHI launch** — all gates passed; architecture checkpoint; go/no-go decision
+16. **Explicit deferrals** — what is NOT in scope for any of the above milestones
+17. **Next step** — Architecture Checkpoint 13: Sprint 13 Go/No-Go Review
 
 ### 3. Static contract tests
 
-Create `backend/tests/test_auth_session_hardening_plan_contract.py`:
+Create `backend/tests/test_production_deployment_execution_plan_contract.py`:
 - Plan doc exists
-- Mentions sessionStorage risk
-- Mentions httpOnly
-- Mentions Secure attribute
-- Mentions SameSite
-- Mentions Set-Cookie on login
-- Mentions POST /auth/logout
-- Mentions credentials: "include"
-- Mentions removing Authorization header injection
-- Mentions CORS credentials: true
-- Mentions CSRF / SameSite=Lax mitigation
-- Mentions no implementation in this module (plan only)
-- Mentions production PHI blocker
-- Mentions 60-minute expiry / no refresh (deferred)
-- Mentions test plan for cookie migration
-- Mentions Sprint 14 execution
-- Mentions no real secrets in plan
+- Mentions staging deployment
+- Mentions staging smoke
+- Mentions auth/session hardening (httpOnly cookie)
+- Mentions production domain and TLS/HTTPS
+- Mentions production secrets
+- Mentions production database / PostgreSQL
+- Mentions production Vapi assistant
+- Mentions legal/GDPR/compliance review
+- Mentions CI/CD pipeline
+- Mentions production monitoring
+- Mentions go/no-go gates
+- Mentions production PHI launch is blocked until all gates pass
+- Mentions no deployment in this module
+- Mentions architecture checkpoint 13
 - Confirms no obvious real secrets in doc
 
 ### 4. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Module 98
-- `docs/claude/NEXT_MODULE.md` — Architecture Checkpoint 13: Staging Deployment Go/No-Go Review
+- `docs/claude/CURRENT_STATE.md` — record Module 99
+- `docs/claude/NEXT_MODULE.md` — Architecture Checkpoint 13: Sprint 13 Go/No-Go Review
 
 ## What not to do
 
-- Do not implement httpOnly cookie auth in this module
-- Do not modify `frontend/lib/auth.ts` or `frontend/app/`
-- Do not modify `backend/app/api/routes/auth.py` or dependencies
-- Do not execute staging deployment
-- Do not start Fabel 5/UX sprint
-- Do not expand appointment workflow
+- Do not execute any deployment
+- Do not provision real infrastructure
+- Do not add real production secrets or real domain names
+- Do not change backend/frontend code
+- Do not implement the httpOnly cookie auth (that is Sprint 14)
+- Do not start the Fabel 5/UX sprint
 
 ## Acceptance
 
-- `docs/deployment/AUTH_SESSION_HARDENING_PLAN.md` created
+- `docs/deployment/PRODUCTION_DEPLOYMENT_EXECUTION_PLAN.md` created
 - Contract tests pass
-- Full test suite passes (1865/1865 minimum)
-- Commit: `Sprint 13 / Module 98 — Auth session hardening implementation plan`
+- Full test suite passes (1892/1892 minimum)
+- Commit: `Sprint 13 / Module 99 — Production deployment execution plan`
