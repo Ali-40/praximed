@@ -1,73 +1,85 @@
-# Sprint 16 / Module 112 — Railway Backend Service Creation Evidence
+# Sprint 16 / Module 113 — Railway PostgreSQL Provisioning and Migration Execution Evidence
 
-Status: pending Railway backend redeploy after Module 111 fix.
+Status: pending manual Railway PostgreSQL creation and migration execution.
 
 ## Context
 
-Module 111 complete:
-- `requirements.txt` (repo root) — direct pinned dependencies; no nested `-r` include
-- `docs/deployment/RAILWAY_BACKEND_SERVICE_CREATION_RUNBOOK.md` updated
-- `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` updated
-- 22 contract tests; full suite: 2304/2304 passed
-- Commit: (see git log)
+Module 112 complete:
+- Railway backend service: **PASS** — `https://web-production-fd91d.up.railway.app`
+- `GET /health` → `{"status":"ok","service":"PraxisMed API"}` — HTTP 200
+- Commit deployed: `081121b`
+- Full suite: 2324/2324 passed
 
-Railway deploy history:
-- First attempt (Module 110): failed — `ModuleNotFoundError: No module named 'backend'` (root dir set to `backend/`)
-- Second attempt (Module 111): failed — Railway/Railpack could not resolve `-r backend/requirements.txt` during build cache
-- Fix applied: root `requirements.txt` now lists all 7 dependencies directly
+Railway backend URL is now known: `https://web-production-fd91d.up.railway.app`
 
-**The developer must:**
-1. Push the Module 111 commit to `master`
-2. Confirm Railway root directory is blank (repo root) — not `backend/`
-3. Trigger Railway redeploy
-4. Confirm `GET https://<railway-url>/health` → HTTP 200
+This is the URL to use for:
+- `NEXT_PUBLIC_API_BASE_URL` in Vercel (Module 114)
+- Vapi test assistant server URL (Module 115)
+- n8n staging endpoint (Module 115)
 
 ## Scope
 
-Evidence doc only. No code changes. No deployment by Claude.
+Evidence doc + static tests. No deployment by Claude.
 No real secrets. No production data.
 
-### If real Railway backend `/health` → 200 evidence is provided:
+### The developer must:
 
-1. Create `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md`
-   - Set result: PASS
-   - Record Railway service name, URL, branch, commit SHA, build status
-   - Record Nixpacks Python version detected
-   - Record start command detected (full Procfile command)
-   - Record root directory confirmed as blank/repo root
-   - Record `requirements.txt` at repo root: direct deps confirmed
-   - Record env var names set (not values): `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `APP_ENV`
-   - Record `DATABASE_URL` status: absent (expected — Module 113 next)
-   - Record `FRONTEND_CORS_ORIGINS` status: absent (expected)
-   - Record `GET /health` → 200 and exact response body
-   - Record `GET /health/ready` → 503 (expected; no DB yet)
-   - Record sanitized build log snippet (no secrets)
-2. Add contract tests for evidence doc
-3. Update CURRENT_STATE.md
-4. Update NEXT_MODULE.md → Module 113: Railway PostgreSQL Provisioning Evidence
+Follow `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md`:
 
-### If redeploy still fails:
+1. In the Railway project (same project as the backend service), add a PostgreSQL plugin
+2. Confirm Railway auto-injects `DATABASE_URL` into the backend service environment
+3. Wait for Railway PostgreSQL to show "Running" status
+4. Redeploy Railway backend — confirm `/health/ready` → 200
+5. Run `python backend/scripts/run_migrations.py` via Railway "Run Command"
+   - Stop if exit code is non-zero
+   - Capture sanitized output (no `DATABASE_URL` value in output)
+6. Run `python backend/scripts/db_smoke_test.py` via Railway "Run Command"
+   - Confirm 4 tables: clinics, patients, consultation_sessions, audit_log
+7. Provision staging fake clinic and user via SQL (one-time INSERT):
+   - Use newly generated UUIDs (not `11111111-...` local UUID)
+   - Use `doctor.staging@praximed.test` email
+   - Use bcrypt hash of a staging-only password (not `local-dev-password`)
+   - Do not commit the password itself to any document
+8. Confirm `GET /health/ready` → 200 with `{"status":"ready","checks":{"app":"ok","db":"ok"}}`
 
-1. Create `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md`
-   - Set result: FAIL / BLOCKED — document exact Railway error from logs
-   - List exact fix steps
-2. Add contract tests
-3. Update CURRENT_STATE.md and NEXT_MODULE.md
+### Evidence to capture (no secret values):
+
+- Railway PostgreSQL service name
+- `DATABASE_URL` injection confirmed (name only — not value)
+- Railway backend redeploy status after DATABASE_URL injection
+- `GET /health/ready` → 200 response body (after DB wired)
+- Migration command: `python backend/scripts/run_migrations.py`
+- Migration exit status: `0`
+- Sanitized migration output (first/last lines; no DB credentials)
+- `alembic current` output: `0002_password_hash (head)`
+- `db_smoke_test.py` output (4 tables confirmed)
+- Staging fake clinic UUID (not a secret; stable identifier)
+- Staging fake user email: `doctor.staging@praximed.test`
+- Confirmation that no real patient data was inserted
+
+### Module 113 will create:
+
+1. `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` — update from BLOCKED/PENDING to PASS if evidence provided; otherwise document exact blocker
+2. Contract tests
+3. Update `STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — mark DATABASE_URL wired, migrations, fake clinic/user as PASS if confirmed
+4. Update `STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — mark DB checks as PASS if confirmed
+5. Update `CURRENT_STATE.md` and `NEXT_MODULE.md` → Module 114 (Vercel frontend creation evidence)
 
 ## What not to do
 
-- Do not deploy to Railway
+- Do not deploy Railway PostgreSQL from Claude
 - Do not add real secrets
 - Do not fabricate PASS evidence
+- Do not run `seed_local_data.py` — local UUIDs must not appear in staging
+- Do not use `local-dev-password` hash in staging
 - Do not implement httpOnly cookie auth
 - Do not change CORS implementation
 - Do not start Fabel 5/UX sprint
-- Do not change DB schema or migration files
 
 ## Acceptance
 
-- `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md` created (PASS or BLOCKED/PENDING)
-- PASS only with real `/health` → 200 evidence
+- `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` updated (PASS or BLOCKED/PENDING)
+- PASS only with real migration evidence
 - Contract tests pass
-- Full test suite passes (2304/2304 minimum)
-- Commit: `Sprint 16 / Module 112 — Railway backend service creation evidence`
+- Full test suite passes (2324/2324 minimum)
+- Commit: `Sprint 16 / Module 113 — Railway PostgreSQL provisioning and migration evidence`

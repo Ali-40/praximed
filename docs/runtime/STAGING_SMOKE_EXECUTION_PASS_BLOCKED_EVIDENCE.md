@@ -56,8 +56,8 @@ services and evidence is provided by the developer.
 
 | Component | Evidence Required | Evidence Available? | Current Status | Notes |
 |---|---|---|---|---|
-| Railway backend service | Service URL; `/health` → 200 | Not available yet | PENDING | Module 105 runbook READY |
-| Railway backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | Not available yet | PENDING | Requires Railway service creation |
+| Railway backend service | Service URL; `/health` → 200 | `https://web-production-fd91d.up.railway.app` — commit `081121b` | **PASS** |
+| Railway backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | `{"status":"ok","service":"PraxisMed API"}` — HTTP 200 | **PASS** |
 | Railway PostgreSQL | `DATABASE_URL` auto-injected; PostgreSQL "Running" | Not available yet | PENDING | Module 106 runbook READY |
 | Migrations | `run_migrations.py` exit 0; `0002_password_hash (head)` | Not available yet | PENDING | Requires Railway PostgreSQL |
 | Fake staging clinic/user | SELECT confirms rows; clinic UUID recorded; email `doctor.staging@praximed.test` | Not available yet | PENDING | Follows migrations |
@@ -83,7 +83,7 @@ All are PENDING because no staging services exist at this time.
 
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
-| 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PENDING** | Railway backend service not created |
+| 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PASS** — `https://web-production-fd91d.up.railway.app/health` → `{"status":"ok","service":"PraxisMed API"}` (commit `081121b`) | — |
 | 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok", "db": "ok"}}` | **PENDING** | Railway PostgreSQL not provisioned |
 | 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PENDING** | Railway PostgreSQL not provisioned |
 | 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PENDING** | Vercel project not created |

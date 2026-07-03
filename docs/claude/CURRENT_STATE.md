@@ -1372,4 +1372,18 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 
 - Full backend tests: 2304/2304 passed
 - Sprint 16 in progress (Modules 110–111 complete)
-- Railway backend redeploy required: push this commit; confirm root directory is blank; redeploy
+
+110. Module 112 — Railway Backend Service Creation Evidence
+   - Commit: (see git log)
+   - Real evidence provided by user: Railway backend active; `/health` → 200
+   - `docs/runtime/RAILWAY_BACKEND_SERVICE_CREATION_EVIDENCE.md` (new — 8-section evidence doc: purpose (accuracy policy; fake/non-PHI; no production secrets), current result (PASS), evidence table (14 rows: service active PASS/URL https://web-production-fd91d.up.railway.app PASS/commit 081121b PASS/health endpoint PASS/GET /health 200 PASS/response body {"status":"ok","service":"PraxisMed API"} PASS/root requirements.txt direct deps PASS/Procfile start command PASS/root directory repo root PASS/Python 3.11 PASS/backend imports PASS/DATABASE_URL PENDING/FRONTEND_CORS_ORIGINS PENDING/health/ready 503 PENDING), what this proves (Railway builds; direct deps work; Procfile works; imports from repo root work; HTTPS URL serves backend), what this does not prove (PostgreSQL/migrations/login/dashboard/Vapi/Vercel/production PHI), safety boundary (fake/non-PHI only; Railway environment label may say "production" — PraxisMed status is fake-data staging; no real patients; no production secrets; production PHI NO-GO), remaining blockers (12 items: PostgreSQL not provisioned; DATABASE_URL not wired; migrations not run; fake clinic/user not provisioned; Vercel not deployed; NEXT_PUBLIC_API_BASE_URL not set; FRONTEND_CORS_ORIGINS not set; CORS not verified; fake login not tested; Vapi not pointed to staging; n8n not configured; full smoke not run), recommended next Module 113)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` updated: Railway backend URL row → PASS (`https://web-production-fd91d.up.railway.app`); /health response → PASS; /health/ready → PENDING
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` updated: evidence summary row 1 (Railway backend service) → PASS with URL + commit; smoke checklist check 1 (backend /health) → PASS; overall remains BLOCKED/PENDING
+   - `backend/tests/test_railway_backend_service_creation_evidence_contract.py` (new — 20 static contract tests: evidence doc exists/non-empty; PASS; Railway service active; URL web-production-fd91d; /health; status ok response; commit 081121b; root requirements direct deps; Procfile/start command; repo root imports; fake non-PHI staging; no real patient data; production PHI not proven/NO-GO; PostgreSQL/DATABASE_URL PENDING; migrations PENDING; Vercel PENDING; Vapi PENDING; Module 113; no real secrets)
+   - No runtime code changed; no secrets recorded; no real patient data
+   - Full backend tests: 2324/2324 passed
+
+- Full backend tests: 2324/2324 passed
+- Sprint 16 in progress (Modules 110–112 complete)
+- Railway backend URL confirmed: https://web-production-fd91d.up.railway.app
+- Next: Module 113 — Railway PostgreSQL provisioning and migration

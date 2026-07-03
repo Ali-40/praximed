@@ -88,8 +88,8 @@ This document will be updated to PASS when:
 
 | Evidence Item | Evidence Available? | Current Value | Status |
 |---|---|---|---|
-| Railway backend URL | Not available yet | — | PENDING |
-| Railway backend `/health` response | Not available yet | Expected: `{"status": "ok", ...}` — 200 | PENDING |
+| Railway backend URL | `https://web-production-fd91d.up.railway.app` | **PASS** |
+| Railway backend `/health` response | `{"status":"ok","service":"PraxisMed API"}` — 200 | **PASS** |
 | Railway backend `/health/ready` response | Not available yet | Expected: `{"status": "ready", ...}` — 200 | PENDING |
 | Railway backend env var names set (not values) | Not available yet | Expected: `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `FRONTEND_CORS_ORIGINS` | PENDING |
 | `DATABASE_URL` auto-injected confirmed | Not available yet | — | PENDING |
