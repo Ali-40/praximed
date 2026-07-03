@@ -1067,7 +1067,7 @@
    - Go/no-go: Not ready for production launch; 6 blockers remain; ready to proceed to deployment smoke runbook
 
 92. Module 94 — Deployment Smoke Runbook
-   - Commit: (see git log)
+   - Commit: 2674688
    - `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` (new — 17-section runbook: purpose, scope, prerequisites, 4 smoke tiers, local smoke steps with exact commands, staging smoke steps with placeholders, production-like pre-traffic smoke, Vapi smoke, n8n smoke, CORS smoke, auth/session smoke with PHI note, DB/migration smoke, logging safety, failure triage table with 14 scenarios, pass/fail checklist, production launch gate, appendix of local commands)
    - `backend/tests/test_deployment_smoke_runbook_contract.py` (new — 36 static contract tests)
    - No production code changes; no runtime behavior changed
@@ -1083,8 +1083,15 @@
   - Reviews Sprint 11 outcomes; decides next sprint direction
   - Recommendation: Sprint 12 — Production Deployment Readiness Inventory
   - Defers: Fabel 5/frontend UX sprint (after deployment blockers mapped); appointment workflow expansion (after production risks known)
+- Architecture Checkpoint 12 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md`
+  - Production PHI launch: NO-GO (12 unresolved blockers)
+  - Staging/fake-data deployment prep: GO
+  - Auth/session hardening (httpOnly cookie): plan in Module 98; implement Sprint 14
+  - Fabel 5/frontend UX sprint: deferred until staging topology confirmed
+  - Appointment workflow expansion: deferred
+  - Next direction: Sprint 13 — Staging Deployment Target Selection and Topology Plan
 - Full backend tests: 1765/1765 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 in progress (Modules 91–94 complete)
+- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 starting
 
 ## Next module
-Architecture Checkpoint 12 — Production Readiness Review.
+Sprint 13 / Module 95 — Staging Deployment Target Selection and Topology Plan.

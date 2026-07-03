@@ -1,62 +1,81 @@
-# Architecture Checkpoint 12 — Production Readiness Review
+# Sprint 13 / Module 95 — Staging Deployment Target Selection and Topology Plan
 
-Status: pending Module 94 commit.
+Status: pending Architecture Checkpoint 12 review.
 
 ## Context
 
-Sprint 12 (Modules 91–94) produced a complete production readiness documentation set:
-- Module 91: Production Deployment Readiness Inventory (13 blockers)
-- Module 92: Environment and Secrets Contract (4 tiers; all env vars defined)
-- Module 93: Production CORS/Auth/Domain Plan (domain topology; sessionStorage risk; cookie migration path)
-- Module 94: Deployment Smoke Runbook (local/staging/production-like verification steps)
+Architecture Checkpoint 12 concluded:
+- Production PHI launch: NO-GO (12 unresolved blockers)
+- Staging fake-data deployment prep: GO
+- The integration loop is proven locally (Sprint 11)
+- The full deployment documentation set is complete (Sprint 12)
 
-Architecture Checkpoint 12 reviews Sprint 12 outcomes, documents the current go/no-go
-state for staging deployment, and decides the next sprint direction.
+Before executing any staging deployment, the team must choose a hosting platform and
+define the exact topology for backend, frontend, database, domains, and secrets management.
+This module makes that decision and documents the chosen architecture.
+
+This module is docs-first. No deployment execution. No production secrets.
 
 ## Scope
 
-This is a docs-only architecture checkpoint. No code changes.
+### 1. Read and audit current state
 
-### 1. Read and review
+Read:
+- `docs/deployment/PRODUCTION_READINESS_INVENTORY.md`
+- `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md`
+- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md`
+- `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md`
+- `backend/app/main.py` — startup requirements
+- `frontend/next.config.js` — Next.js build config
+- `docker-compose.postgres.yml` — current local DB setup
 
-- All four Sprint 12 deployment docs
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_11_POST_VAPI_DIRECTION_REVIEW.md`
-- `docs/claude/CURRENT_STATE.md`
-- Full test count
-
-### 2. Create `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md`
+### 2. Create `docs/deployment/STAGING_TOPOLOGY_PLAN.md`
 
 Sections:
-1. **Date / Sprint / Test count**
-2. **Sprint 12 deliverables summary** — what was documented in Modules 91–94
-3. **Current production readiness state** — what is blocking, what is proven
-4. **Remaining blockers table** — from the inventory; which are resolved by docs, which require implementation
-5. **Auth/session decision** — sessionStorage risk summary; decision options from Module 93
-6. **Recommended next sprint direction** (Options A/B/C/D):
-   A. Staging deployment setup (infrastructure)
-   B. Auth/session hardening implementation (httpOnly cookie migration)
-   C. Fabel 5 / premium frontend UX sprint
-   D. Appointment workflow expansion (Reject, Assign, Archive)
-7. **Decision** — which option is recommended and why
-8. **Deferred items** — what remains after this checkpoint
-9. **Sprint summary table** (all sprints)
+1. **Purpose** — staging only; fake data; no PHI; no production launch
+2. **Platform comparison** — compare 2–3 realistic options for backend hosting, frontend hosting, and managed PostgreSQL (e.g., Railway/Render/Fly.io + Vercel/Netlify + Supabase/Neon); include cost, simplicity, PostgreSQL support, env var injection, HTTPS
+3. **Chosen topology** — decide one platform combination; document why
+4. **Backend deployment target** — platform, runtime, port, process manager, HTTPS termination
+5. **Frontend deployment target** — platform, build command, env var injection for `NEXT_PUBLIC_API_BASE_URL`
+6. **Database target** — managed PostgreSQL service; connection string format; migration execution
+7. **Staging domain placeholders** — staging backend URL; staging frontend URL; confirm these will differ from local and production
+8. **Secrets injection method** — how secrets are set on the chosen platform (platform env vars UI, CLI, secret store)
+9. **Vapi staging configuration** — staging Vapi test assistant pointing at staging HTTPS API URL
+10. **Staging limitations** — fake data only; no real clinic; no PHI; no production Vapi assistant
+11. **Next step** — Module 96: Staging Environment Variable Matrix
 
-### 3. Update docs
+### 3. Static contract tests
 
-- `docs/claude/CURRENT_STATE.md` — record Architecture Checkpoint 12
-- `docs/claude/NEXT_MODULE.md` — first module of the next sprint (based on decision)
+Create `backend/tests/test_staging_topology_plan_contract.py`:
+- Plan doc exists
+- Mentions at least one hosting platform by name
+- Mentions managed PostgreSQL
+- Mentions HTTPS for staging
+- Mentions `NEXT_PUBLIC_API_BASE_URL` staging value
+- Mentions `FRONTEND_CORS_ORIGINS` staging value
+- Mentions staging domain placeholders distinct from localhost and production
+- Mentions secrets injection method
+- Mentions Vapi staging configuration
+- Mentions fake data only / no PHI
+- Mentions no deployment execution in this module
+
+### 4. Update docs
+
+- `docs/claude/CURRENT_STATE.md` — record Module 95
+- `docs/claude/NEXT_MODULE.md` — Module 96: Staging Environment Variable Matrix
 
 ## What not to do
 
-- Do not deploy
-- Do not implement auth changes
-- Do not start Fabel 5 sprint
-- Do not add real secrets or domain names
+- Do not execute any deployment
+- Do not provision real infrastructure
+- Do not add real production secrets or real domain names
+- Do not change backend/frontend code
+- Do not start the Fabel 5/UX sprint
+- Do not implement httpOnly cookie auth yet
 
 ## Acceptance
 
-- Checkpoint doc created
-- Clear go/no-go decision documented
-- Next sprint direction decided
+- `docs/deployment/STAGING_TOPOLOGY_PLAN.md` created
+- Contract tests pass
 - Full test suite passes (1765/1765 minimum)
-- Commit: `Architecture Checkpoint 12 — Production readiness review`
+- Commit: `Sprint 13 / Module 95 — Staging deployment topology plan`
