@@ -1108,7 +1108,7 @@
    - No seed_local_data.py in staging; staging-specific fake clinic UUID required
 
 94. Module 96 — Staging Environment Variable Matrix
-   - Commit: (see git log)
+   - Commit: 5761683
    - `docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md` (new — 15-section matrix: purpose, environment boundary with 3-tier isolation rules, staging components table, full backend env var matrix with Railway injection details, frontend env var matrix, PostgreSQL staging matrix, Vapi staging matrix with machine auth headers, n8n staging matrix, domain/CORS variable mapping, secret generation rules, staging env setup checklist, validation checklist, 13-scenario failure matrix, production separation statements, Module 97 next step)
    - `backend/tests/test_staging_environment_variable_matrix_contract.py` (new — 34 static contract tests: matrix exists, Railway backend/PostgreSQL/Vercel covered, fake/non-PHI staging, PHI no-go, all 6 backend secrets, POSTGRES_DB/USER/PASSWORD, NEXT_PUBLIC_API_BASE_URL, vapi:tool singular, staging fake clinic UUID placeholder, no ngrok, no wildcard CORS, HTTPS only, no local-dev secrets, no production secrets, Railway/Vercel secret storage, migrations, n8n staging, no real patient data, no deployment in module, Module 97 mention, no real secrets in doc)
    - No production code changes; no runtime behavior changed
@@ -1119,6 +1119,17 @@
    - NEXT_PUBLIC_API_BASE_URL: set via Vercel dashboard; build-time public var; not a secret
    - sessionStorage JWT: acceptable for fake-data staging only; httpOnly cookie required for production PHI (Module 98)
    - Staging fake clinic UUID: distinct from local 11111111-... UUID; assigned at DB provisioning time
+
+95. Module 97 — Staging Deployment Dry-Run Checklist
+   - Commit: (see git log)
+   - `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` (new — 19-section dry-run checklist: purpose, preconditions, target topology, repository readiness, Railway backend setup, Railway PostgreSQL, Vercel frontend, domain/CORS, env var checklist, migration gate, auth/dashboard, Vapi staging, n8n staging, smoke execution order, evidence capture, failure stop rules, rollback, go/no-go, Module 98 next step)
+   - `backend/tests/test_staging_deployment_dry_run_checklist_contract.py` (new — 33 static contract tests: checklist exists, Railway/Vercel/PostgreSQL covered, fake/non-PHI data, PHI no-go, no deployment in module, no ngrok, no wildcard CORS, HTTPS, DATABASE_URL/JWT_SECRET_KEY/FRONTEND_CORS_ORIGINS/NEXT_PUBLIC_API_BASE_URL, migrations, Vapi vapi:tool singular/no auto-confirm/staff Confirm, n8n staging, no real patient data, no secrets in logs, rollback, evidence capture, failure stop rules, sessionStorage JWT fake-data-only/not PHI-safe, Module 98 mention, no real secrets in doc)
+   - No production code changes; no runtime behavior changed
+   - Full backend tests: 1865/1865 passed
+   - Smoke execution order: 13-step sequence from health check to rollback readiness
+   - Failure stop rules: 14 conditions that must halt the staging deployment attempt
+   - Evidence capture: per-smoke checklist of command, status, screenshot, log snippet, commit SHA, timestamp, pass/fail
+   - Go/no-go: staging GO when all checklists signed off; production PHI NO-GO; Fabel 5/UX sprint WAIT; Module 98 auth plan next
 
 ## Architecture checkpoints
 
@@ -1135,8 +1146,8 @@
   - Fabel 5/frontend UX sprint: deferred until staging topology confirmed
   - Appointment workflow expansion: deferred
   - Next direction: Sprint 13 — Staging Deployment Target Selection and Topology Plan
-- Full backend tests: 1832/1832 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 in progress (Modules 95–96 complete)
+- Full backend tests: 1865/1865 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 in progress (Modules 95–97 complete)
 
 ## Next module
-Sprint 13 / Module 97 — Staging Deployment Dry-Run Checklist.
+Sprint 13 / Module 98 — Auth/Session Hardening Implementation Plan.

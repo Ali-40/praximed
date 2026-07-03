@@ -1,108 +1,110 @@
-# Sprint 13 / Module 97 — Staging Deployment Dry-Run Checklist
+# Sprint 13 / Module 98 — Auth/Session Hardening Implementation Plan
 
-Status: pending Module 96 review.
+Status: pending Module 97 review.
 
 ## Context
 
-Module 96 defined the complete staging environment variable matrix for Railway
-(Backend + PostgreSQL) + Vercel (Frontend).
+Module 97 completed the staging deployment dry-run checklist. The Sprint 13 staging
+documentation set is now complete:
+- Module 95: Staging topology chosen (Railway + Vercel)
+- Module 96: Staging environment variable matrix
+- Module 97: Staging deployment dry-run checklist
 
-Key decisions from Modules 95–96:
-- Staging backend: `https://staging-api.up.railway.app`
-- Staging frontend: `https://staging-app.vercel.app`
-- `DATABASE_URL`: auto-injected by Railway PostgreSQL add-on
-- `FRONTEND_CORS_ORIGINS`: `https://staging-app.vercel.app` (exact; no wildcard)
-- `NEXT_PUBLIC_API_BASE_URL`: `https://staging-api.up.railway.app`
-- All secrets: Railway dashboard; high-entropy per-staging values
-- Staging fake clinic UUID: distinct from local `11111111-...`; assigned at DB provisioning
-- `seed_local_data.py` must NOT run in staging
-- Backend start command: `python backend/scripts/run_migrations.py && python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+The largest remaining production blocker is the `sessionStorage` JWT. The frontend
+stores the JWT access token in `sessionStorage`, explicitly labeled "local-dev only"
+in `frontend/lib/auth.ts`. This is acceptable for fake-data staging (no PHI) but
+is PHI-incompatible for any production launch.
 
-Module 97 produces a step-by-step pre-deployment dry-run checklist for the Railway +
-Vercel staging topology. This is docs-first. No deployment execution. No real secrets.
-No runtime code changes.
+Module 98 produces a detailed **implementation plan** for httpOnly Secure SameSite
+cookie auth migration. No implementation is performed in this module — plan only.
+Execution is Sprint 14.
 
 ## Scope
 
 ### 1. Read and audit current state
 
 Read:
-- `docs/deployment/STAGING_DEPLOYMENT_TOPOLOGY_PLAN.md` — chosen topology (Module 95)
-- `docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md` — full env var matrix (Module 96)
-- `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` — canonical env var definitions
-- `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` — smoke runbook (Module 94)
-- `backend/scripts/run_migrations.py` — migration execution details
-- `backend/app/main.py` — startup requirements
-- `frontend/next.config.js` — Next.js build config
-- `docker-compose.postgres.yml` — local DB context (for contrast with staging)
+- `frontend/lib/auth.ts` — current sessionStorage JWT implementation
+- `frontend/lib/api.ts` — current manual Authorization header injection
+- `frontend/app/login/page.tsx` — current login form
+- `frontend/app/dashboard/page.tsx` — current auth guard
+- `backend/app/api/routes/auth.py` — current login route
+- `backend/app/api/dependencies/auth.py` — current JWT dependency
+- `backend/app/core/jwt_tokens.py` — token creation and decode
+- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` — Option B cookie migration path (Module 93)
+- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` — sessionStorage risk acknowledgment
+- `docs/architecture/ARCHITECTURE_CHECKPOINT_12_PRODUCTION_READINESS_REVIEW.md` — production blockers
 
-### 2. Create `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md`
+### 2. Create `docs/deployment/AUTH_SESSION_HARDENING_PLAN.md`
 
 Sections:
-1. **Purpose** — dry-run checklist only; no deployment execution; no real secrets; Railway + Vercel; fake data only
-2. **Prerequisites** — what must be true before the checklist begins (GitHub repo, test suite pass, local smoke pass, no real data)
-3. **Phase 1 — Railway project setup** — project creation, service creation, GitHub connection; checklist format
-4. **Phase 2 — Railway PostgreSQL provisioning** — add PostgreSQL add-on; verify DATABASE_URL auto-injected; no manual connection string
-5. **Phase 3 — Railway backend environment variables** — set each var from Module 96 matrix in Railway dashboard; secret classification; how to verify each without printing
-6. **Phase 4 — Railway backend start command** — set `run_migrations.py && uvicorn $PORT`; migration gate explanation
-7. **Phase 5 — Migration verification** — how to confirm migrations ran; Railway log stream; expected output; failure triage
-8. **Phase 6 — Backend smoke checks** — `/health`, `/health/ready`, `/auth/login` with staging credentials; no real data
-9. **Phase 7 — Vercel project setup** — project creation, GitHub connection, framework detection (Next.js), build command, output directory
-10. **Phase 8 — Vercel environment variable injection** — `NEXT_PUBLIC_API_BASE_URL`; verify staging value; no secrets in Vercel
-11. **Phase 9 — Vercel build and deploy** — trigger build; verify `npm run build` passes; check function logs
-12. **Phase 10 — Frontend smoke checks** — `/login` loads; login with staging credentials; dashboard visible; no CORS errors
-13. **Phase 11 — CORS verification** — browser devtools → OPTIONS preflight → `Access-Control-Allow-Origin` matches staging frontend origin; no wildcard
-14. **Phase 12 — Vapi staging configuration** — update Vapi test assistant server URL to Railway URL; set machine auth headers; remove ngrok URL; verify `vapi:tool` singular
-15. **Phase 13 — Vapi smoke check** — trigger fake Vapi test call; verify appointment row created; status=new; staff Confirm; no auto-confirmation; no calendar booking
-16. **Phase 14 — n8n staging configuration (optional)** — update n8n workflow webhook URL; set HMAC secret; test signed request; mark NOT ENABLED if deferred
-17. **Phase 15 — Staging isolation verification** — confirm no local UUIDs in staging DB; no local-dev secrets in Railway; no production values; sessionStorage JWT only for fake data
-18. **Phase 16 — Go/No-Go decision** — pass/fail checklist; conditions that block deployment; staging approval != production approval
-19. **Non-goals** — no production launch; no auth refactor; no Fabel 5; no appointment workflow expansion; no CI/CD pipeline in this module
+1. **Purpose** — implementation plan only; no auth code changed in this module; production PHI blocker
+2. **Current state assessment** — exact code locations for `storeToken`, `getToken`, `clearToken`, `sessionStorage`, `Authorization: Bearer`, auth guard
+3. **Risk assessment** — XSS attack surface; 60-minute expiry window; no CSP; client-side guard only
+4. **Migration target: httpOnly Secure SameSite cookie** — Option B from Module 93
+5. **Backend changes required**
+   - `POST /auth/login` response: add `Set-Cookie` header
+   - New `POST /auth/logout` route: clear cookie
+   - Auth dependency: read from `request.cookies` instead of `Authorization` header
+   - Staging/production cookie attributes: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, `Domain=` policy
+6. **Frontend changes required**
+   - Remove `storeToken`, `getToken`, `clearToken` from `auth.ts`
+   - Remove manual `Authorization: Bearer` header injection from `api.ts`
+   - Add `credentials: "include"` to all fetch calls
+   - Add `POST /auth/logout` call on logout
+   - Server-side auth guard option (Next.js middleware)
+7. **CORS changes required for cookie auth**
+   - `allow_credentials=True` (already set)
+   - `FRONTEND_CORS_ORIGINS` must be an exact origin (not wildcard) — already enforced
+   - Cookie `Domain` attribute policy for staging vs production
+8. **CSRF risk and mitigation** — SameSite=Lax protects cross-site POSTs; same-domain subdomains require care; no custom CSRF token needed for SameSite=Lax with same registrable domain
+9. **Token expiry and refresh** — current 60-minute expiry; refresh token strategy (out of scope for this plan; defer)
+10. **Test plan for the cookie migration** — unit tests for `Set-Cookie` on login; unit tests for cookie-based auth dependency; contract tests for logout route; frontend contract tests for credentials: include; regression tests for all PHI routes
+11. **Implementation sequence** — order of changes; which parts are backend-first vs frontend-first; rollback point
+12. **Staging dry-run with cookie auth** — after implementation, re-run staging smoke with cookie auth enabled
+13. **Production gate** — cookie auth is a prerequisite for production PHI launch; completes one of the 12 Checkpoint 12 blockers
+14. **What not to implement in this module** — no backend code change; no frontend code change; no cookie implementation; plan only
+15. **Next step** — Sprint 14: implement httpOnly cookie auth (backend + frontend + tests)
 
 ### 3. Static contract tests
 
-Create `backend/tests/test_staging_deployment_dry_run_checklist_contract.py`:
-- Checklist doc exists
-- Mentions Railway
-- Mentions Vercel
-- Mentions PostgreSQL
-- Mentions DATABASE_URL auto-injection
-- Mentions migration gate
-- Mentions `/health` and `/health/ready`
-- Mentions CORS verification (OPTIONS preflight or Access-Control-Allow-Origin)
-- Mentions no wildcard CORS
-- Mentions `FRONTEND_CORS_ORIGINS`
-- Mentions `NEXT_PUBLIC_API_BASE_URL`
-- Mentions Vapi test assistant
-- Mentions `vapi:tool` singular
-- Mentions no ngrok
-- Mentions no auto-confirmation
-- Mentions staging fake clinic (not local `11111111-...` UUID)
-- Mentions n8n (or deferred/NOT ENABLED note)
-- Mentions sessionStorage JWT acceptable for fake staging only
-- Mentions staging approval is not production approval
-- Mentions no deployment execution in this module
-- Mentions no real secrets
-- Mentions fake/non-PHI data only
+Create `backend/tests/test_auth_session_hardening_plan_contract.py`:
+- Plan doc exists
+- Mentions sessionStorage risk
+- Mentions httpOnly
+- Mentions Secure attribute
+- Mentions SameSite
+- Mentions Set-Cookie on login
+- Mentions POST /auth/logout
+- Mentions credentials: "include"
+- Mentions removing Authorization header injection
+- Mentions CORS credentials: true
+- Mentions CSRF / SameSite=Lax mitigation
+- Mentions no implementation in this module (plan only)
+- Mentions production PHI blocker
+- Mentions 60-minute expiry / no refresh (deferred)
+- Mentions test plan for cookie migration
+- Mentions Sprint 14 execution
+- Mentions no real secrets in plan
 - Confirms no obvious real secrets in doc
 
 ### 4. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Module 97
-- `docs/claude/NEXT_MODULE.md` — Module 98: Auth/Session Hardening Implementation Plan
+- `docs/claude/CURRENT_STATE.md` — record Module 98
+- `docs/claude/NEXT_MODULE.md` — Architecture Checkpoint 13: Staging Deployment Go/No-Go Review
 
 ## What not to do
 
-- Do not execute any deployment
-- Do not provision real infrastructure
-- Do not add real production secrets or real domain names
-- Do not change backend/frontend code
-- Do not start the Fabel 5/UX sprint
-- Do not implement httpOnly cookie auth yet (plan in Module 98)
+- Do not implement httpOnly cookie auth in this module
+- Do not modify `frontend/lib/auth.ts` or `frontend/app/`
+- Do not modify `backend/app/api/routes/auth.py` or dependencies
+- Do not execute staging deployment
+- Do not start Fabel 5/UX sprint
+- Do not expand appointment workflow
 
 ## Acceptance
 
-- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` created
+- `docs/deployment/AUTH_SESSION_HARDENING_PLAN.md` created
 - Contract tests pass
-- Full test suite passes (1832/1832 minimum)
-- Commit: `Sprint 13 / Module 97 — Staging deployment dry-run checklist`
+- Full test suite passes (1865/1865 minimum)
+- Commit: `Sprint 13 / Module 98 — Auth session hardening implementation plan`
