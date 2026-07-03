@@ -1158,8 +1158,18 @@
    - Refresh tokens: deferred to Sprint 14 or later; 60-min expiry accepted for initial production launch
    - Sprint 14 scope: implement cookie login/logout/get_current_user + frontend auth.ts/api.ts/pages update
 
-- Full backend tests: 1892/1892 passed
-- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 in progress (Modules 95–98 complete)
+   - Refresh tokens: deferred to Sprint 14 or later; 60-min expiry accepted for initial production launch
+   - Sprint 14 scope: implement cookie login/logout/get_current_user + frontend auth.ts/api.ts/pages update
+
+97. Module 99 — Production Deployment Execution Plan
+   - Commit: (see git log)
+   - `docs/deployment/PRODUCTION_DEPLOYMENT_EXECUTION_PLAN.md` (new — 17-section execution plan: purpose, current status (what is complete / what is NOT done), 12 production blockers tracker with Sprint 13 progress and open/resolved status, milestone sequence table (M1–M11 with go/no-go gates and sprint estimates), M1 staging deployment (Module 97 checklist + failure stop rules + rollback + Decision Gate A), M2 staging smoke (13-step smoke order + evidence capture + session storage note + Decision Gate B), M3 auth/session hardening (httpOnly cookie + SameSite=None for staging + clinic_id from login body + smoke re-run + Decision Gate C), M4 production domain and TLS (HTTPS domains + DNS + no ngrok), M5 production secrets provisioning (4 secrets + high-entropy + no placeholders), M6 production database (managed PostgreSQL + PITR + migration gate + isolation), M7 production Vapi assistant (dedicated production assistant + vapi:tool singular + no ngrok + Decision Gate D), M8 legal/GDPR/compliance review (hard gate; raw_payload PHI policy; Austrian DSG; data processor agreements), M9 CI/CD pipeline (GitHub Actions + Railway/Vercel hooks + manual approval for production), M10 production monitoring (APM + structured logs + alerting + on-call runbook), M11 production PHI launch (pre-launch checklist; all M1–M10 gates required; current status NO-GO), explicit deferrals table, Architecture Checkpoint 13 as next step)
+   - `backend/tests/test_production_deployment_execution_plan_contract.py` (new — 54 static contract tests: plan exists, non-empty, staging deployment/Railway/Vercel/HTTPS/no-ngrok, staging smoke/smoke-runbook/evidence capture, auth hardening/httpOnly/SameSite/SameSite=None staging cross-domain/Sprint 14 implementation, production domain and TLS/DNS/no-ngrok, production secrets/JWT_SECRET_KEY/VAPI_WEBHOOK_SECRET/no-placeholder, production database/managed PostgreSQL/backups+PITR/migration gate, production Vapi/vapi:tool singular/no auto-confirm, legal/GDPR/Austrian healthcare/raw_payload PHI/hard gate, CI/CD/automated test gate/no secrets in CI logs, production monitoring/APM/alerting/structured logs, go/no-go gates/gate at each milestone/decision gates, PHI launch blocked/all gates must pass/12 open blockers, no deployment in module/planning document only, Architecture Checkpoint 13/checkpoint go/no-go/Sprint 13 deliverables under review, stop rules/rollback, no real API keys/no real DB password)
+   - No deployment executed; no production secrets; no runtime code changes; no auth implementation
+   - Full backend tests: 1946/1946 passed
+
+- Full backend tests: 1946/1946 passed
+- Sprint 11 complete (Modules 81–90); Sprint 12 complete (Modules 91–94); Sprint 13 complete (Modules 95–99)
 
 ## Next module
-Sprint 13 / Module 99 — Production Deployment Execution Plan.
+Architecture Checkpoint 13: Sprint 13 Go/No-Go Review.
