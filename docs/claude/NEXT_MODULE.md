@@ -1,83 +1,95 @@
-# Sprint 13 / Module 96 — Staging Environment Variable Matrix
+# Sprint 13 / Module 97 — Staging Deployment Dry-Run Checklist
 
-Status: pending Module 95 commit.
+Status: pending Module 96 review.
 
 ## Context
 
-Module 95 chose the staging topology: **Railway (Backend + PostgreSQL) + Vercel (Frontend)**.
+Module 96 defined the complete staging environment variable matrix for Railway
+(Backend + PostgreSQL) + Vercel (Frontend).
 
-Key decisions from Module 95:
+Key decisions from Modules 95–96:
 - Staging backend: `https://staging-api.up.railway.app`
 - Staging frontend: `https://staging-app.vercel.app`
+- `DATABASE_URL`: auto-injected by Railway PostgreSQL add-on
 - `FRONTEND_CORS_ORIGINS`: `https://staging-app.vercel.app` (exact; no wildcard)
 - `NEXT_PUBLIC_API_BASE_URL`: `https://staging-api.up.railway.app`
-- `DATABASE_URL`: auto-injected by Railway PostgreSQL add-on
-- All other staging secrets: set via Railway and Vercel dashboard env var UI
-- No deployment executed in Module 95; no runtime code changed
+- All secrets: Railway dashboard; high-entropy per-staging values
+- Staging fake clinic UUID: distinct from local `11111111-...`; assigned at DB provisioning
+- `seed_local_data.py` must NOT run in staging
+- Backend start command: `python backend/scripts/run_migrations.py && python -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
 
-Module 96 maps every env var the stack consumes to its staging value,
-injection method, secret classification, and rotation policy for the Railway+Vercel platform.
-This is docs-first. No deployment execution. No production secrets.
+Module 97 produces a step-by-step pre-deployment dry-run checklist for the Railway +
+Vercel staging topology. This is docs-first. No deployment execution. No real secrets.
+No runtime code changes.
 
 ## Scope
 
 ### 1. Read and audit current state
 
 Read:
-- `docs/deployment/STAGING_DEPLOYMENT_TOPOLOGY_PLAN.md` — chosen topology
+- `docs/deployment/STAGING_DEPLOYMENT_TOPOLOGY_PLAN.md` — chosen topology (Module 95)
+- `docs/deployment/STAGING_ENVIRONMENT_VARIABLE_MATRIX.md` — full env var matrix (Module 96)
 - `docs/deployment/ENVIRONMENT_AND_SECRETS_CONTRACT.md` — canonical env var definitions
-- `docs/deployment/PRODUCTION_READINESS_INVENTORY.md` — env var list from inventory
-- `backend/.env.example` — backend env var template
-- `frontend/.env.example` — frontend env var template
-- `backend/app/main.py` — confirms which env vars are consumed at startup
-- `frontend/lib/api.ts` — confirms NEXT_PUBLIC_API_BASE_URL usage
+- `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` — smoke runbook (Module 94)
+- `backend/scripts/run_migrations.py` — migration execution details
+- `backend/app/main.py` — startup requirements
+- `frontend/next.config.js` — Next.js build config
+- `docker-compose.postgres.yml` — local DB context (for contrast with staging)
 
-### 2. Create `docs/deployment/STAGING_ENV_VAR_MATRIX.md`
+### 2. Create `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md`
 
 Sections:
-1. **Purpose** — staging only; fake data; no PHI; no production values in this document
-2. **Platform summary** — Railway (backend + PostgreSQL) + Vercel (frontend) per Module 95
-3. **Backend env var matrix** — table with: var name, staging value or placeholder, injection platform (Railway), injection method (dashboard / CLI / auto), secret classification (secret / non-secret), rotation policy for staging
-4. **Frontend env var matrix** — table with: var name, staging value, injection platform (Vercel), injection method, secret classification
-5. **DATABASE_URL** — special section: auto-injected by Railway PostgreSQL add-on; format `postgresql://user:pass@host:port/db`; never hardcoded; Railway sets this automatically when PostgreSQL add-on is attached
-6. **Secret generation instructions** — how to generate each secret value for staging (openssl rand -hex 32); which vars get unique per-environment values; which are platform-auto-injected
-7. **Injection walkthrough** — step-by-step instructions for setting env vars in the Railway dashboard and the Vercel dashboard; no actual secrets shown
-8. **CORS constraint** — `FRONTEND_CORS_ORIGINS` must be set to `https://staging-app.vercel.app` exactly; no wildcard; no localhost; enforced by `_cors_origins()` in `main.py`
-9. **Vapi staging env var** — which env var the Vapi test assistant uses (the Railway URL); set on Vapi dashboard, not in Railway/Vercel
-10. **n8n staging env var** — `N8N_WEBHOOK_SECRET` staging value; n8n workflow points to Railway URL
-11. **Env var validation at startup** — what happens if a required var is missing (FastAPI startup failure; Alembic migration error); how to verify all vars are set before deploying
-12. **Staging isolation guarantee** — staging vars are distinct from local and production; no value overlap; no production secret used in staging
-13. **What NOT to put in env vars** — no real patient data; no production JWT secrets; no production database password
-14. **Next step** — Module 97: Staging Deployment Dry-Run Checklist
+1. **Purpose** — dry-run checklist only; no deployment execution; no real secrets; Railway + Vercel; fake data only
+2. **Prerequisites** — what must be true before the checklist begins (GitHub repo, test suite pass, local smoke pass, no real data)
+3. **Phase 1 — Railway project setup** — project creation, service creation, GitHub connection; checklist format
+4. **Phase 2 — Railway PostgreSQL provisioning** — add PostgreSQL add-on; verify DATABASE_URL auto-injected; no manual connection string
+5. **Phase 3 — Railway backend environment variables** — set each var from Module 96 matrix in Railway dashboard; secret classification; how to verify each without printing
+6. **Phase 4 — Railway backend start command** — set `run_migrations.py && uvicorn $PORT`; migration gate explanation
+7. **Phase 5 — Migration verification** — how to confirm migrations ran; Railway log stream; expected output; failure triage
+8. **Phase 6 — Backend smoke checks** — `/health`, `/health/ready`, `/auth/login` with staging credentials; no real data
+9. **Phase 7 — Vercel project setup** — project creation, GitHub connection, framework detection (Next.js), build command, output directory
+10. **Phase 8 — Vercel environment variable injection** — `NEXT_PUBLIC_API_BASE_URL`; verify staging value; no secrets in Vercel
+11. **Phase 9 — Vercel build and deploy** — trigger build; verify `npm run build` passes; check function logs
+12. **Phase 10 — Frontend smoke checks** — `/login` loads; login with staging credentials; dashboard visible; no CORS errors
+13. **Phase 11 — CORS verification** — browser devtools → OPTIONS preflight → `Access-Control-Allow-Origin` matches staging frontend origin; no wildcard
+14. **Phase 12 — Vapi staging configuration** — update Vapi test assistant server URL to Railway URL; set machine auth headers; remove ngrok URL; verify `vapi:tool` singular
+15. **Phase 13 — Vapi smoke check** — trigger fake Vapi test call; verify appointment row created; status=new; staff Confirm; no auto-confirmation; no calendar booking
+16. **Phase 14 — n8n staging configuration (optional)** — update n8n workflow webhook URL; set HMAC secret; test signed request; mark NOT ENABLED if deferred
+17. **Phase 15 — Staging isolation verification** — confirm no local UUIDs in staging DB; no local-dev secrets in Railway; no production values; sessionStorage JWT only for fake data
+18. **Phase 16 — Go/No-Go decision** — pass/fail checklist; conditions that block deployment; staging approval != production approval
+19. **Non-goals** — no production launch; no auth refactor; no Fabel 5; no appointment workflow expansion; no CI/CD pipeline in this module
 
 ### 3. Static contract tests
 
-Create `backend/tests/test_staging_env_var_matrix_contract.py`:
-- Matrix doc exists
-- Mentions Railway as injection platform for backend vars
-- Mentions Vercel as injection platform for frontend vars
-- Mentions DATABASE_URL auto-injection by Railway PostgreSQL add-on
-- Mentions JWT_SECRET_KEY
-- Mentions VAPI_WEBHOOK_SECRET
-- Mentions N8N_WEBHOOK_SECRET
-- Mentions INTERNAL_WEBHOOK_SECRET
-- Mentions FRONTEND_CORS_ORIGINS with staging value
-- Mentions NEXT_PUBLIC_API_BASE_URL with staging value
-- Mentions openssl rand or equivalent secret generation
-- Mentions Railway dashboard (injection walkthrough)
-- Mentions Vercel dashboard (injection walkthrough)
-- No wildcard in CORS
-- Mentions staging isolation (distinct from local and production)
-- Mentions what happens if a required var is missing
+Create `backend/tests/test_staging_deployment_dry_run_checklist_contract.py`:
+- Checklist doc exists
+- Mentions Railway
+- Mentions Vercel
+- Mentions PostgreSQL
+- Mentions DATABASE_URL auto-injection
+- Mentions migration gate
+- Mentions `/health` and `/health/ready`
+- Mentions CORS verification (OPTIONS preflight or Access-Control-Allow-Origin)
+- Mentions no wildcard CORS
+- Mentions `FRONTEND_CORS_ORIGINS`
+- Mentions `NEXT_PUBLIC_API_BASE_URL`
+- Mentions Vapi test assistant
+- Mentions `vapi:tool` singular
+- Mentions no ngrok
+- Mentions no auto-confirmation
+- Mentions staging fake clinic (not local `11111111-...` UUID)
+- Mentions n8n (or deferred/NOT ENABLED note)
+- Mentions sessionStorage JWT acceptable for fake staging only
+- Mentions staging approval is not production approval
+- Mentions no deployment execution in this module
+- Mentions no real secrets
 - Mentions fake/non-PHI data only
-- Mentions no deployment in this module
-- Mentions Module 97 as next step
-- No obvious real secrets in the document
+- Confirms no obvious real secrets in doc
 
 ### 4. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Module 96
-- `docs/claude/NEXT_MODULE.md` — Module 97: Staging Deployment Dry-Run Checklist
+- `docs/claude/CURRENT_STATE.md` — record Module 97
+- `docs/claude/NEXT_MODULE.md` — Module 98: Auth/Session Hardening Implementation Plan
 
 ## What not to do
 
@@ -86,11 +98,11 @@ Create `backend/tests/test_staging_env_var_matrix_contract.py`:
 - Do not add real production secrets or real domain names
 - Do not change backend/frontend code
 - Do not start the Fabel 5/UX sprint
-- Do not implement httpOnly cookie auth yet
+- Do not implement httpOnly cookie auth yet (plan in Module 98)
 
 ## Acceptance
 
-- `docs/deployment/STAGING_ENV_VAR_MATRIX.md` created
+- `docs/deployment/STAGING_DEPLOYMENT_DRY_RUN_CHECKLIST.md` created
 - Contract tests pass
-- Full test suite passes (1798/1798 minimum)
-- Commit: `Sprint 13 / Module 96 — Staging environment variable matrix`
+- Full test suite passes (1832/1832 minimum)
+- Commit: `Sprint 13 / Module 97 — Staging deployment dry-run checklist`
