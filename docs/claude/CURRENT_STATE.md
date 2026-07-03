@@ -1211,5 +1211,15 @@
 - Full backend tests: 2024/2024 passed
 - Sprint 13 complete (Modules 95–99); Sprint 14 in progress (Modules 100–101 complete)
 
+100. Module 102 — Vercel Frontend Deployment Prep
+   - Commit: (see git log)
+   - `docs/deployment/VERCEL_FRONTEND_DEPLOYMENT_PREP.md` (new — 13-section prep doc: purpose (no deployment; fake/non-PHI; no Fabel 5), current frontend inventory (Next.js 14.2.3; App Router; package.json scripts; api.ts/auth.ts paths; login/dashboard routes; root .gitignore coverage from Module 101; no standalone frontend .gitignore needed; no vercel.json needed), recommended Vercel project settings (root=frontend; Next.js auto-detect; npm install; npm run build; no vercel.json; no output:standalone), Vercel env vars (only NEXT_PUBLIC_API_BASE_URL; no backend secrets table; failure mode if unset; no JWT_SECRET_KEY/DATABASE_URL/webhook secrets in frontend), frontend/backend URL contract (CORS bootstrap sequence: Railway→Vercel URL→FRONTEND_CORS_ORIGINS→restart→verify preflight; no wildcard; no ngrok; HTTPS; exact origin), auth/session staging caveat (sessionStorage JWT fake-data-only; XSS risk acceptable for staging; PHI blocker; httpOnly Secure SameSite=None when cookie auth implemented; SameSite cross-domain complication), build verification plan (npm run build not run in this module; previously verified Module 77), Vercel routing expectations (/login; /dashboard; client-side auth guard only), staging smoke expectations (9 steps), rollback plan, blockers before actual Vercel deploy (8 items), non-goals, recommended next Module 103)
+   - `backend/tests/test_vercel_frontend_deployment_prep_contract.py` (new — 26 static contract tests: doc exists/non-empty; mentions Vercel+frontend/root directory/Next.js/npm run build/npm run dev; NEXT_PUBLIC_API_BASE_URL/no backend secrets/no DATABASE_URL/no JWT_SECRET_KEY; Railway staging API URL/FRONTEND_CORS_ORIGINS exact origin/no wildcard CORS/no ngrok/HTTPS; /login//dashboard routes; sessionStorage JWT fake-data-only/httpOnly cookie migration; fake/non-PHI staging only/no deployment executed/no Fabel 5 UX; rollback/Module 103 staging DB migration and seed; no real API keys)
+   - No deployment executed; no production secrets; no runtime code changes; no frontend code changes; no auth/session implementation; no CORS changes; no npm install
+   - Full backend tests: 2050/2050 passed
+
+- Full backend tests: 2050/2050 passed
+- Sprint 13 complete (Modules 95–99); Sprint 14 in progress (Modules 100–102 complete)
+
 ## Next module
-Sprint 14 / Module 102 — Vercel Frontend Deployment Prep.
+Sprint 14 / Module 103 — Staging DB Migration and Seed Strategy.
