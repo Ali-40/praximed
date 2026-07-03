@@ -1,94 +1,126 @@
-# Sprint 14 / Module 103 — Staging DB Migration and Seed Strategy
+# Sprint 14 / Module 104 — Staging Smoke Execution Evidence
 
-Status: pending Module 102 review.
+Status: pending Module 103 review.
 
 ## Context
 
-Module 102 resolved the Vercel frontend deployment blockers:
-- `docs/deployment/VERCEL_FRONTEND_DEPLOYMENT_PREP.md` created (13 sections)
-- Vercel project settings documented (root=`frontend`; Next.js auto-detect; no vercel.json)
-- `NEXT_PUBLIC_API_BASE_URL` documented as the only required Vercel env var
-- CORS bootstrap sequence documented (Railway URL → Vercel URL → FRONTEND_CORS_ORIGINS)
-- Auth/session staging caveat documented (sessionStorage JWT fake-data-only; httpOnly cookie deferred)
-- Contract tests: 26/26 passed; full suite: 2050/2050 passed
+Module 103 resolved the staging DB migration and seed strategy:
+- `docs/deployment/STAGING_DB_MIGRATION_AND_SEED_STRATEGY.md` created (17 sections)
+- Migration sequence defined: `python backend/scripts/run_migrations.py` via Railway "Run Command"
+- Staging fake tenant/user strategy defined (distinct UUIDs; `doctor.staging@praximed.test`)
+- `seed_local_data.py` assessed as local-only; must not run against staging DB
+- Option A (manual SQL via Railway shell) recommended for first smoke provisioning
+- Contract tests: 27/27 passed; full suite: 2077/2077 passed
 
-The remaining staging deployment blockers:
-- Staging DB migration execution sequence not defined
-- Staging fake clinic + user provisioning strategy not defined
-- `seed_local_data.py` is local-dev only (hardcoded local UUIDs and local-dev password hash); cannot be reused
-- Staging seed strategy unclear: staging-safe seed script vs. manual SQL inserts
+The remaining staging deployment blockers (all require actual Railway/Vercel services to be
+created manually by the developer outside this Claude Code session):
+- Railway backend service not yet deployed
+- Railway PostgreSQL add-on not yet provisioned
+- `DATABASE_URL` not yet available
+- Staging fake clinic and user UUIDs not yet generated and inserted
+- `VAPI_WEBHOOK_SECRET` and other secrets not yet set in Railway dashboard
+- Vercel frontend not yet deployed
+- `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel
+- `FRONTEND_CORS_ORIGINS` on Railway not yet set
 
-Module 103 defines the staging DB migration and seed strategy. No actual migration execution.
-No real secrets. No runtime code changes. No deployment.
+Module 104 documents staging smoke execution evidence **only if** the Railway and Vercel
+services have been created and configured manually. If they have not been created, Module
+104 documents the exact blockers preventing smoke execution — it does not claim a pass.
+
+No fake smoke evidence. No deployment in this module. No real patient data.
 
 ## Scope
 
-### 1. Read and audit current state
+### 1. Check if staging services exist
 
-Read:
-- `backend/scripts/run_migrations.py` — migration runner script
-- `backend/alembic/versions/` — migration files (list and review)
-- `backend/scripts/seed_local_data.py` — understand why it is local-only
-- `backend/app/db/models/` — clinic, clinic_user, appointment_request tables
-- `docs/deployment/STAGING_DEPLOYMENT_CONFIG_FILE_INVENTORY.md` — staging seed gap section
-- `docs/deployment/RAILWAY_BACKEND_DEPLOYMENT_PREP.md` — migration strategy section
+Before writing any smoke evidence:
+- Ask the user whether the Railway backend service and Vercel frontend have been created
+- If not created: document the open blockers and defer smoke to a future module
+- If created: collect and document actual smoke evidence
 
-### 2. Create `docs/deployment/STAGING_DB_MIGRATION_AND_SEED_STRATEGY.md`
+### 2. If staging services exist — collect and document evidence
+
+Read from user or environment (not from guesses):
+- Actual Railway staging API HTTPS URL
+- Actual Vercel staging frontend HTTPS URL
+- Migration execution result (sanitized)
+- DB smoke test result
+- Login smoke result
+- Dashboard load result
+- Vapi test call result
+- Staff Confirm result
+
+### 3. Create `docs/deployment/STAGING_SMOKE_EVIDENCE.md`
 
 Sections:
-1. **Purpose** — define staging DB migration and seed strategy; no execution; fake/non-PHI only
-2. **Migration execution sequence** — exact commands and order for Railway staging DB
-3. **Migration files** — list all Alembic migrations; expected final schema state
-4. **run_migrations.py behavior** — what it does, gaps (no retry loop), when to run it on Railway
-5. **Why seed_local_data.py cannot be used in staging** — hardcoded UUIDs; local-dev password hashes
-6. **Staging fake data requirements** — what must exist before smoke begins (clinic row; clinic_user row; fake appointment rows)
-7. **Staging seed strategy** — manual SQL inserts vs. staging seed script; recommendation
-8. **Staging fake tenant spec** — exact field values for the staging clinic and user (fake; no real PII)
-9. **Password hashing for staging** — how to generate a staging-safe bcrypt hash without running local code
-10. **Smoke test data dependency** — which smoke steps require which DB rows
-11. **Rollback** — how to reset the staging DB if needed
-12. **Blockers remaining** — what cannot proceed until this module is reviewed
-13. **Non-goals** — no migration execution; no production data; no PHI; no real credentials
+1. **Purpose** — actual staging smoke evidence; fake/non-PHI only; production PHI no-go
+2. **Staging topology used** — Railway URL; Vercel URL; staging clinic UUID; no real data
+3. **Pre-smoke checklist** — all items from Module 97 checklist verified
+4. **Migration evidence** — command run; timestamp; revision reached; sanitized output
+5. **DB smoke test evidence** — `db_smoke_test.py` result; tables verified
+6. **Staging provisioning evidence** — fake clinic and user confirmed in DB
+7. **Backend health smoke** — `GET /health` → `{"status": "ok"}`; `GET /health/ready`
+8. **CORS smoke** — `OPTIONS /auth/login` preflight from Vercel origin → correct headers
+9. **Auth smoke** — login with `doctor.staging@praximed.test` → JWT returned
+10. **Frontend smoke** — Vercel URL loads; `/login` renders; `/dashboard` loads after login
+11. **Vapi appointment intake smoke** — test call → `status=new`; `action_required=true`
+12. **Staff Confirm smoke** — `PATCH /appointment-requests/{id}/status` → `confirmed`
+13. **n8n calendar sync smoke** (optional) — `POST /webhooks/n8n/calendar-sync` → 200
+14. **Failures and deviations** — any smoke step that did not pass; triage and resolution
+15. **Stop rules triggered** — any stop rule from Module 103/97 that fired
+16. **Go/No-Go decision** — staging smoke: GO or NO-GO for next milestone
+17. **Open blockers after smoke** — what remains before auth hardening (M3)
+18. **Non-goals** — no production PHI; no real patients; no auth hardening in this module
 
-### 3. Static contract tests
+### 4. Static contract tests
 
-Create `backend/tests/test_staging_db_migration_and_seed_strategy_contract.py`:
-- Staging DB migration and seed strategy doc exists
-- Doc mentions migration execution sequence
-- Doc mentions run_migrations.py
-- Doc mentions alembic upgrade head
-- Doc mentions why seed_local_data.py cannot be used in staging
-- Doc mentions staging fake clinic tenant
-- Doc mentions staging fake clinic_user
-- Doc mentions bcrypt password hash
-- Doc mentions smoke test data dependency
-- Doc mentions rollback
-- Doc mentions fake/non-PHI staging only
-- Doc mentions no deployment executed
-- Doc mentions no real credentials
-- Doc mentions Module 104
-- No obvious real secrets in doc
+Create `backend/tests/test_staging_smoke_evidence_contract.py`:
+- Smoke evidence doc exists
+- Mentions Railway staging API URL
+- Mentions Vercel staging frontend URL
+- Mentions fake/non-PHI staging
+- Mentions no production PHI
+- Mentions migration evidence
+- Mentions /health route result
+- Mentions CORS smoke
+- Mentions login smoke / auth smoke
+- Mentions Vapi appointment intake
+- Mentions status=new / action_required
+- Mentions staff Confirm
+- Mentions no auto-confirmation
+- Mentions go/no-go decision
+- Mentions Module 105 or next step
+- No obvious real secrets
 
-### 4. Update docs
+### 5. Update docs
 
-- `docs/claude/CURRENT_STATE.md` — record Module 103
-- `docs/claude/NEXT_MODULE.md` — Sprint 14 / Module 104: Staging Smoke Execution
+- `docs/claude/CURRENT_STATE.md` — record Module 103 commit and Module 104
+- `docs/claude/NEXT_MODULE.md` — Sprint 14 / Module 105 or Architecture Checkpoint 14
+
+## If staging services do not yet exist
+
+If the Railway and Vercel services have not been created:
+- Document the open blockers clearly
+- Do not fabricate smoke evidence
+- Recommend the developer create the services manually, then re-run Module 104
+- Update NEXT_MODULE.md to reflect that Module 104 is a deployment execution step requiring
+  manual developer action, not a documentation-only module
 
 ## What not to do
 
-- Do not execute migrations against any database
-- Do not create or modify any migration files
-- Do not create a real staging seed script (document the strategy only)
-- Do not use real clinic names, patient names, or real credentials
-- Do not run npm install or touch frontend
+- Do not fabricate smoke evidence
+- Do not claim a smoke pass without actual service responses
+- Do not deploy Railway or Vercel services from within Claude Code
+- Do not use real patient data, real clinic data, or PHI
 - Do not implement httpOnly cookie auth
 - Do not change CORS implementation
 - Do not start Fabel 5/UX sprint
-- Do not change DB schema
+- Do not change DB schema or migration files
+- Do not add real secrets to any file
 
 ## Acceptance
 
-- `docs/deployment/STAGING_DB_MIGRATION_AND_SEED_STRATEGY.md` created
+- `docs/deployment/STAGING_SMOKE_EVIDENCE.md` created (or blocker doc if services don't exist)
 - Contract tests pass
-- Full test suite passes (2050/2050 minimum)
-- Commit: `Sprint 14 / Module 103 — Staging DB migration and seed strategy`
+- Full test suite passes (2077/2077 minimum)
+- Commit: `Sprint 14 / Module 104 — Staging smoke execution evidence`
