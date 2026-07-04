@@ -1422,3 +1422,21 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Sprint 16 in progress (Modules 110–114 complete)
 - Railway PostgreSQL migration PASS; fake staging clinic/user still PENDING
 - Next: Module 115 — Fake Staging Clinic and User Provisioning Evidence
+
+113. Module 115 — Fake Staging Clinic and User Provisioning Evidence
+   - Commit: (see git log)
+   - Real evidence provided by user: fake staging clinic and doctor user provisioned in Railway PostgreSQL via Railway console
+   - Staging clinic: `id=1a5bbc75-c1b0-4488-94aa-64b3f1c50056` `slug=staging-fake-clinic` `status=active`
+   - Staging user: `id=5b63b514-7624-4e8e-9af0-71c153ba7b83` `email=doctor.staging@praximed.test` `role=doctor` `status=active`
+   - Password not recorded; bcrypt hash not recorded; DATABASE_URL not recorded; no real patient data; not local-dev-password; not local-dev UUIDs
+   - `docs/runtime/FAKE_STAGING_CLINIC_USER_PROVISIONING_EVIDENCE.md` (new — 7-section evidence doc: purpose (accuracy policy; fake/non-PHI; no production secrets), current result (PASS), evidence (clinic table: id/slug/name/status/timezone/locale all PASS; user table: id/clinic_id/email/full_name/role/status/password_hash all PASS; sanitized verification output from Railway console), safety boundary (password/hash/DATABASE_URL not recorded; no real patient data; fake/non-PHI; not local-dev-password; not local-dev UUIDs; production PHI NO-GO), what this proves (Railway PostgreSQL has both rows; user bound to clinic; active status on both; password_hash column populated; credentials held privately; local-dev isolation confirmed), what this does not prove (login/JWT/health-ready/Vercel/CORS/dashboard/Vapi/n8n/production PHI all NOT PROVEN), next verification Module 116 with exact request template)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — fake staging clinic PASS (id/slug/status); fake staging user PASS (id/email/role/status); blockers 6+7 resolved; Vercel/CORS/Vapi/n8n remain PENDING
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — evidence summary row (fake staging clinic/user) PASS with real IDs; smoke checklist check 2 (health/ready) updated blocker note (not yet tested); check 6 (fake login) updated (not yet tested against staging backend); overall BLOCKED/PENDING
+   - `backend/tests/test_fake_staging_clinic_user_provisioning_evidence_contract.py` (new — 19 static contract tests: evidence doc exists/PASS/fake staging clinic/staging-fake-clinic slug/clinic UUID/user email/user UUID/role doctor/status active/password not recorded/hash not recorded/DATABASE_URL not recorded/no real patient data/fake non-PHI/not local-dev-password/login endpoint pending/Vercel pending/Vapi pending/Module 116)
+   - No runtime code changed; no secrets recorded; no real patient data
+   - Full backend tests: 2379/2379 passed
+
+- Full backend tests: 2379/2379 passed
+- Sprint 16 in progress (Modules 110–115 complete)
+- Fake staging clinic/user PASS; backend login smoke still PENDING
+- Next: Module 116 — Backend Staging Login Smoke Evidence

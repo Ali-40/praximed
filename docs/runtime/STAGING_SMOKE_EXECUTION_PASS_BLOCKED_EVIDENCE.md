@@ -1,8 +1,8 @@
 # Staging Smoke Execution PASS/BLOCKED Evidence — PraxisMed
 
 **Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 114
-**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations PASS; fake clinic/user/Vercel/CORS/Vapi/n8n PENDING
+**Sprint:** Sprint 16 / Module 115
+**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations/fake clinic+user PASS; login smoke/Vercel/CORS/Vapi/n8n PENDING
 
 ---
 
@@ -61,7 +61,7 @@ services and evidence is provided by the developer.
 | Railway backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | `{"status":"ok","service":"PraxisMed API"}` — HTTP 200 | **PASS** |
 | Railway PostgreSQL | `DATABASE_URL` auto-injected; PostgreSQL "Running" | Online; DATABASE_URL wired — Module 114 | **PASS** |
 | Migrations | `run_migrations.py` exit 0; `0002_password_hash (head)` | Exit 0; both revisions applied; 4 tables confirmed — Module 114 | **PASS** |
-| Fake staging clinic/user | SELECT confirms rows; clinic UUID recorded; email `doctor.staging@praximed.test` | Not available yet | PENDING | Follows migrations — Module 115 |
+| Fake staging clinic/user | SELECT confirms rows; clinic UUID recorded; email `doctor.staging@praximed.test` | `clinic_id=1a5bbc75-c1b0-4488-94aa-64b3f1c50056`; `user_id=5b63b514-7624-4e8e-9af0-71c153ba7b83`; both `active` — Module 115 | **PASS** |
 | Vercel frontend | Project URL; build success | Not available yet | PENDING | Module 107 runbook READY |
 | Vercel `/login` | Page renders in browser; no 404 | Not available yet | PENDING | Requires Vercel deploy |
 | CORS browser call | OPTIONS → `Access-Control-Allow-Origin` matches Vercel URL; no wildcard | Not available yet | PENDING | Requires `FRONTEND_CORS_ORIGINS` set |
@@ -85,11 +85,11 @@ All are PENDING because no staging services exist at this time.
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
 | 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PASS** — `https://web-production-fd91d.up.railway.app/health` → `{"status":"ok","service":"PraxisMed API"}` (commit `081121b`) | — |
-| 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok", "db": "ok"}}` | **PENDING** | Fake staging clinic/user not yet provisioned (Module 115) |
+| 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok", "db": "ok"}}` | **PENDING** | Not yet tested — Module 116 |
 | 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PASS** — exit 0; `0001_initial_schema` + `0002_password_hash` applied; 4 tables confirmed (Module 114) | — |
 | 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PENDING** | Vercel project not created |
 | 5 | CORS frontend to API | OPTIONS preflight → `Access-Control-Allow-Origin: <vercel-url>`; HTTP 200/204; no wildcard | **PENDING** | `FRONTEND_CORS_ORIGINS` not set; wiring incomplete |
-| 6 | Fake login | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned; sessionStorage populated | **PENDING** | Fake user not provisioned; no DB |
+| 6 | Fake login | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned; sessionStorage populated | **PENDING** | Not yet tested against staging backend — Module 116 |
 | 7 | Protected dashboard | `/dashboard` returns 200; appointment list renders (may be empty) | **PENDING** | Requires login |
 | 8 | Dashboard sections render | Appointment cards / empty state visible; no 500 errors in browser console | **PENDING** | Requires dashboard load |
 | 9 | Staff Confirm existing appointment | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff-initiated only | **PENDING** | No existing rows; no DB |

@@ -1,8 +1,8 @@
 # Staging Environment Wiring Evidence — PraxisMed
 
 **Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 114
-**Status:** BLOCKED/PENDING — Railway backend/PostgreSQL/migrations PASS; fake clinic/user/Vercel/Vapi/n8n PENDING
+**Sprint:** Sprint 16 / Module 115
+**Status:** BLOCKED/PENDING — Railway backend/PostgreSQL/migrations/fake clinic+user PASS; Vercel/CORS/Vapi/n8n PENDING
 
 ---
 
@@ -30,7 +30,7 @@ Fake staging clinic/user, Vercel frontend, CORS wiring, Vapi, and n8n remain PEN
 This document will be updated to PASS when:
 1. ~~Railway backend URL is confirmed and `/health` returns 200~~ **PASS**
 2. ~~Railway PostgreSQL is provisioned; `DATABASE_URL` auto-injected; migrations applied~~ **PASS**
-3. Staging fake clinic and user are provisioned in Railway PostgreSQL ← next step
+3. ~~Staging fake clinic and user are provisioned in Railway PostgreSQL~~ **PASS**
 4. Vercel frontend URL is confirmed and `/login` loads in browser
 5. `NEXT_PUBLIC_API_BASE_URL` is set to Railway backend HTTPS URL in Vercel
 6. `FRONTEND_CORS_ORIGINS` is set to exact Vercel URL in Railway backend
@@ -50,8 +50,8 @@ This document will be updated to PASS when:
 | Railway PostgreSQL provisioned (Module 114) | **PASS** | Online; `DATABASE_URL` wired; migrations applied |
 | `DATABASE_URL` auto-injected into Railway backend | **PASS** | Confirmed wired; value not recorded |
 | Migrations applied: `0002_password_hash (head)` | **PASS** | Both revisions applied; DB smoke confirmed 4 tables |
-| Staging fake clinic provisioned | **PENDING** | Follows migrations — Module 115 |
-| Staging fake user (`doctor.staging@praximed.test`) provisioned | **PENDING** | Follows migrations — Module 115 |
+| Staging fake clinic provisioned | **PASS** | `id=1a5bbc75-c1b0-4488-94aa-64b3f1c50056` `slug=staging-fake-clinic` `status=active` — Module 115 |
+| Staging fake user (`doctor.staging@praximed.test`) provisioned | **PASS** | `id=5b63b514-7624-4e8e-9af0-71c153ba7b83` `role=doctor` `status=active` — Module 115 |
 | Vercel frontend project exists (Module 107) | **PENDING** | Runbook published; project not yet confirmed created |
 | Vercel frontend URL known | **PENDING** | Required for `FRONTEND_CORS_ORIGINS` |
 | `NEXT_PUBLIC_API_BASE_URL` set in Vercel | **PENDING** | Requires Railway backend URL |
@@ -95,8 +95,8 @@ This document will be updated to PASS when:
 | `db_smoke_test.py` result | 4 tables confirmed: clinics, patients, consultation_sessions, audit_log | **PASS** |
 | Railway backend `/health/ready` response | Not available yet | Expected: `{"status": "ready", ...}` — 200 | PENDING |
 | Railway backend env var names set (not values) | Not available yet | Expected: `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `FRONTEND_CORS_ORIGINS` | PENDING |
-| Staging fake clinic UUID | Not available yet | — | PENDING |
-| Staging fake user email confirmed | Not available yet | Expected: `doctor.staging@praximed.test` | PENDING |
+| Staging fake clinic UUID | `1a5bbc75-c1b0-4488-94aa-64b3f1c50056` | **PASS** |
+| Staging fake user email confirmed | `doctor.staging@praximed.test` | **PASS** |
 | Vercel frontend URL | Not available yet | — | PENDING |
 | `NEXT_PUBLIC_API_BASE_URL` name confirmed in Vercel | Not available yet | — | PENDING |
 | Vercel build status | Not available yet | Expected: Success | PENDING |
@@ -129,8 +129,8 @@ All require manual developer action before the corresponding evidence row can be
 | 3 | Railway PostgreSQL not yet provisioned | **HIGH** | **RESOLVED — Module 114** |
 | 4 | `DATABASE_URL` not yet auto-injected into Railway backend | **HIGH** | **RESOLVED — Module 114** |
 | 5 | Migrations not yet run against Railway PostgreSQL | **HIGH** | **RESOLVED — Module 114** |
-| 6 | Staging fake clinic not yet provisioned | **HIGH** | PENDING — Module 115 |
-| 7 | Staging fake user not yet provisioned | **HIGH** | PENDING — Module 115 |
+| 6 | Staging fake clinic not yet provisioned | **HIGH** | **RESOLVED — Module 115** |
+| 7 | Staging fake user not yet provisioned | **HIGH** | **RESOLVED — Module 115** |
 | 8 | Vercel frontend project not yet created | **HIGH** | PENDING — Module 116 |
 | 9 | Vercel URL not yet known | **HIGH** | PENDING — Module 116 |
 | 10 | `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel | **HIGH** | PENDING — Module 116 |
