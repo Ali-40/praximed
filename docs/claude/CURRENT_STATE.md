@@ -1440,3 +1440,20 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Sprint 16 in progress (Modules 110–115 complete)
 - Fake staging clinic/user PASS; backend login smoke still PENDING
 - Next: Module 116 — Backend Staging Login Smoke Evidence
+
+114. Module 116 — Backend Staging Login Smoke Evidence
+   - Commit: (see git log)
+   - Real evidence provided by user: `GET /health` → 200; `GET /health/ready` → 200; `POST /auth/login` → 200
+   - `GET /health/ready` response: `{"status":"ready","checks":{"app":"ok"}}` — DB pool healthy; JWT_SECRET_KEY set
+   - `POST /auth/login` response: HTTP 200; `access_token` present (REDACTED); `token_type=bearer`; `expires_in_seconds` present; `user` object present; password not recorded; token value not recorded
+   - `docs/runtime/BACKEND_STAGING_LOGIN_SMOKE_EVIDENCE.md` (new — 8-section evidence doc: purpose (accuracy policy; no secrets), current result (PASS), evidence (health/ready/login tables with all PASS; token REDACTED), safety boundary (password/token/hash/DATABASE_URL not recorded; no real patient data; fake/non-PHI; production PHI NO-GO), what this proves (backend reaches PostgreSQL; JWT_SECRET_KEY set; fake credentials authenticate; bearer token issued; all HTTPS endpoints reachable), what this does not prove (Vercel/CORS/browser login/dashboard/Vapi/n8n/production PHI all NOT PROVEN), remaining blockers (9 items), next step Module 117)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — health/ready PASS; direct login smoke PASS; Vercel/CORS/browser dashboard/Vapi/n8n remain PENDING
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — smoke checklist check 2 (health/ready) PASS; check 6 (fake login — direct backend) PASS; Vercel/browser/dashboard/Vapi/n8n remain PENDING; overall BLOCKED/PENDING
+   - `backend/tests/test_backend_staging_login_smoke_evidence_contract.py` (new — 21 static contract tests: evidence doc exists/PASS; /health; /health/ready; /auth/login; status 200; staging email; clinic UUID; access_token present; token REDACTED; bearer; password not recorded; hash not recorded; DATABASE_URL not recorded; no real patient data; fake non-PHI; Vercel pending; CORS pending; browser dashboard pending; Vapi pending; Module 117)
+   - No runtime code changed; no secrets recorded; no real patient data
+   - Full backend tests: 2400/2400 passed
+
+- Full backend tests: 2400/2400 passed
+- Sprint 16 in progress (Modules 110–116 complete)
+- Backend direct login smoke PASS; Vercel frontend deployment still PENDING
+- Next: Module 117 — Vercel Frontend Deployment and API Wiring

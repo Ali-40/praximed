@@ -1,8 +1,8 @@
 # Staging Environment Wiring Evidence — PraxisMed
 
 **Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 115
-**Status:** BLOCKED/PENDING — Railway backend/PostgreSQL/migrations/fake clinic+user PASS; Vercel/CORS/Vapi/n8n PENDING
+**Sprint:** Sprint 16 / Module 116
+**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations/fake clinic+user/direct login PASS; Vercel/CORS/browser dashboard/Vapi/n8n PENDING
 
 ---
 
@@ -93,8 +93,9 @@ This document will be updated to PASS when:
 | Migrations applied | `run_migrations.py` exit 0; both revisions applied | **PASS** |
 | `alembic current` output | `0002_password_hash (head)` (confirmed via migration output) | **PASS** |
 | `db_smoke_test.py` result | 4 tables confirmed: clinics, patients, consultation_sessions, audit_log | **PASS** |
-| Railway backend `/health/ready` response | Not available yet | Expected: `{"status": "ready", ...}` — 200 | PENDING |
-| Railway backend env var names set (not values) | Not available yet | Expected: `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `FRONTEND_CORS_ORIGINS` | PENDING |
+| Railway backend `/health/ready` response | `{"status":"ready","checks":{"app":"ok"}}` — 200 | **PASS** |
+| Backend direct login smoke (`POST /auth/login`) | HTTP 200; `access_token` present (value REDACTED); `token_type=bearer` | **PASS** |
+| Railway backend env var names set (not values) | Not available yet | Expected: `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `FRONTEND_CORS_ORIGINS` | PENDING |
 | Staging fake clinic UUID | `1a5bbc75-c1b0-4488-94aa-64b3f1c50056` | **PASS** |
 | Staging fake user email confirmed | `doctor.staging@praximed.test` | **PASS** |
 | Vercel frontend URL | Not available yet | — | PENDING |

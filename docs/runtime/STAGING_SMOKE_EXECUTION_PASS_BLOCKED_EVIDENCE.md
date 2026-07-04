@@ -1,8 +1,8 @@
 # Staging Smoke Execution PASS/BLOCKED Evidence — PraxisMed
 
 **Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 115
-**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations/fake clinic+user PASS; login smoke/Vercel/CORS/Vapi/n8n PENDING
+**Sprint:** Sprint 16 / Module 116
+**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations/fake clinic+user/direct login PASS; Vercel/CORS/browser dashboard/Vapi/n8n PENDING
 
 ---
 
@@ -85,11 +85,11 @@ All are PENDING because no staging services exist at this time.
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
 | 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PASS** — `https://web-production-fd91d.up.railway.app/health` → `{"status":"ok","service":"PraxisMed API"}` (commit `081121b`) | — |
-| 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok", "db": "ok"}}` | **PENDING** | Not yet tested — Module 116 |
+| 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok"}}` | **PASS** — `https://web-production-fd91d.up.railway.app/health/ready` → 200 (Module 116) | — |
 | 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PASS** — exit 0; `0001_initial_schema` + `0002_password_hash` applied; 4 tables confirmed (Module 114) | — |
 | 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PENDING** | Vercel project not created |
 | 5 | CORS frontend to API | OPTIONS preflight → `Access-Control-Allow-Origin: <vercel-url>`; HTTP 200/204; no wildcard | **PENDING** | `FRONTEND_CORS_ORIGINS` not set; wiring incomplete |
-| 6 | Fake login | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned; sessionStorage populated | **PENDING** | Not yet tested against staging backend — Module 116 |
+| 6 | Fake login (direct backend) | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned | **PASS** — HTTP 200; `access_token` present (REDACTED); `token_type=bearer` (Module 116) | — |
 | 7 | Protected dashboard | `/dashboard` returns 200; appointment list renders (may be empty) | **PENDING** | Requires login |
 | 8 | Dashboard sections render | Appointment cards / empty state visible; no 500 errors in browser console | **PENDING** | Requires dashboard load |
 | 9 | Staff Confirm existing appointment | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff-initiated only | **PENDING** | No existing rows; no DB |
