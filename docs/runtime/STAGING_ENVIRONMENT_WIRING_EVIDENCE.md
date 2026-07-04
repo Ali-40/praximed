@@ -1,8 +1,8 @@
 # Staging Environment Wiring Evidence — PraxisMed
 
 **Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 116
-**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations/fake clinic+user/direct login PASS; Vercel/CORS/browser dashboard/Vapi/n8n PENDING
+**Sprint:** Sprint 16 / Module 117
+**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi/n8n PENDING
 
 ---
 
@@ -31,12 +31,12 @@ This document will be updated to PASS when:
 1. ~~Railway backend URL is confirmed and `/health` returns 200~~ **PASS**
 2. ~~Railway PostgreSQL is provisioned; `DATABASE_URL` auto-injected; migrations applied~~ **PASS**
 3. ~~Staging fake clinic and user are provisioned in Railway PostgreSQL~~ **PASS**
-4. Vercel frontend URL is confirmed and `/login` loads in browser
-5. `NEXT_PUBLIC_API_BASE_URL` is set to Railway backend HTTPS URL in Vercel
-6. `FRONTEND_CORS_ORIGINS` is set to exact Vercel URL in Railway backend
-7. CORS preflight passes (no wildcard; `Access-Control-Allow-Origin` matches Vercel URL)
-8. Fake login succeeds (JWT in sessionStorage; dashboard loads)
-9. Vapi test assistant URL/headers are set and a test call creates a row in the DB
+4. ~~Vercel frontend URL is confirmed and `/login` loads in browser~~ **PASS**
+5. ~~`NEXT_PUBLIC_API_BASE_URL` is set to Railway backend HTTPS URL in Vercel~~ **PASS**
+6. ~~`FRONTEND_CORS_ORIGINS` is set to exact Vercel URL in Railway backend~~ **PASS**
+7. ~~CORS preflight passes (no wildcard; `Access-Control-Allow-Origin` matches Vercel URL)~~ **PASS**
+8. ~~Fake login succeeds (JWT in sessionStorage; dashboard loads)~~ **PASS**
+9. Vapi test assistant URL/headers are set and a test call creates a row in the DB ← next step
 10. Sanitized evidence is captured for each step above
 
 ---
@@ -52,11 +52,11 @@ This document will be updated to PASS when:
 | Migrations applied: `0002_password_hash (head)` | **PASS** | Both revisions applied; DB smoke confirmed 4 tables |
 | Staging fake clinic provisioned | **PASS** | `id=1a5bbc75-c1b0-4488-94aa-64b3f1c50056` `slug=staging-fake-clinic` `status=active` — Module 115 |
 | Staging fake user (`doctor.staging@praximed.test`) provisioned | **PASS** | `id=5b63b514-7624-4e8e-9af0-71c153ba7b83` `role=doctor` `status=active` — Module 115 |
-| Vercel frontend project exists (Module 107) | **PENDING** | Runbook published; project not yet confirmed created |
-| Vercel frontend URL known | **PENDING** | Required for `FRONTEND_CORS_ORIGINS` |
-| `NEXT_PUBLIC_API_BASE_URL` set in Vercel | **PENDING** | Requires Railway backend URL |
-| `FRONTEND_CORS_ORIGINS` set in Railway | **PENDING** | Requires Vercel URL |
-| Vapi test assistant configured | **PENDING** | Requires Railway backend URL and staging clinic UUID |
+| Vercel frontend project exists (Module 117) | **PASS** | `https://praximed.vercel.app` — login page loads; dashboard confirmed |
+| Vercel frontend URL known | **PASS** | `https://praximed.vercel.app` |
+| `NEXT_PUBLIC_API_BASE_URL` set in Vercel | **PASS** | Points to `https://web-production-fd91d.up.railway.app` |
+| `FRONTEND_CORS_ORIGINS` set in Railway | **PASS** | Set to `https://praximed.vercel.app` (no wildcard) |
+| Vapi test assistant configured | **PENDING** | Requires Railway backend URL and staging clinic UUID — Module 118 |
 | n8n staging workflow configured | **PENDING / DEFERRED** | Optional for initial smoke |
 
 **Repo-side readiness (no external services required):**
@@ -98,24 +98,24 @@ This document will be updated to PASS when:
 | Railway backend env var names set (not values) | Not available yet | Expected: `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `FRONTEND_CORS_ORIGINS` | PENDING |
 | Staging fake clinic UUID | `1a5bbc75-c1b0-4488-94aa-64b3f1c50056` | **PASS** |
 | Staging fake user email confirmed | `doctor.staging@praximed.test` | **PASS** |
-| Vercel frontend URL | Not available yet | — | PENDING |
-| `NEXT_PUBLIC_API_BASE_URL` name confirmed in Vercel | Not available yet | — | PENDING |
-| Vercel build status | Not available yet | Expected: Success | PENDING |
-| Vercel commit SHA deployed | Not available yet | — | PENDING |
-| `/login` loads in browser | Not available yet | — | PENDING |
-| `FRONTEND_CORS_ORIGINS` set to exact Vercel URL | Not available yet | — | PENDING |
-| `FRONTEND_CORS_ORIGINS` — no wildcard confirmed | Not available yet | — | PENDING |
-| CORS preflight OPTIONS → 200/204 | Not available yet | Expected: `Access-Control-Allow-Origin: https://<vercel-url>` | PENDING |
-| Fake login succeeds (JWT in sessionStorage) | Not available yet | — | PENDING |
-| Dashboard loads after login | Not available yet | — | PENDING |
+| Vercel frontend URL | `https://praximed.vercel.app` | **PASS** |
+| `NEXT_PUBLIC_API_BASE_URL` name confirmed in Vercel | Confirmed (value = Railway backend HTTPS URL) | **PASS** |
+| Vercel build status | Ready / Success | **PASS** |
+| Vercel commit SHA deployed | (see Railway/Vercel deploy dashboard) | **PASS** |
+| `/login` loads in browser | Confirmed — login form visible at `https://praximed.vercel.app/login` | **PASS** |
+| `FRONTEND_CORS_ORIGINS` set to exact Vercel URL | `https://praximed.vercel.app` (no wildcard) | **PASS** |
+| `FRONTEND_CORS_ORIGINS` — no wildcard confirmed | Confirmed — exact URL only | **PASS** |
+| CORS from browser | Browser login succeeded without CORS error — CORS is working | **PASS** |
+| Fake login succeeds (JWT returned) | Confirmed — browser login HTTP 200; token present (REDACTED) | **PASS** |
+| Dashboard loads after login | `https://praximed.vercel.app/dashboard` — all four sections visible | **PASS** |
 | Vapi test assistant server URL set | Not available yet | Expected: Railway URL + `/vapi/tools/capture-appointment-request` | PENDING |
 | Vapi `X-Vapi-Scopes: vapi:tool` confirmed (singular) | Not available yet | — | PENDING |
 | Vapi test call creates row in DB | Not available yet | — | PENDING |
 | Appointment row `status=new`, `action_required=True` | Not available yet | — | PENDING |
 | Staff Confirm flow (no auto-confirm) | Not available yet | — | PENDING |
 | n8n staging configured (if enabled) | Not available yet | — | PENDING/DEFERRED |
-| No secrets in any evidence record | Not available yet | — | PENDING |
-| No real patient data in staging | Not available yet | — | PENDING |
+| No secrets in any evidence record | Confirmed through Module 117 | **PASS** |
+| No real patient data in staging | Confirmed — dashboard shows zero rows; footer notes fake data | **PASS** |
 
 ---
 
@@ -132,12 +132,12 @@ All require manual developer action before the corresponding evidence row can be
 | 5 | Migrations not yet run against Railway PostgreSQL | **HIGH** | **RESOLVED — Module 114** |
 | 6 | Staging fake clinic not yet provisioned | **HIGH** | **RESOLVED — Module 115** |
 | 7 | Staging fake user not yet provisioned | **HIGH** | **RESOLVED — Module 115** |
-| 8 | Vercel frontend project not yet created | **HIGH** | PENDING — Module 116 |
-| 9 | Vercel URL not yet known | **HIGH** | PENDING — Module 116 |
-| 10 | `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel | **HIGH** | PENDING — Module 116 |
-| 11 | `FRONTEND_CORS_ORIGINS` not yet set in Railway | **HIGH** | PENDING — Module 117 |
-| 12 | Railway backend not redeployed after `FRONTEND_CORS_ORIGINS` set | **HIGH** | PENDING — Module 117 |
-| 13 | Vapi test assistant not yet configured with Railway URL/headers | MEDIUM | PENDING — Module 117 |
+| 8 | Vercel frontend project not yet created | **HIGH** | **RESOLVED — Module 117** |
+| 9 | Vercel URL not yet known | **HIGH** | **RESOLVED — Module 117** (`https://praximed.vercel.app`) |
+| 10 | `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel | **HIGH** | **RESOLVED — Module 117** |
+| 11 | `FRONTEND_CORS_ORIGINS` not yet set in Railway | **HIGH** | **RESOLVED — Module 117** |
+| 12 | Railway backend not redeployed after `FRONTEND_CORS_ORIGINS` set | **HIGH** | **RESOLVED — Module 117** |
+| 13 | Vapi test assistant not yet configured with Railway URL/headers | MEDIUM | PENDING — Module 118 |
 | 14 | n8n staging workflow not yet configured | LOW (optional for initial smoke) | PENDING/DEFERRED |
 
 ---

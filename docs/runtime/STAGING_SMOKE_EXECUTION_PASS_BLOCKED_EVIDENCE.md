@@ -1,8 +1,8 @@
 # Staging Smoke Execution PASS/BLOCKED Evidence — PraxisMed
 
 **Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 116
-**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations/fake clinic+user/direct login PASS; Vercel/CORS/browser dashboard/Vapi/n8n PENDING
+**Sprint:** Sprint 16 / Module 117
+**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi/n8n dashboard loop PENDING
 
 ---
 
@@ -62,11 +62,11 @@ services and evidence is provided by the developer.
 | Railway PostgreSQL | `DATABASE_URL` auto-injected; PostgreSQL "Running" | Online; DATABASE_URL wired — Module 114 | **PASS** |
 | Migrations | `run_migrations.py` exit 0; `0002_password_hash (head)` | Exit 0; both revisions applied; 4 tables confirmed — Module 114 | **PASS** |
 | Fake staging clinic/user | SELECT confirms rows; clinic UUID recorded; email `doctor.staging@praximed.test` | `clinic_id=1a5bbc75-c1b0-4488-94aa-64b3f1c50056`; `user_id=5b63b514-7624-4e8e-9af0-71c153ba7b83`; both `active` — Module 115 | **PASS** |
-| Vercel frontend | Project URL; build success | Not available yet | PENDING | Module 107 runbook READY |
-| Vercel `/login` | Page renders in browser; no 404 | Not available yet | PENDING | Requires Vercel deploy |
-| CORS browser call | OPTIONS → `Access-Control-Allow-Origin` matches Vercel URL; no wildcard | Not available yet | PENDING | Requires `FRONTEND_CORS_ORIGINS` set |
-| Dashboard login | JWT in sessionStorage; redirect to `/dashboard` | Not available yet | PENDING | Requires fake user + CORS |
-| Dashboard protected route | `/dashboard` renders; appointment list visible | Not available yet | PENDING | Requires login |
+| Vercel frontend | Project URL; build success | `https://praximed.vercel.app` — Ready — Module 117 | **PASS** |
+| Vercel `/login` | Page renders in browser; no 404 | Login form visible at `https://praximed.vercel.app/login` — Module 117 | **PASS** |
+| CORS browser call | Browser login succeeds without CORS error; `FRONTEND_CORS_ORIGINS=https://praximed.vercel.app` | Browser login HTTP 200 — no CORS error — Module 117 | **PASS** |
+| Dashboard login | JWT returned; redirect to `/dashboard` | Browser login succeeded; dashboard loaded — Module 117 | **PASS** |
+| Dashboard protected route | `/dashboard` renders; all four sections visible | `https://praximed.vercel.app/dashboard` — Appointments/Patients/Notifications/Consultations visible (count 0) — Module 117 | **PASS** |
 | Appointment Confirm | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff action only | Not available yet | PENDING | Requires existing row |
 | Vapi test assistant call | POST to `/vapi/tools/capture-appointment-request` → 200 | Not available yet | PENDING | Requires Vapi config |
 | Vapi-created appointment row | Row in DB: `status=new`, `action_required=True` | Not available yet | PENDING | Requires Vapi call |
@@ -87,11 +87,11 @@ All are PENDING because no staging services exist at this time.
 | 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PASS** — `https://web-production-fd91d.up.railway.app/health` → `{"status":"ok","service":"PraxisMed API"}` (commit `081121b`) | — |
 | 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok"}}` | **PASS** — `https://web-production-fd91d.up.railway.app/health/ready` → 200 (Module 116) | — |
 | 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PASS** — exit 0; `0001_initial_schema` + `0002_password_hash` applied; 4 tables confirmed (Module 114) | — |
-| 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PENDING** | Vercel project not created |
-| 5 | CORS frontend to API | OPTIONS preflight → `Access-Control-Allow-Origin: <vercel-url>`; HTTP 200/204; no wildcard | **PENDING** | `FRONTEND_CORS_ORIGINS` not set; wiring incomplete |
-| 6 | Fake login (direct backend) | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned | **PASS** — HTTP 200; `access_token` present (REDACTED); `token_type=bearer` (Module 116) | — |
-| 7 | Protected dashboard | `/dashboard` returns 200; appointment list renders (may be empty) | **PENDING** | Requires login |
-| 8 | Dashboard sections render | Appointment cards / empty state visible; no 500 errors in browser console | **PENDING** | Requires dashboard load |
+| 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PASS** — `https://praximed.vercel.app/login` loads (Module 117) | — |
+| 5 | CORS frontend to API | Browser login succeeds without CORS error; `FRONTEND_CORS_ORIGINS` = exact Vercel URL | **PASS** — browser login HTTP 200; no CORS error (Module 117) | — |
+| 6 | Fake login (direct backend + browser) | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned | **PASS** — HTTP 200; `access_token` present (REDACTED); `token_type=bearer` (Modules 116 + 117) | — |
+| 7 | Protected dashboard | `/dashboard` returns 200; all four sections render | **PASS** — `https://praximed.vercel.app/dashboard` loaded; Appointments/Patients/Notifications/Consultations all visible (count 0) (Module 117) | — |
+| 8 | Dashboard sections render | Appointment cards / empty state visible; no 500 errors | **PASS** — all four sections showed zero-row empty states; footer confirms fake data (Module 117) | — |
 | 9 | Staff Confirm existing appointment | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff-initiated only | **PENDING** | No existing rows; no DB |
 | 10 | Vapi test assistant fake call | Vapi initiates POST to `/vapi/tools/capture-appointment-request` → HTTP 200; tool returns appointment data | **PENDING** | Vapi test assistant not configured for staging |
 | 11 | Vapi-created row in dashboard | New `appointment_requests` row visible with `status=new` | **PENDING** | Requires Vapi call |

@@ -1457,3 +1457,21 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Sprint 16 in progress (Modules 110–116 complete)
 - Backend direct login smoke PASS; Vercel frontend deployment still PENDING
 - Next: Module 117 — Vercel Frontend Deployment and API Wiring
+
+115. Module 117 — Vercel Frontend Deployment and API Wiring Evidence
+   - Commit: (see git log)
+   - Real evidence provided by user: Vercel deployed; URL `https://praximed.vercel.app`; login loaded; browser login PASS; dashboard loaded
+   - `FRONTEND_CORS_ORIGINS=https://praximed.vercel.app` set in Railway; Railway backend redeployed; `/health` still 200
+   - Dashboard evidence: header "PraxisMed / Clinic Dashboard"; Logout button; Clinic Overview; Appointments card (0 rows); Patients card (0 rows); Notifications card (0 rows); Consultations card (0 rows); footer says fake/local demo data
+   - No password, token, hash, DATABASE_URL, JWT_SECRET_KEY, or webhook secrets recorded
+   - `docs/runtime/VERCEL_FRONTEND_DEPLOYMENT_AND_API_WIRING_EVIDENCE.md` (new — 8-section evidence doc: purpose; current result PASS; evidence (Vercel deployment/API base URL wiring/CORS wiring/browser login/dashboard — all PASS; dashboard shows zero rows in all four sections as expected before Vapi calls); login evidence summary (clinic_id/email/password-not-recorded/token-not-recorded); safety boundary (all secrets not recorded; no wildcard CORS; no real patient data; production PHI NO-GO); what this proves (Vercel builds from frontend/; frontend reaches Railway backend; CORS works; browser login works; dashboard renders; no auto-confirm); what this does not prove (Vapi/n8n/staff Confirm in deployed dashboard/full smoke/production PHI — all NOT PROVEN); next Module 118)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — Vercel URL PASS; NEXT_PUBLIC_API_BASE_URL PASS; FRONTEND_CORS_ORIGINS PASS; CORS browser PASS; login PASS; dashboard PASS; blockers 8–12 resolved; Vapi/n8n PENDING
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — smoke checklist checks 4 (frontend /login) PASS; 5 (CORS) PASS; 6 (browser login) PASS; 7 (protected dashboard) PASS; 8 (dashboard sections) PASS; Vapi/n8n rows still PENDING; overall PARTIAL PASS
+   - `backend/tests/test_vercel_frontend_deployment_and_api_wiring_evidence_contract.py` (new — 24 static contract tests: evidence doc exists/PASS; Vercel URL; Railway backend URL; NEXT_PUBLIC_API_BASE_URL; FRONTEND_CORS_ORIGINS; /health; /health/ready; browser login; dashboard; Appointments/Patients/Notifications/Consultations; staging email/clinic UUID; password not recorded; token not recorded; DATABASE_URL not recorded; no real patient data; fake non-PHI; Vapi pending; n8n pending; Module 118)
+   - No runtime code changed; no secrets recorded; no real patient data
+   - Full backend tests: 2424/2424 passed
+
+- Full backend tests: 2424/2424 passed
+- Sprint 16 in progress (Modules 110–117 complete)
+- Frontend/CORS/browser login/dashboard PASS; Vapi staging dashboard loop still PENDING
+- Next: Module 118 — Vapi Staging Dashboard Loop Evidence
