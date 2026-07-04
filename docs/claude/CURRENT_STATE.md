@@ -1387,3 +1387,21 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Sprint 16 in progress (Modules 110–112 complete)
 - Railway backend URL confirmed: https://web-production-fd91d.up.railway.app
 - Next: Module 113 — Railway PostgreSQL provisioning and migration
+
+111. Module 113 — Railway Migration psycopg2 Dependency Fix
+   - Commit: (see git log)
+   - Real Railway migration attempted: **FAILED** — `ModuleNotFoundError: No module named 'psycopg2'`
+   - Root cause: `psycopg2-binary` was missing from `requirements.txt`; SQLAlchemy/Alembic requires a synchronous PostgreSQL driver (`psycopg2`) for migrations even when `asyncpg` (async driver) is installed for runtime DB access; both drivers must coexist
+   - Fix:
+     - `requirements.txt` (repo root) — added `psycopg2-binary==2.9.9` after `asyncpg==0.31.0`; now contains 8 direct deps
+     - `backend/requirements.txt` — added `psycopg2-binary==2.9.9` after `asyncpg==0.31.0`; kept in sync with root
+     - `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md` — added Section 6.1a "PostgreSQL Driver Requirements" (driver table: asyncpg = async runtime; psycopg2-binary = sync for Alembic; both required); added failure triage row for `ModuleNotFoundError: No module named 'psycopg2'`
+     - `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` — updated current result: PostgreSQL Online PASS; DATABASE_URL wired PASS; migration failed `ModuleNotFoundError: No module named 'psycopg2'`; fix applied Module 113; evidence table updated with PASS rows for PostgreSQL status and DATABASE_URL injection
+   - `backend/tests/test_railway_migration_psycopg2_dependency_contract.py` (new — 14 static contract tests: root requirements.txt exists/has psycopg2-binary/still has asyncpg; backend requirements.txt exists/has psycopg2-binary/still has asyncpg; migration runbook exists/mentions psycopg2-binary/mentions asyncpg/mentions ModuleNotFoundError/mentions run_migrations script; migration evidence doc exists/records psycopg2 failure/no secrets policy)
+   - No runtime app logic changed; no auth changes; no DB schema changes; no real secrets
+   - Full backend tests: 2338/2338 passed
+
+- Full backend tests: 2338/2338 passed
+- Sprint 16 in progress (Modules 110–113 complete)
+- psycopg2-binary==2.9.9 now in both requirements files; Railway redeploy + migration rerun required
+- Next: Module 114 — Railway PostgreSQL Migration Retest Evidence

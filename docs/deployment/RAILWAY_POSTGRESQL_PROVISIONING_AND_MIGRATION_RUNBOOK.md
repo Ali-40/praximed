@@ -141,6 +141,28 @@ Run the migration command only after:
 2. `DATABASE_URL` is injected into the Railway backend service
 3. `/health/ready` returns 200 (confirms DB pool connected)
 
+### 6.1a PostgreSQL Driver Requirements
+
+Alembic/SQLAlchemy migrations require a **synchronous** PostgreSQL driver at runtime.
+The PraxisMed backend uses two drivers with different roles:
+
+| Driver | Package | Role | Required For |
+|---|---|---|---|
+| `asyncpg` | `asyncpg==0.31.0` | Async driver | Runtime API — `backend/app/db/pool.py` connection pool; all API request handlers |
+| `psycopg2-binary` | `psycopg2-binary==2.9.9` | Sync driver | SQLAlchemy/Alembic migrations — `run_migrations.py` uses `alembic upgrade head` which needs a sync driver |
+
+**Both must be installed.** Removing `asyncpg` breaks the runtime API. Removing `psycopg2-binary`
+causes migration failures with:
+
+```
+ModuleNotFoundError: No module named 'psycopg2'
+ERROR: Migration failed
+```
+
+This was confirmed by a real Railway migration failure where `psycopg2-binary` was missing
+from `requirements.txt`. The fix is to ensure both packages appear in `requirements.txt`
+(repo root) and `backend/requirements.txt`.
+
 ### 6.2 Migration Command
 
 Run this command via the Railway backend service **Shell** panel or **Run Command** feature:
@@ -370,6 +392,7 @@ value, no bcrypt hashes.
 | Migration fails: `ERROR: DATABASE_URL environment variable is not set` | Migration run before `DATABASE_URL` was injected | Railway "Run Command" output | Inject `DATABASE_URL` into backend service first; redeploy; then retry |
 | Migration fails: `Connection refused` or `could not connect` | PostgreSQL still cold-starting | Railway PostgreSQL service → Status | Wait for PostgreSQL to show "Running"; retry migration |
 | Migration fails: `alembic.ini not found` | Command run from wrong directory | Railway "Run Command" output | Use `python backend/scripts/run_migrations.py` (runs from repo root) — do not `cd backend/` first |
+| Migration fails: `ModuleNotFoundError: No module named 'psycopg2'` | `psycopg2-binary` missing from `requirements.txt` — Alembic/SQLAlchemy needs the sync driver even when `asyncpg` is present | Railway "Run Command" output | Add `psycopg2-binary==2.9.9` to `requirements.txt` (repo root) and `backend/requirements.txt`; push and redeploy Railway before retrying |
 | Migration fails: `ModuleNotFoundError: No module named 'alembic'` | `backend/requirements.txt` deps not installed in the Railway environment | Railway backend build log | Confirm `alembic==1.18.5` in `backend/requirements.txt` and Nixpacks build installed it |
 | Migration fails: `SSL connection required` | Railway PostgreSQL requires SSL; asyncpg/alembic connection string needs `?ssl=require` | Migration error output | Add `?ssl=require` to `DATABASE_URL` in Railway Variables if Railway requires it |
 | `db_smoke_test.py` fails: table not found | Migrations did not complete | `db_smoke_test.py` output | Rerun migration; check alembic revision state with `alembic current` |

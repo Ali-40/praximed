@@ -23,10 +23,21 @@ Staging uses fake/non-PHI data only. No production DB. No real patient data.
 
 **Overall result: BLOCKED/PENDING**
 
-Railway PostgreSQL has not yet been provisioned and migration evidence has not been
-provided. This result is accurate — it is not a failure. The runbook
-(`RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md`) defines all steps required
-to move this document to PASS.
+Railway PostgreSQL has been provisioned and `DATABASE_URL` has been wired to the backend
+service. However, the migration command failed due to a missing dependency:
+
+```
+ModuleNotFoundError: No module named 'psycopg2'
+ERROR: Migration failed
+```
+
+**Root cause:** `psycopg2-binary` was not in `requirements.txt`. Alembic/SQLAlchemy
+requires a synchronous PostgreSQL driver (`psycopg2`) even when `asyncpg` is present for
+runtime async DB access. Fix applied in Module 113: `psycopg2-binary==2.9.9` added to
+both `requirements.txt` (repo root) and `backend/requirements.txt`.
+
+**Next action:** Push the Module 113 fix, redeploy Railway backend, and rerun
+`python backend/scripts/run_migrations.py`.
 
 This document will be updated to PASS when:
 1. Railway PostgreSQL add-on is created and shows "Running"
@@ -75,7 +86,10 @@ This document will be updated to PASS when:
 |---|---|---|---|
 | Railway project name | Not available yet | — | PENDING |
 | Railway backend service name | Not available yet | — | PENDING |
+| Railway backend URL | `https://web-production-fd91d.up.railway.app` | — | **PASS (Module 112)** |
 | Railway PostgreSQL service name | Not available yet | — | PENDING |
+| Railway PostgreSQL status | Online | — | **PASS** |
+| `DATABASE_URL` injection confirmed | Confirmed wired to backend service | — | **PASS** |
 | Commit SHA deployed | Not available yet | — | PENDING |
 | `DATABASE_URL` injection confirmed | Not available yet | — | PENDING |
 | Migration command run | Not available yet | — | PENDING |
