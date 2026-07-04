@@ -1,8 +1,8 @@
 # Railway PostgreSQL Migration Evidence — PraxisMed
 
-**Date:** 2026-07-03
-**Sprint:** Sprint 15 / Module 106
-**Status:** BLOCKED/PENDING — Railway PostgreSQL has not yet been provisioned
+**Date:** 2026-07-04
+**Sprint:** Sprint 16 / Module 114
+**Status:** PASS — migrations applied; DB smoke passed; /health still 200
 
 ---
 
@@ -16,121 +16,172 @@ Railway PostgreSQL service. No evidence is fabricated. If a step has not been ex
 against a real service, its status is PENDING or BLOCKED.
 
 Staging uses fake/non-PHI data only. No production DB. No real patient data.
+No secrets recorded in this document.
 
 ---
 
 ## 2. Current Result
 
-**Overall result: BLOCKED/PENDING**
+**Overall result: PASS**
 
-Railway PostgreSQL has been provisioned and `DATABASE_URL` has been wired to the backend
-service. However, the migration command failed due to a missing dependency:
-
-```
-ModuleNotFoundError: No module named 'psycopg2'
-ERROR: Migration failed
-```
-
-**Root cause:** `psycopg2-binary` was not in `requirements.txt`. Alembic/SQLAlchemy
-requires a synchronous PostgreSQL driver (`psycopg2`) even when `asyncpg` is present for
-runtime async DB access. Fix applied in Module 113: `psycopg2-binary==2.9.9` added to
-both `requirements.txt` (repo root) and `backend/requirements.txt`.
-
-**Next action:** Push the Module 113 fix, redeploy Railway backend, and rerun
-`python backend/scripts/run_migrations.py`.
-
-This document will be updated to PASS when:
-1. Railway PostgreSQL add-on is created and shows "Running"
-2. `DATABASE_URL` is injected into the Railway backend service
-3. `python backend/scripts/run_migrations.py` exits 0
-4. `python backend/scripts/db_smoke_test.py` confirms all 4 tables
-5. `/health/ready` returns 200
-6. Staging fake clinic and user are provisioned
-7. Sanitized evidence is captured for each step above
+Railway PostgreSQL is provisioned and `DATABASE_URL` is wired to the backend service.
+`psycopg2-binary==2.9.9` was added in Module 113 to resolve the earlier
+`ModuleNotFoundError: No module named 'psycopg2'` failure. After redeploy, the
+migration command succeeded and DB smoke confirmed all 4 required tables exist.
 
 ---
 
-## 3. Preconditions Available/Missing
+## 3. Migration Failure History
 
-| Precondition | Status | Notes |
+| Module | Event | Status |
 |---|---|---|
-| Railway backend service exists (Module 105) | **PENDING** | Module 105 runbook published; service not yet confirmed created |
-| `/health` returns 200 on Railway backend | **PENDING** | Depends on Module 105 completion |
-| Railway PostgreSQL add-on created | **MISSING** | Not yet provisioned |
-| `DATABASE_URL` injected into Railway backend service | **MISSING** | Follows PostgreSQL creation |
-| Railway PostgreSQL shows "Running" status | **MISSING** | Not yet provisioned |
-| Backend redeployed with `DATABASE_URL` | **MISSING** | Follows injection |
-| `/health/ready` returns 200 | **MISSING** | Requires DB pool connection |
-| `python backend/scripts/run_migrations.py` run against staging DB | **MISSING** | Not yet executed |
-| `python backend/scripts/db_smoke_test.py` run after migration | **MISSING** | Not yet executed |
-| Staging fake clinic provisioned | **MISSING** | Follows migration success |
-| Staging fake user (`doctor.staging@praximed.test`) provisioned | **MISSING** | Follows migration success |
-| Sanitized migration evidence captured | **NOT AVAILABLE YET** | No evidence to capture |
+| Module 113 (attempt 1) | `python backend/scripts/run_migrations.py` failed — `ModuleNotFoundError: No module named 'psycopg2'` | FAIL |
+| Module 113 (fix) | `psycopg2-binary==2.9.9` added to `requirements.txt` and `backend/requirements.txt` | FIX APPLIED |
+| Module 114 (retest) | Migration command rerun after redeploy — exit 0 | **PASS** |
 
-**Repo-side readiness (no external services required):**
+Root cause of Module 113 failure: SQLAlchemy/Alembic requires a synchronous PostgreSQL
+driver (`psycopg2`) for migrations even when `asyncpg` (async runtime driver) is
+installed. Both must coexist in requirements.
 
-| Item | Status |
+---
+
+## 4. Evidence
+
+| Evidence Item | Value | Status |
+|---|---|---|
+| Railway backend URL | `https://web-production-fd91d.up.railway.app` | **PASS** |
+| `GET /health` HTTP status | `200` | **PASS** |
+| `GET /health` response body | `{"status":"ok","service":"PraxisMed API"}` | **PASS** |
+| Railway PostgreSQL service status | Online / Running | **PASS** |
+| `DATABASE_URL` injection confirmed | Confirmed wired to Railway backend service (name only — value not recorded) | **PASS** |
+| Migration command | `python backend/scripts/run_migrations.py` | **PASS** |
+| Migration exit status | `0` | **PASS** |
+| Migration revision 0001 applied | `Running upgrade -> 0001_initial_schema, Initial schema baseline — PraxisMed Modules 1–40` | **PASS** |
+| Migration revision 0002 applied | `Running upgrade 0001_initial_schema -> 0002_password_hash, Add password_hash column to clinic_users — PraxisMed Sprint 7 / Module 59` | **PASS** |
+| Final migration revision | `0002_password_hash (head)` | **PASS** |
+| DB smoke command | `python backend/scripts/db_smoke_test.py` | **PASS** |
+| Database connectivity | `✓ Database connectivity OK (SELECT 1 passed)` | **PASS** |
+| Table `clinics` exists | `✓ Table 'clinics' exists` | **PASS** |
+| Table `patients` exists | `✓ Table 'patients' exists` | **PASS** |
+| Table `consultation_sessions` exists | `✓ Table 'consultation_sessions' exists` | **PASS** |
+| Table `audit_log` exists | `✓ Table 'audit_log' exists` | **PASS** |
+| DB smoke final result | `Smoke test passed. Database is ready for local development.` | **PASS** |
+| Staging fake clinic UUID | Not yet provisioned | PENDING |
+| Staging fake user email | Not yet provisioned | Expected: `doctor.staging@praximed.test` | PENDING |
+| `/health/ready` HTTP status | Not yet confirmed (fake user not yet provisioned) | PENDING |
+| No secrets in evidence | Confirmed — `DATABASE_URL` value not recorded; no passwords in evidence | **PASS** |
+| No real patient data | Confirmed — no real patient records inserted | **PASS** |
+| Fake/non-PHI staging only | Confirmed — staging uses synthetic test data only | **PASS** |
+
+---
+
+## 5. Sanitized Migration Output
+
+```
+Running: alembic -c /app/backend/alembic.ini upgrade head
+INFO [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO [alembic.runtime.migration] Will assume transactional DDL.
+INFO [alembic.runtime.migration] Running upgrade -> 0001_initial_schema, Initial schema baseline — PraxisMed Modules 1–40.
+INFO [alembic.runtime.migration] Running upgrade 0001_initial_schema -> 0002_password_hash, Add password_hash column to clinic_users — PraxisMed Sprint 7 / Module 59.
+```
+
+No `DATABASE_URL` value appears in migration output. No secrets. No PII.
+
+---
+
+## 6. Sanitized DB Smoke Output
+
+```
+✓ Database connectivity OK (SELECT 1 passed)
+✓ Table 'clinics' exists
+✓ Table 'patients' exists
+✓ Table 'consultation_sessions' exists
+✓ Table 'audit_log' exists
+Smoke test passed. Database is ready for local development.
+```
+
+---
+
+## 7. What This Proves
+
+- **Railway PostgreSQL exists and is reachable from the Railway backend service** —
+  `SELECT 1` passed; DB connectivity confirmed
+- **Backend can connect to Railway PostgreSQL** — Alembic context initialized without
+  connection error; `asyncpg` runtime driver + `psycopg2-binary` migration driver both
+  installed and functional
+- **Both required migrations applied successfully** — `0001_initial_schema` and
+  `0002_password_hash` applied in sequence; final head confirmed
+- **All 4 required core tables exist** — `clinics`, `patients`, `consultation_sessions`,
+  `audit_log` all confirmed by `db_smoke_test.py`
+- **`DATABASE_URL` is wired correctly into the Railway backend service** — migration
+  command resolved the DB URL without manual configuration
+- **`psycopg2-binary==2.9.9` fix resolved the Module 113 migration failure** — no
+  `ModuleNotFoundError` in retest
+
+---
+
+## 8. What This Does Not Prove
+
+| Area | Status | Next Step |
+|---|---|---|
+| Staging fake clinic provisioned | NOT PROVEN | Module 115 |
+| Staging fake user (`doctor.staging@praximed.test`) provisioned | NOT PROVEN | Module 115 |
+| `/health/ready` returns 200 | NOT PROVEN | Module 115 (after fake user provisioned) |
+| Vercel frontend deployed | NOT PROVEN | Module 116 |
+| `NEXT_PUBLIC_API_BASE_URL` set to Railway URL | NOT PROVEN | Module 116 |
+| CORS wired (`FRONTEND_CORS_ORIGINS` = Vercel URL) | NOT PROVEN | Module 117 |
+| Browser login works | NOT PROVEN | Module 117 |
+| Vapi test assistant pointed to staging | NOT PROVEN | Module 117 |
+| n8n staging workflow configured | NOT PROVEN | Module 117 |
+| Full staging smoke passed | NOT PROVEN | Module 118 |
+| Production PHI readiness | NOT PROVEN | Production PHI launch remains NO-GO |
+
+---
+
+## 9. Safety Boundary
+
+| Rule | Status |
 |---|---|
-| `backend/scripts/run_migrations.py` | READY |
-| `backend/scripts/db_smoke_test.py` | READY |
-| `backend/migrations/versions/0001_initial_schema.py` | READY |
-| `backend/migrations/versions/0002_add_password_hash_to_clinic_users.py` | READY |
-| `backend/alembic.ini` | READY |
-| Module 103 staging fake tenant/user provisioning strategy | READY |
+| Staging uses fake/non-PHI data only | CONFIRMED — no real patient data in any staging component |
+| No secrets recorded | CONFIRMED — `DATABASE_URL` value not recorded; no passwords appear in any evidence |
+| No real patient data | CONFIRMED — only schema tables exist; no data rows other than what was explicitly inserted |
+| No production secrets | CONFIRMED — staging credentials are staging-only; no production credentials |
+| Fake/non-PHI staging only | CONFIRMED |
+| Production PHI launch | **NO-GO** — fake staging clinic/user not yet provisioned; Vercel not deployed; CORS not wired |
 
 ---
 
-## 4. Migration Evidence Table
+## 10. Remaining Blockers
 
-| Evidence Item | Evidence Available? | Current Value | Status |
+| # | Blocker | Level | Next Step |
 |---|---|---|---|
-| Railway project name | Not available yet | — | PENDING |
-| Railway backend service name | Not available yet | — | PENDING |
-| Railway backend URL | `https://web-production-fd91d.up.railway.app` | — | **PASS (Module 112)** |
-| Railway PostgreSQL service name | Not available yet | — | PENDING |
-| Railway PostgreSQL status | Online | — | **PASS** |
-| `DATABASE_URL` injection confirmed | Confirmed wired to backend service | — | **PASS** |
-| Commit SHA deployed | Not available yet | — | PENDING |
-| `DATABASE_URL` injection confirmed | Not available yet | — | PENDING |
-| Migration command run | Not available yet | — | PENDING |
-| Migration timestamp | Not available yet | — | PENDING |
-| Migration exit status | Not available yet | — | PENDING |
-| Sanitized migration output | Not available yet | — | PENDING |
-| Final migration revision | Not available yet | Expected: `0002_password_hash (head)` | PENDING |
-| DB smoke test result | Not available yet | Expected: 4 tables confirmed | PENDING |
-| `/health/ready` HTTP status | Not available yet | Expected: `200` | PENDING |
-| Staging fake clinic UUID | Not available yet | — | PENDING |
-| Staging fake user email | Not available yet | Expected: `doctor.staging@praximed.test` | PENDING |
-| No secrets in evidence (confirmed) | Not available yet | — | PENDING |
+| 1 | Staging fake clinic not provisioned | **HIGH** | Module 115 |
+| 2 | Staging fake user not provisioned | **HIGH** | Module 115 |
+| 3 | `/health/ready` not yet returning 200 | **HIGH** | Module 115 |
+| 4 | Vercel frontend not deployed | **HIGH** | Module 116 |
+| 5 | `NEXT_PUBLIC_API_BASE_URL` not set in Vercel | **HIGH** | Module 116 |
+| 6 | `FRONTEND_CORS_ORIGINS` not set in Railway | **HIGH** | Module 117 |
+| 7 | CORS preflight not verified | **HIGH** | Module 117 |
+| 8 | Fake login not tested | **HIGH** | Module 117 |
+| 9 | Vapi test assistant not pointed to staging URL | **HIGH** | Module 117 |
+| 10 | n8n staging workflow not configured | LOW (optional for initial smoke) | Module 117 |
+| 11 | Full staging smoke not executed | **HIGH** | Module 118 |
 
 ---
 
-## 5. Blockers
+## 11. Recommended Next Step — Module 115
 
-The following external actions must be completed before any evidence row can be captured.
-All require manual developer action.
+**Sprint 16 / Module 115 — Fake Staging Clinic and User Provisioning Evidence**
 
-| # | Blocker | Level |
-|---|---|---|
-| 1 | Railway PostgreSQL add-on not provisioned | **HIGH** |
-| 2 | `DATABASE_URL` not injected into Railway backend service | **HIGH** |
-| 3 | Railway PostgreSQL not yet showing "Running" status | **HIGH** |
-| 4 | Migration command not yet run against staging DB | **HIGH** |
-| 5 | DB smoke test not yet run | **HIGH** |
-| 6 | Staging fake clinic UUID not yet generated | **HIGH** |
-| 7 | Staging fake user not yet provisioned | **HIGH** |
-| 8 | `/health/ready` not yet returning 200 | MEDIUM |
+Now that migrations are confirmed applied and all 4 tables exist, the next step is:
 
----
+1. Connect to Railway PostgreSQL (via Railway console or `psql`)
+2. INSERT a fake staging clinic row (`slug='staging-fake-clinic'`; new UUID; no real data)
+3. INSERT a fake staging user (`doctor.staging@praximed.test`; bcrypt hash of a
+   staging-only password; not `local-dev-password`)
+4. Confirm `SELECT` returns both rows
+5. Confirm `GET /health/ready` → 200 with DB pool connected
+6. Record clinic UUID (not a secret) and user email in evidence
 
-## 6. Next Evidence Needed
-
-To update this document from BLOCKED/PENDING to PASS, the developer must:
-
-1. Follow `RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md` Sections 4–9
-2. Capture each evidence item from Section 4 of that runbook
-3. Update this document with real values
-4. Confirm no secrets or PII appear in any recorded evidence
-
-Once this document is updated to PASS, proceed to Module 107 (Vercel frontend project
-creation).
+Follow `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md`
+Section 7 for exact SQL and evidence to capture.

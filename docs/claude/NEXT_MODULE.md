@@ -1,66 +1,60 @@
-# Sprint 16 / Module 114 — Railway PostgreSQL Migration Retest Evidence
+# Sprint 16 / Module 115 — Fake Staging Clinic and User Provisioning Evidence
 
-Status: pending push, Railway redeploy, and migration rerun.
+Status: pending manual fake staging clinic/user provisioning in Railway PostgreSQL.
 
 ## Context
 
-Module 113 complete:
-- `psycopg2-binary==2.9.9` added to both `requirements.txt` and `backend/requirements.txt`
-- Root cause of migration failure documented: SQLAlchemy/Alembic requires synchronous psycopg2 driver even when asyncpg is installed for runtime async DB access
-- Migration runbook updated with Section 6.1a (driver requirements) and new failure triage row
-- Migration evidence doc updated: PostgreSQL Online PASS; DATABASE_URL wired PASS; migration still PENDING (awaiting rerun after fix)
-- Full test suite: 2338/2338 passed
+Module 114 complete:
+- Railway PostgreSQL migration retest: **PASS**
+- `run_migrations.py` exit 0; both revisions applied (`0001_initial_schema`, `0002_password_hash`)
+- `db_smoke_test.py` PASS: clinics, patients, consultation_sessions, audit_log all confirmed
+- `/health` still `{"status":"ok","service":"PraxisMed API"}` — HTTP 200
+- Full test suite: 2360/2360 passed
 - Commit: (see git log)
 
-Railway PostgreSQL is already provisioned and DATABASE_URL is already wired.
-The only remaining step is to push the psycopg2-binary fix, redeploy the backend, and rerun the migration.
-
 Railway backend URL: `https://web-production-fd91d.up.railway.app`
+Database tables confirmed ready. No fake data rows inserted yet.
 
 ## Scope
 
 Evidence doc + static tests. No deployment by Claude.
-No real secrets. No production data.
+No real secrets. No production data. No real patient data.
 
 ### The developer must:
 
-1. Push current branch to GitHub (the psycopg2-binary fix is now in the repo)
-2. Railway will auto-redeploy from the push (or trigger manually)
-3. Confirm Railway backend redeploy succeeds — `/health` → 200
-4. Run `python backend/scripts/run_migrations.py` via Railway "Run Command"
-   - Stop if exit code is non-zero
-   - Capture sanitized output (no DATABASE_URL value in output)
-5. Run `python backend/scripts/db_smoke_test.py` via Railway "Run Command"
-   - Confirm 4 tables: clinics, patients, consultation_sessions, audit_log
-6. Run `alembic current` via Railway "Run Command" — confirm `0002_password_hash (head)`
-7. Confirm `GET /health/ready` → 200 with `{"status":"ready","checks":{"app":"ok","db":"ok"}}`
-8. Provision staging fake clinic and user via SQL (one-time INSERT):
-   - Use newly generated UUIDs (not `11111111-...` local UUID)
-   - Use `doctor.staging@praximed.test` email
-   - Use bcrypt hash of a staging-only password (not `local-dev-password`)
-   - Do not commit the password itself to any document
+Follow `docs/deployment/RAILWAY_POSTGRESQL_PROVISIONING_AND_MIGRATION_RUNBOOK.md` Section 7:
+
+1. Connect to Railway PostgreSQL via Railway console (Data tab → psql or query editor)
+2. INSERT a fake staging clinic row:
+   - Generate a new UUID (do NOT use `11111111-1111-1111-1111-111111111111`)
+   - `slug='staging-fake-clinic'` or similar fake identifier
+   - No real clinic name, address, or contact data
+3. INSERT a fake staging user row:
+   - Email: `doctor.staging@praximed.test`
+   - bcrypt hash of a staging-only password (NOT `local-dev-password`)
+   - Do not record the password itself in any document
+   - clinic_id = the fake clinic UUID from step 2
+4. Confirm `SELECT * FROM clinics WHERE slug='staging-fake-clinic'` returns 1 row
+5. Confirm `SELECT email FROM clinic_users WHERE email='doctor.staging@praximed.test'` returns 1 row
+6. Confirm `GET /health/ready` → 200 with `{"status":"ready","checks":{"app":"ok","db":"ok"}}`
 
 ### Evidence to capture (no secret values):
 
-- Railway backend redeploy status after psycopg2-binary fix
-- `GET /health` → 200 after redeploy (confirm backend still healthy)
-- Migration command: `python backend/scripts/run_migrations.py`
-- Migration exit status: `0`
-- Sanitized migration output (first/last lines; no DB credentials)
-- `alembic current` output: `0002_password_hash (head)`
-- `db_smoke_test.py` output (4 tables confirmed)
-- `GET /health/ready` → 200 response body
-- Staging fake clinic UUID (not a secret; stable identifier)
+- Staging fake clinic UUID (not a secret; stable staging identifier)
+- Staging fake clinic slug/name (fake data only)
 - Staging fake user email: `doctor.staging@praximed.test`
+- `SELECT` confirmation (row count or redacted row — no password hash in evidence)
+- `GET /health/ready` → 200 response body
 - Confirmation that no real patient data was inserted
+- Confirmation that no local-dev password hash was used
 
-### Module 114 will create/update:
+### Module 115 will create/update:
 
-1. `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` — update from BLOCKED/PENDING to PASS if migration succeeds; document exact blocker if still failing
-2. Contract tests for migration retest evidence
-3. Update `STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — mark DATABASE_URL wired, migrations, fake clinic/user as PASS if confirmed
-4. Update `STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — mark DB checks as PASS if confirmed
-5. Update `CURRENT_STATE.md` and `NEXT_MODULE.md` → Module 115 (Vercel frontend creation evidence)
+1. `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` — add fake clinic/user PASS rows; add `/health/ready` PASS
+2. Contract tests for fake staging clinic/user provisioning evidence
+3. Update `STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — mark fake clinic/user PASS; `/health/ready` PASS
+4. Update `STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — mark check 2 (`/health/ready`) PASS; mark fake login row PASS if confirmed; fake login still PENDING without Vercel
+5. Update `CURRENT_STATE.md` and `NEXT_MODULE.md` → Module 116 (Vercel frontend creation evidence)
 
 ## What not to do
 
@@ -76,7 +70,7 @@ No real secrets. No production data.
 ## Acceptance
 
 - `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` updated (PASS or BLOCKED/PENDING with real evidence)
-- PASS only with real migration output from real Railway service
+- PASS only with real SELECT confirmation from real Railway PostgreSQL
 - Contract tests pass
-- Full test suite passes (2338/2338 minimum)
-- Commit: `Sprint 16 / Module 114 — Railway PostgreSQL migration retest evidence`
+- Full test suite passes (2360/2360 minimum)
+- Commit: `Sprint 16 / Module 115 — Fake staging clinic and user provisioning evidence`

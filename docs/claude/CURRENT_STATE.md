@@ -1405,3 +1405,20 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Sprint 16 in progress (Modules 110–113 complete)
 - psycopg2-binary==2.9.9 now in both requirements files; Railway redeploy + migration rerun required
 - Next: Module 114 — Railway PostgreSQL Migration Retest Evidence
+
+112. Module 114 — Railway PostgreSQL Migration Retest Evidence
+   - Commit: (see git log)
+   - Real evidence provided by user: Railway backend `/health` → 200; `run_migrations.py` exit 0; `db_smoke_test.py` → 4 tables PASS
+   - Sanitized migration output confirms both revisions applied: `0001_initial_schema` and `0002_password_hash`
+   - Sanitized DB smoke output: SELECT 1 passed; clinics/patients/consultation_sessions/audit_log all confirmed
+   - `docs/runtime/RAILWAY_POSTGRESQL_MIGRATION_EVIDENCE.md` — updated to PASS: migration failure history (Module 113 attempt + fix + Module 114 retest PASS); full evidence table (18 rows; PostgreSQL/DATABASE_URL/migration command/exit 0/0001/0002/db_smoke/4 tables/health all PASS; fake clinic/user/health-ready PENDING); sanitized migration output section; sanitized DB smoke output section; what this proves (PostgreSQL reachable; both drivers functional; migrations applied; 4 tables confirmed); what this does not prove (fake clinic/user/Vercel/CORS/Vapi/n8n/production PHI all PENDING); safety boundary; remaining blockers (11 items); recommended next Module 115
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — PostgreSQL status PASS; DATABASE_URL wired PASS; migrations PASS; db_smoke PASS; fake clinic/user/Vercel/CORS/Vapi/n8n remain PENDING; resolved blockers 1–5 noted
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — evidence summary table: PostgreSQL PASS; migrations PASS; smoke checklist check 3 (migrations applied) PASS; check 2 (health/ready) still PENDING (fake user not provisioned); overall BLOCKED/PENDING
+   - `backend/tests/test_railway_postgresql_migration_retest_evidence_contract.py` (new — 22 static contract tests: evidence doc exists/non-empty; PASS; Railway PostgreSQL; DATABASE_URL wired name-only; run_migrations.py; 0001_initial_schema; 0002_password_hash; db_smoke_test.py; SELECT 1 passed; clinics/patients/consultation_sessions/audit_log tables; /health still PASS; no secrets; no real patient data; fake/non-PHI; fake clinic/user still PENDING; Vercel PENDING; Vapi PENDING; Module 115)
+   - No runtime code changed; no secrets recorded; no real patient data
+   - Full backend tests: 2360/2360 passed
+
+- Full backend tests: 2360/2360 passed
+- Sprint 16 in progress (Modules 110–114 complete)
+- Railway PostgreSQL migration PASS; fake staging clinic/user still PENDING
+- Next: Module 115 — Fake Staging Clinic and User Provisioning Evidence

@@ -1,8 +1,8 @@
 # Staging Environment Wiring Evidence — PraxisMed
 
-**Date:** 2026-07-03
-**Sprint:** Sprint 15 / Module 108
-**Status:** BLOCKED/PENDING — staging environment wiring evidence not yet provided
+**Date:** 2026-07-04
+**Sprint:** Sprint 16 / Module 114
+**Status:** BLOCKED/PENDING — Railway backend/PostgreSQL/migrations PASS; fake clinic/user/Vercel/Vapi/n8n PENDING
 
 ---
 
@@ -24,15 +24,13 @@ Staging uses fake/non-PHI data only. No production secrets. No real patient data
 
 **Overall result: BLOCKED/PENDING**
 
-External staging services have not been confirmed created and no wiring evidence has
-been provided. This result is accurate — it is not a failure. The runbook
-(`STAGING_ENVIRONMENT_WIRING_RUNBOOK.md`) defines all steps required to move this
-document to PASS.
+Railway backend service, Railway PostgreSQL, and migrations are confirmed PASS.
+Fake staging clinic/user, Vercel frontend, CORS wiring, Vapi, and n8n remain PENDING.
 
 This document will be updated to PASS when:
-1. Railway backend URL is confirmed and `/health` returns 200
-2. Railway PostgreSQL is provisioned; `DATABASE_URL` auto-injected; migrations applied
-3. Staging fake clinic and user are provisioned in Railway PostgreSQL
+1. ~~Railway backend URL is confirmed and `/health` returns 200~~ **PASS**
+2. ~~Railway PostgreSQL is provisioned; `DATABASE_URL` auto-injected; migrations applied~~ **PASS**
+3. Staging fake clinic and user are provisioned in Railway PostgreSQL ← next step
 4. Vercel frontend URL is confirmed and `/login` loads in browser
 5. `NEXT_PUBLIC_API_BASE_URL` is set to Railway backend HTTPS URL in Vercel
 6. `FRONTEND_CORS_ORIGINS` is set to exact Vercel URL in Railway backend
@@ -47,13 +45,13 @@ This document will be updated to PASS when:
 
 | Precondition | Status | Notes |
 |---|---|---|
-| Railway backend service exists (Module 105) | **PENDING** | Runbook published; service not yet confirmed created |
-| Railway backend HTTPS URL known | **PENDING** | Required for `NEXT_PUBLIC_API_BASE_URL` and Vapi tool URL |
-| Railway PostgreSQL provisioned (Module 106) | **PENDING** | Runbook published; DB not yet confirmed provisioned |
-| `DATABASE_URL` auto-injected into Railway backend | **PENDING** | Follows Module 106 completion |
-| Migrations applied: `0002_password_hash (head)` | **PENDING** | Follows `DATABASE_URL` injection |
-| Staging fake clinic provisioned | **PENDING** | Follows migrations |
-| Staging fake user (`doctor.staging@praximed.test`) provisioned | **PENDING** | Follows migrations |
+| Railway backend service exists (Module 112) | **PASS** | `https://web-production-fd91d.up.railway.app` — commit `081121b` |
+| Railway backend HTTPS URL known | **PASS** | `https://web-production-fd91d.up.railway.app` |
+| Railway PostgreSQL provisioned (Module 114) | **PASS** | Online; `DATABASE_URL` wired; migrations applied |
+| `DATABASE_URL` auto-injected into Railway backend | **PASS** | Confirmed wired; value not recorded |
+| Migrations applied: `0002_password_hash (head)` | **PASS** | Both revisions applied; DB smoke confirmed 4 tables |
+| Staging fake clinic provisioned | **PENDING** | Follows migrations — Module 115 |
+| Staging fake user (`doctor.staging@praximed.test`) provisioned | **PENDING** | Follows migrations — Module 115 |
 | Vercel frontend project exists (Module 107) | **PENDING** | Runbook published; project not yet confirmed created |
 | Vercel frontend URL known | **PENDING** | Required for `FRONTEND_CORS_ORIGINS` |
 | `NEXT_PUBLIC_API_BASE_URL` set in Vercel | **PENDING** | Requires Railway backend URL |
@@ -90,12 +88,13 @@ This document will be updated to PASS when:
 |---|---|---|---|
 | Railway backend URL | `https://web-production-fd91d.up.railway.app` | **PASS** |
 | Railway backend `/health` response | `{"status":"ok","service":"PraxisMed API"}` — 200 | **PASS** |
+| Railway PostgreSQL service status | Online / Running | **PASS** |
+| `DATABASE_URL` auto-injected confirmed | Confirmed wired to backend service (name only; value not recorded) | **PASS** |
+| Migrations applied | `run_migrations.py` exit 0; both revisions applied | **PASS** |
+| `alembic current` output | `0002_password_hash (head)` (confirmed via migration output) | **PASS** |
+| `db_smoke_test.py` result | 4 tables confirmed: clinics, patients, consultation_sessions, audit_log | **PASS** |
 | Railway backend `/health/ready` response | Not available yet | Expected: `{"status": "ready", ...}` — 200 | PENDING |
 | Railway backend env var names set (not values) | Not available yet | Expected: `JWT_SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, `N8N_WEBHOOK_SECRET`, `INTERNAL_WEBHOOK_SECRET`, `FRONTEND_CORS_ORIGINS` | PENDING |
-| `DATABASE_URL` auto-injected confirmed | Not available yet | — | PENDING |
-| Migrations applied | Not available yet | Expected: exit code 0 | PENDING |
-| `alembic current` output | Not available yet | Expected: `0002_password_hash (head)` | PENDING |
-| `db_smoke_test.py` result | Not available yet | Expected: 4 tables confirmed | PENDING |
 | Staging fake clinic UUID | Not available yet | — | PENDING |
 | Staging fake user email confirmed | Not available yet | Expected: `doctor.staging@praximed.test` | PENDING |
 | Vercel frontend URL | Not available yet | — | PENDING |
@@ -121,24 +120,24 @@ This document will be updated to PASS when:
 
 ## 5. Blockers
 
-All require manual developer action before any evidence row can be captured.
+All require manual developer action before the corresponding evidence row can be captured.
 
-| # | Blocker | Level |
-|---|---|---|
-| 1 | Railway backend service not yet created | **HIGH** |
-| 2 | Railway backend HTTPS URL not yet known | **HIGH** |
-| 3 | Railway PostgreSQL not yet provisioned | **HIGH** |
-| 4 | `DATABASE_URL` not yet auto-injected into Railway backend | **HIGH** |
-| 5 | Migrations not yet run against Railway PostgreSQL | **HIGH** |
-| 6 | Staging fake clinic not yet provisioned | **HIGH** |
-| 7 | Staging fake user not yet provisioned | **HIGH** |
-| 8 | Vercel frontend project not yet created | **HIGH** |
-| 9 | Vercel URL not yet known | **HIGH** |
-| 10 | `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel | **HIGH** |
-| 11 | `FRONTEND_CORS_ORIGINS` not yet set in Railway | **HIGH** |
-| 12 | Railway backend not redeployed after `FRONTEND_CORS_ORIGINS` set | **HIGH** |
-| 13 | Vapi test assistant not yet configured with Railway URL/headers | MEDIUM |
-| 14 | n8n staging workflow not yet configured | LOW (optional for initial smoke) |
+| # | Blocker | Level | Status |
+|---|---|---|---|
+| 1 | Railway backend service not yet created | **HIGH** | **RESOLVED — Module 112** |
+| 2 | Railway backend HTTPS URL not yet known | **HIGH** | **RESOLVED — Module 112** |
+| 3 | Railway PostgreSQL not yet provisioned | **HIGH** | **RESOLVED — Module 114** |
+| 4 | `DATABASE_URL` not yet auto-injected into Railway backend | **HIGH** | **RESOLVED — Module 114** |
+| 5 | Migrations not yet run against Railway PostgreSQL | **HIGH** | **RESOLVED — Module 114** |
+| 6 | Staging fake clinic not yet provisioned | **HIGH** | PENDING — Module 115 |
+| 7 | Staging fake user not yet provisioned | **HIGH** | PENDING — Module 115 |
+| 8 | Vercel frontend project not yet created | **HIGH** | PENDING — Module 116 |
+| 9 | Vercel URL not yet known | **HIGH** | PENDING — Module 116 |
+| 10 | `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel | **HIGH** | PENDING — Module 116 |
+| 11 | `FRONTEND_CORS_ORIGINS` not yet set in Railway | **HIGH** | PENDING — Module 117 |
+| 12 | Railway backend not redeployed after `FRONTEND_CORS_ORIGINS` set | **HIGH** | PENDING — Module 117 |
+| 13 | Vapi test assistant not yet configured with Railway URL/headers | MEDIUM | PENDING — Module 117 |
+| 14 | n8n staging workflow not yet configured | LOW (optional for initial smoke) | PENDING/DEFERRED |
 
 ---
 

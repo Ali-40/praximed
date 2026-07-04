@@ -1,8 +1,8 @@
 # Staging Smoke Execution PASS/BLOCKED Evidence — PraxisMed
 
-**Date:** 2026-07-03
-**Sprint:** Sprint 15 / Module 109
-**Status:** BLOCKED/PENDING — staging services and smoke evidence not yet provided
+**Date:** 2026-07-04
+**Sprint:** Sprint 16 / Module 114
+**Status:** BLOCKED/PENDING — backend/PostgreSQL/migrations PASS; fake clinic/user/Vercel/CORS/Vapi/n8n PENDING
 
 ---
 
@@ -37,11 +37,12 @@ No production secrets. No fabricated success.
 
 **Overall result: BLOCKED/PENDING**
 
-Railway backend service, Railway PostgreSQL, and Vercel frontend project have not been
-confirmed created and no staging smoke evidence has been provided. This result is
-accurate — it is not a failure.
+Railway backend service (Module 112 PASS), Railway PostgreSQL, and migrations
+(Module 114 PASS) are confirmed. Staging fake clinic/user, Vercel frontend, CORS
+wiring, Vapi, and n8n remain PENDING. Overall staging smoke cannot be marked PASS
+until all smoke checklist steps in Section 4 are confirmed with real evidence.
 
-Sprint 15 has produced the complete suite of human-executable runbooks:
+Sprint 15/16 runbooks confirmed READY:
 - Module 105: Railway backend service creation runbook (READY)
 - Module 106: Railway PostgreSQL provisioning and migration runbook (READY)
 - Module 107: Vercel frontend project creation runbook (READY)
@@ -58,9 +59,9 @@ services and evidence is provided by the developer.
 |---|---|---|---|---|
 | Railway backend service | Service URL; `/health` → 200 | `https://web-production-fd91d.up.railway.app` — commit `081121b` | **PASS** |
 | Railway backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | `{"status":"ok","service":"PraxisMed API"}` — HTTP 200 | **PASS** |
-| Railway PostgreSQL | `DATABASE_URL` auto-injected; PostgreSQL "Running" | Not available yet | PENDING | Module 106 runbook READY |
-| Migrations | `run_migrations.py` exit 0; `0002_password_hash (head)` | Not available yet | PENDING | Requires Railway PostgreSQL |
-| Fake staging clinic/user | SELECT confirms rows; clinic UUID recorded; email `doctor.staging@praximed.test` | Not available yet | PENDING | Follows migrations |
+| Railway PostgreSQL | `DATABASE_URL` auto-injected; PostgreSQL "Running" | Online; DATABASE_URL wired — Module 114 | **PASS** |
+| Migrations | `run_migrations.py` exit 0; `0002_password_hash (head)` | Exit 0; both revisions applied; 4 tables confirmed — Module 114 | **PASS** |
+| Fake staging clinic/user | SELECT confirms rows; clinic UUID recorded; email `doctor.staging@praximed.test` | Not available yet | PENDING | Follows migrations — Module 115 |
 | Vercel frontend | Project URL; build success | Not available yet | PENDING | Module 107 runbook READY |
 | Vercel `/login` | Page renders in browser; no 404 | Not available yet | PENDING | Requires Vercel deploy |
 | CORS browser call | OPTIONS → `Access-Control-Allow-Origin` matches Vercel URL; no wildcard | Not available yet | PENDING | Requires `FRONTEND_CORS_ORIGINS` set |
@@ -84,8 +85,8 @@ All are PENDING because no staging services exist at this time.
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
 | 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PASS** — `https://web-production-fd91d.up.railway.app/health` → `{"status":"ok","service":"PraxisMed API"}` (commit `081121b`) | — |
-| 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok", "db": "ok"}}` | **PENDING** | Railway PostgreSQL not provisioned |
-| 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PENDING** | Railway PostgreSQL not provisioned |
+| 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok", "db": "ok"}}` | **PENDING** | Fake staging clinic/user not yet provisioned (Module 115) |
+| 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PASS** — exit 0; `0001_initial_schema` + `0002_password_hash` applied; 4 tables confirmed (Module 114) | — |
 | 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PENDING** | Vercel project not created |
 | 5 | CORS frontend to API | OPTIONS preflight → `Access-Control-Allow-Origin: <vercel-url>`; HTTP 200/204; no wildcard | **PENDING** | `FRONTEND_CORS_ORIGINS` not set; wiring incomplete |
 | 6 | Fake login | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned; sessionStorage populated | **PENDING** | Fake user not provisioned; no DB |
