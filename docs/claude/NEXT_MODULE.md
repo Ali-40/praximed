@@ -9,10 +9,11 @@ Modules 121 and 121B complete:
 - Railway staging migration PASS; `patient_id` column/index confirmed
 - Direct Vapi endpoint smoke with linked patient_id PASS
 
-Module 122 complete:
+Modules 122 and 122B complete:
 - `GET /appointment-requests/{id}/pre-appointment-summary` live
 - `build_pre_appointment_summary` service: structured factual brief; no AI; no diagnosis
-- 25 tests; full suite: 2665/2665 passed
+- 25 tests; full suite: 2689/2689 passed
+- Deployed smoke PASS (Module 122B): doctor cookie auth → summary with `patient_type: returning`, `suggested_next_action: Review and confirm`, safety_note present
 - Commercial acceleration mode active — clinic outreach in parallel
 
 ## Goal

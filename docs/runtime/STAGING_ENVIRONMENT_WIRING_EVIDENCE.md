@@ -117,7 +117,7 @@ Production PHI launch remains NO-GO.
 | Vapi test call creates row in DB | Appointments count reached 2 then 3 in Vercel dashboard; fake `Test Patient` rows confirmed | Dashboard displayed rows from Railway PostgreSQL — Module 118B | **PASS** |
 | Appointment row `status=new`, `action_required=True` | Rows visible with `status: new`; `priority: normal`; Confirm button visible | Module 118B dashboard evidence | **PASS** |
 | Staff Confirm flow (no auto-confirm) | Two rows updated to `status: confirmed` via dashboard Confirm button; one row remained `status: new`; no auto-confirmation observed | Module 118B dashboard evidence | **PASS** |
-| Pre-appointment summary (Module 122) | Not yet implemented | — | PENDING |
+| Pre-appointment summary (Module 122B) | `GET /appointment-requests/{id}/pre-appointment-summary` — HTTP 200; `ok: true`; `patient_type: returning`; `suggested_next_action: Review and confirm`; `safety_note` present; no diagnosis (Module 122B) | **PASS** |
 | Doctor notification (Module 123) | Not yet implemented | — | PENDING |
 | n8n staging configured (if enabled) | Not available yet | — | PENDING/DEFERRED |
 | No secrets in any evidence record | Confirmed through Module 121B | **PASS** |

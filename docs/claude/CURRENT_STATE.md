@@ -1643,3 +1643,21 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/architecture/PRE_APPOINTMENT_SUMMARY_FOUNDATION.md` (new — data sources; safety rules; API spec; suggested_next_action logic table; compatibility; what enables next: Module 123 notifications, dashboard UI, demo quality)
    - No real patient data; no secrets; no AI calls; no production PHI; fake-data staging only
    - Full backend tests: 2665/2665 passed
+
+125. Module 122B — Deployed Pre-Appointment Summary Smoke Evidence
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - Docs/static-tests only — no runtime code changes, no migrations, no secrets
+   - `GET /auth/me` → HTTP 200; role: doctor; cookie auth confirmed — **PASS**
+   - `GET /appointment-requests/ae8d53cd.../` → HTTP 200; patient_id linked; source: vapi; status: new; action_required: true — **PASS**
+   - `GET /appointment-requests/ae8d53cd.../pre-appointment-summary` → HTTP 200; ok: true — **PASS**
+   - patient_name: Summary Linked Patient (fake); patient_type: returning; suggested_next_action: Review and confirm — **PASS**
+   - safety_note present; no diagnosis; no medical advice — **PASS**
+   - Observation: patient_phone returned null — future data-normalization/input-mapping improvement; does not block 122B
+   - No password/token/cookie value/DATABASE_URL/secrets recorded
+   - Fake/non-PHI staging only; production PHI readiness: NO-GO
+   - `docs/runtime/PRE_APPOINTMENT_SUMMARY_DEPLOYED_SMOKE_EVIDENCE.md` (new)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` (updated — pre-appointment summary PASS added)
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 14 pre-appointment summary PASS added)
+   - `backend/tests/test_pre_appointment_summary_deployed_smoke_evidence_contract.py` (new — 24 static contract tests)
+   - Full backend tests: 2689/2689 passed
