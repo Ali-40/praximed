@@ -1,98 +1,83 @@
-# Sprint 16 / Module 119 — n8n Staging Workflow Wiring Evidence
+# Sprint 17 / Module 119 — Production Hardening Gap Review
 
-Status: pending manual n8n staging workflow configuration and fake-data smoke.
+Status: pending structured review of production readiness gaps identified in Architecture Checkpoint 16.
 
 ## Context
 
-Module 118B complete:
-- Vapi staging dashboard loop confirmed PASS with real deployed staging evidence
-- Appointments count reached 2 then 3 in Vercel dashboard
-- Two Test Patient rows confirmed with status: new; priority: normal; Confirm button visible
-- Staff Confirm updated two rows to status: confirmed; one row remained status: new; no auto-confirm
-- Full test suite: [see last passing run]
-- Commit: Sprint 16 / Module 118B
+Architecture Checkpoint 16 complete:
+- Sprint 16 fake-data staging core: FAKE-DATA STAGING CORE PASS
+- Full deployed loop confirmed: Vapi → Railway backend → Railway PostgreSQL → Vercel dashboard → staff Confirm
+- n8n staging: PENDING/DEFERRED
+- Production PHI readiness: NO-GO
+- Full test suite: 2468/2468 passed (+ Architecture Checkpoint 16 contract tests)
+- Commit: f602612 (Module 118B)
 
-Railway backend URL (confirmed): `https://web-production-fd91d.up.railway.app`
-Staging clinic_id (confirmed): `1a5bbc75-c1b0-4488-94aa-64b3f1c50056`
-Vercel frontend URL (confirmed): `https://praximed.vercel.app`
+## Primary Recommendation
+
+**Sprint 17 / Module 119 — Production Hardening Gap Review**
+
+Before production use, clinic demos with real patients, or onboarding real data, the
+project needs a structured review of production hardening gaps. This module produces a
+prioritized, actionable module plan for closing those gaps.
 
 ## Scope
 
-Evidence doc + static tests. No deployment by Claude.
-No real secrets. No production data. No real patient PII.
-n8n staging is optional for the initial core smoke — it is DEFERRED if not yet configured.
+Docs only. No runtime code changes. No deployment changes. No secrets. No production data.
 
-## Decision point
+## What Module 119 should deliver
 
-Before starting Module 119, the developer must decide:
+### 1. Gap inventory
 
-**Option A — Configure n8n staging now:**
-- Proceed with n8n staging workflow wiring
-- Connect n8n only to Railway staging backend
-- Use staging webhook secret (`N8N_WEBHOOK_SECRET` name only — value not recorded)
-- Fake data only — no real calendar writes, no production data
+Review each item from Architecture Checkpoint 16 Section 6 and produce a gap record:
 
-**Option B — Defer n8n staging:**
-- Mark n8n as DEFERRED in evidence docs
-- Proceed to Architecture Checkpoint 16 (Sprint 16 staging smoke review)
-- n8n staging can be revisited in a later sprint
+| Gap | Current state | Risk level | Recommended module(s) |
+|---|---|---|---|
+| Production auth/session hardening (httpOnly cookie for JWT) | sessionStorage (fake-data only; XSS-accessible) | HIGH | Module 120+ |
+| Production secrets rotation | Staging secrets still in use | HIGH | Module 120+ |
+| PHI/compliance review (GDPR/HIPAA) | Not reviewed | HIGH | Module 120+ |
+| Custom domain | Vercel/Railway default URLs | MEDIUM | Module 120+ |
+| Monitoring / logging / alerting / rollback | Not configured | MEDIUM | Module 120+ |
+| Real clinic onboarding flow | No admin workflow | MEDIUM | Module 121+ |
+| n8n staging workflow | PENDING/DEFERRED | LOW | Module 122+ (optional) |
+| UI/UX polish (Fabel 5 or equivalent) | Deferred | LOW | Separate UX sprint |
 
-If Option B is chosen, update `NEXT_MODULE.md` to:
+### 2. Ordered module plan
 
-```
-Sprint 17 / Architecture Checkpoint 16 — Sprint 16 Staging Smoke Review
-```
+Produce a recommended ordered sprint/module plan (Sprint 17+) that addresses the HIGH
+priority items before any production or PHI-bearing use.
 
-## If Option A (n8n staging):
+### 3. Production NO-GO confirmation
 
-### The developer must:
+Explicitly confirm that the following must be true before production PHI access:
 
-1. Configure the n8n staging workflow to receive a signed POST from Railway backend:
-   - Staging n8n webhook URL (no production URL)
-   - `N8N_WEBHOOK_SECRET` must match the env var on Railway backend
-   - Method: POST; signature header: `X-Signature` (HMAC-SHA256)
-
-2. Trigger a fake staging event (no real calendar writes, no real patient data)
-
-3. Confirm the n8n workflow receives and processes the fake event:
-   - n8n workflow execution status: success
-   - No production calendar write
-   - No real patient data in the n8n payload
-
-4. Confirm `GET /health/ready` → 200 (DB still healthy after n8n event)
-
-### Evidence to capture (no secrets):
-
-- n8n staging webhook URL (no secret values)
-- n8n workflow execution status: success
-- Confirmation: no production calendar write
-- Confirmation: no real patient data in n8n payload
-- `N8N_WEBHOOK_SECRET` variable name only — not the value
-- `GET /health/ready` → 200 after n8n event
-
-### Module 119 will create/update:
-
-1. `docs/runtime/N8N_STAGING_WORKFLOW_WIRING_EVIDENCE.md` (new) — PASS or DEFERRED
-2. Contract tests for n8n staging evidence
-3. Update `STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` — mark n8n PASS or DEFERRED
-4. Update `STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` — mark n8n check PASS or NOT ENABLED
-5. Update `CURRENT_STATE.md` and `NEXT_MODULE.md` → Architecture Checkpoint 16
+- httpOnly cookie auth replaces sessionStorage JWT
+- JWT_SECRET_KEY, VAPI_WEBHOOK_SECRET, DATABASE_URL rotated to fresh production secrets
+- PHI/compliance review complete
+- Railway log stream sanitized (no secrets or PII in logs)
+- Rollback path confirmed
 
 ## What not to do
 
-- Do not deploy Railway or n8n from Claude
-- Do not record the `N8N_WEBHOOK_SECRET` value
-- Do not record JWT tokens or passwords
-- Do not use real patient data in any n8n test payload
-- Do not fabricate PASS evidence
-- Do not implement httpOnly cookie auth
-- Do not change CORS implementation
+- Do not implement httpOnly cookie auth in this module (plan only)
+- Do not deploy to production
 - Do not start Fabel 5/UX sprint
+- Do not configure n8n in this module (it is the alternative path below)
+- Do not record secrets
+- Do not use real patient data
+
+## Alternative path
+
+**Sprint 16 / Module 119 — n8n Staging Workflow Wiring Evidence**
+
+Choose this instead of the Production Hardening Gap Review only if n8n is immediately
+needed for a demo or integration milestone. n8n staging does not unblock production PHI
+access. Both paths are available — the recommendation is to address production hardening
+first.
 
 ## Acceptance
 
-- `docs/runtime/N8N_STAGING_WORKFLOW_WIRING_EVIDENCE.md` created (PASS or DEFERRED with real evidence)
-- PASS only with real n8n workflow execution evidence
-- Contract tests pass
-- Full test suite passes
-- Commit: `Sprint 16 / Module 119 — n8n staging workflow wiring evidence`
+- Production hardening gap inventory created
+- Ordered module plan (Sprint 17+) produced
+- Production PHI NO-GO explicitly confirmed with gap conditions
+- Full tests pass
+- Commit: `Sprint 17 / Module 119 — Production hardening gap review`

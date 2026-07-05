@@ -1502,4 +1502,18 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` updated: checks 9–12 PASS; Section 3 Vapi rows PASS; overall CORE PASS; n8n NOT ENABLED/DEFERRED; logs/rollback PENDING
    - `backend/tests/test_vapi_staging_dashboard_loop_evidence_contract.py` (new — 25 static contract tests: evidence doc exists/PASS; endpoint URL; dashboard URL; Content-Type/X-Vapi-Service-Name/X-Vapi-Clinic-Id/X-Vapi-Scopes; X-Clinic-Ref removed; clinic UUID; Test Patient; count 2/count 3; status new/confirmed; priority normal; Confirm; fake data/no real patient/no production PHI; DATABASE_URL/token/password not recorded; n8n pending; production PHI NO-GO)
    - No runtime code changed; no secrets recorded; no real patient data; fake/non-PHI staging only
+   - Commit: f602612
    - Full backend tests: 2468/2468 passed
+
+## Architecture Checkpoint 16
+
+- Architecture Checkpoint 16 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_16_FAKE_DATA_STAGING_CORE_COMPLETION.md`
+- Result: FAKE-DATA STAGING CORE PASS
+- Sprint 16 complete (Modules 110–118B all confirmed PASS for fake-data staging core)
+- Fake-data staging backend / PostgreSQL / migrations / clinic+user / login / Vercel / CORS / browser login / dashboard / Vapi appointment capture / dashboard Confirm — all PASS
+- n8n staging: PENDING/DEFERRED
+- Production PHI readiness: NO-GO — production hardening checklist incomplete
+- `backend/tests/test_architecture_checkpoint_16_fake_data_staging_core_completion_contract.py` (new — 23 static contract tests)
+- Full backend tests: 2491/2491 passed
+- Recommended next module: Sprint 17 / Module 119 — Production Hardening Gap Review
+- Alternative: Sprint 16 / Module 119 — n8n Staging Workflow Wiring Evidence
