@@ -276,6 +276,40 @@ async def mark_callback_needed(
 # ---------------------------------------------------------------------------
 
 
+async def count_requests_for_patient(
+    pool: Any,
+    clinic_id: str,
+    patient_id: str,
+    exclude_request_id: Optional[str] = None,
+) -> int:
+    """Return the count of appointment requests for a patient, scoped to clinic_id.
+
+    ``exclude_request_id`` omits the current request so callers can compute
+    the count of *prior* requests without double-counting.
+    """
+    if exclude_request_id:
+        sql = """
+            SELECT COUNT(*) FROM appointment_requests
+            WHERE clinic_id  = $1
+              AND patient_id = $2::uuid
+              AND id        != $3::uuid
+        """
+        val = await pool.fetchval(sql, clinic_id, patient_id, exclude_request_id)
+    else:
+        sql = """
+            SELECT COUNT(*) FROM appointment_requests
+            WHERE clinic_id  = $1
+              AND patient_id = $2::uuid
+        """
+        val = await pool.fetchval(sql, clinic_id, patient_id)
+    return int(val) if val is not None else 0
+
+
+# ---------------------------------------------------------------------------
+# 8. archive_appointment_request
+# ---------------------------------------------------------------------------
+
+
 async def archive_appointment_request(
     pool: Any,
     clinic_id: str,

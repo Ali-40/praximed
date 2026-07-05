@@ -22,8 +22,10 @@ from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
 from backend.app.db.repositories import appointment_request_repo
+from backend.app.db.repositories import patient_repo
 from backend.app.modules.audit import audit_logger
 from backend.app.db.repositories.appointment_request_repo import InvalidAppointmentRequestError
+from backend.app.services.pre_appointment_summary import build_pre_appointment_summary
 from backend.app.schemas.appointment_requests import (
     AppointmentRequestAssign,
     AppointmentRequestCreate,
@@ -124,6 +126,62 @@ async def get_appointment_request(
         raise HTTPException(status_code=404, detail="Appointment request not found")
 
     return AppointmentRequestResponse(ok=True, request=row)
+
+
+@router.get("/{request_id}/pre-appointment-summary")
+async def get_pre_appointment_summary(
+    request_id: str,
+    clinic_id: str = Query(...),
+    pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_current_user),
+) -> dict:
+    """Return a structured pre-appointment brief for a linked appointment request.
+
+    Tenant isolation: clinic_id from the query param is validated against the
+    caller's auth context — cross-clinic access returns HTTP 403.
+    No diagnosis or medical advice is included in the response.
+    """
+    require_staff_clinic_access(requested_clinic_id=clinic_id, auth_context=auth)
+    try:
+        row = await appointment_request_repo.get_appointment_request_by_id(
+            pool=pool,
+            clinic_id=clinic_id,
+            request_id=request_id,
+        )
+    except Exception as exc:
+        logger.exception("Unexpected error fetching appointment request for summary")
+        raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Appointment request not found")
+
+    linked_patient = None
+    previous_request_count = 0
+    patient_id = row.get("patient_id")
+
+    if patient_id:
+        try:
+            linked_patient = await patient_repo.get_patient_by_id(
+                pool=pool,
+                clinic_id=clinic_id,
+                patient_id=str(patient_id),
+            )
+            previous_request_count = await appointment_request_repo.count_requests_for_patient(
+                pool=pool,
+                clinic_id=clinic_id,
+                patient_id=str(patient_id),
+                exclude_request_id=request_id,
+            )
+        except Exception as exc:
+            logger.exception("Unexpected error fetching patient for summary")
+            raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
+
+    summary = build_pre_appointment_summary(
+        appointment_request=row,
+        patient=linked_patient,
+        previous_request_count=previous_request_count,
+    )
+    return {"ok": True, "summary": summary}
 
 
 @router.patch("/{request_id}/status", response_model=AppointmentRequestResponse)

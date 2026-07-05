@@ -1631,3 +1631,15 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 13 patient/appointment linking PASS added; migration head updated to 0003; commercial MVP data foundation improved)
    - `backend/tests/test_patient_appointment_linking_staging_migration_evidence_contract.py` (new — 21 static contract tests)
    - Full backend tests: 2640/2640 passed
+
+124. Module 122 — Pre-Appointment Summary Foundation
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - `backend/app/services/__init__.py` (new — services package init)
+   - `backend/app/services/pre_appointment_summary.py` (new — pure service: `build_pre_appointment_summary(appointment_request, patient, previous_request_count)` → structured dict; rule-based `suggested_next_action`; no AI, no DB, no diagnosis, no medical advice; `patient_type` "returning"/"new" from patient_id presence)
+   - `backend/app/db/repositories/appointment_request_repo.py` (updated — `count_requests_for_patient` added: scoped COUNT by clinic_id + patient_id, optional exclude_request_id)
+   - `backend/app/api/routes/appointment_requests.py` (updated — `GET /appointment-requests/{id}/pre-appointment-summary` added; `patient_repo` imported; `build_pre_appointment_summary` imported; tenant isolation via `require_staff_clinic_access`; 404 on missing request; 403 on wrong clinic; 401 on missing auth)
+   - `backend/tests/test_pre_appointment_summary.py` (new — 25 tests: 18 service unit tests (patient_name/phone/type/reason/metadata/previous_count/suggested_next_action/no-diagnosis/no-medical-advice/no-treatment/safety_note/no-patient-id-fallback) + 7 route integration tests (200/404/401/403/required-fields/no-patient-id/no-diagnosis))
+   - `docs/architecture/PRE_APPOINTMENT_SUMMARY_FOUNDATION.md` (new — data sources; safety rules; API spec; suggested_next_action logic table; compatibility; what enables next: Module 123 notifications, dashboard UI, demo quality)
+   - No real patient data; no secrets; no AI calls; no production PHI; fake-data staging only
+   - Full backend tests: 2665/2665 passed
