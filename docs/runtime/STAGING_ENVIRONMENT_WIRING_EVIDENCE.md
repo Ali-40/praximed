@@ -119,8 +119,10 @@ Production PHI launch remains NO-GO.
 | Staff Confirm flow (no auto-confirm) | Two rows updated to `status: confirmed` via dashboard Confirm button; one row remained `status: new`; no auto-confirmation observed | Module 118B dashboard evidence | **PASS** |
 | Pre-appointment summary (Module 122B) | `GET /appointment-requests/{id}/pre-appointment-summary` — HTTP 200; `ok: true`; `patient_type: returning`; `suggested_next_action: Review and confirm`; `safety_note` present; no diagnosis (Module 122B) | **PASS** |
 | Internal doctor notification DB foundation (Module 124) | `notification_count=1`; `clinic_id` scoped; `related_resource_id = a7d25ac1-31a8-4179-904e-6a06617e040f`; `channel: internal`; no external delivery (Module 124) | **PASS** |
-| Dashboard notification UI display | Not yet wired — pending Module 125 | — | PENDING |
+| Dashboard summary UI (Module 125B) | View summary / Hide summary; inline summary panel; Patient/Type/Reason/Urgency/Prior visits/Suggested action/Safety note all visible; Confirm compatible; deployed commit `ab08b7a` | **PASS** |
+| Dashboard notification UI display | Internal notification DB proven (Module 124); notification list display in dashboard UI not separately verified in Module 125B browser smoke — partially pending | PARTIALLY PENDING |
 | External phone/email/SMS/WhatsApp delivery | Not implemented — future module | — | PENDING |
+| Fabel 5 premium UI/UX polish | Not yet implemented — Sprint 18 / Module 126 | — | PENDING |
 | n8n staging configured (if enabled) | Not available yet | — | PENDING/DEFERRED |
 | No secrets in any evidence record | Confirmed through Module 121B | **PASS** |
 | No real patient data in staging | Confirmed — fake/non-PHI data only | **PASS** |

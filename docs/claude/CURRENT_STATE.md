@@ -1688,6 +1688,7 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: 2709/2709 passed
 
 129. Module 125 — Dashboard Notification and Summary UI Foundation
+   - Commit: ab08b7a
    - Date: 2026-07-05
    - Sprint 17 / Commercial MVP build track
    - `frontend/lib/api.ts` (updated — `PreAppointmentSummary` interface added; `fetchPreAppointmentSummary(requestId, clinicId)` added; calls GET /appointment-requests/{id}/pre-appointment-summary; uses shared apiFetch with credentials: include)
@@ -1696,6 +1697,31 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/architecture/DASHBOARD_NOTIFICATION_AND_SUMMARY_UI_FOUNDATION.md` (new)
    - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
    - Full backend tests: 2754/2754 passed
+
+130. Module 125B — Deployed Dashboard Notification and Summary UI Smoke Evidence
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - Docs/static-tests only — no runtime code changes, no migrations, no secrets
+   - Vercel production deployment: Ready
+   - Deployed commit: ab08b7a
+   - Frontend URL: https://praximed.vercel.app
+   - Dashboard URL: https://praximed.vercel.app/dashboard
+   - Appointments count visible: 9 — **PASS**
+   - Doctor Notification Patient rows visible — **PASS**
+   - "View summary" button visible on appointment rows — **PASS**
+   - Inline summary panel opens after click — **PASS**
+   - "Hide summary" button visible after panel opens — **PASS**
+   - Summary panel fields: Patient, Type, Reason, Urgency, Prior visits, Suggested action, Safety note — all **PASS**
+   - Safety note: "This summary contains no medical advice or diagnosis. All actions require doctor or staff review and confirmation." — **PASS**
+   - Confirm button remains visible and compatible — **PASS**
+   - Confirmed status badges remain visible — **PASS**
+   - Notification list display not separately verified in this browser smoke — PARTIALLY PENDING
+   - No diagnosis; no medical advice; no real patient data; no secrets; fake-data staging only; production PHI NO-GO
+   - `docs/runtime/DASHBOARD_NOTIFICATION_AND_SUMMARY_UI_DEPLOYED_SMOKE_EVIDENCE.md` (new)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` (updated — dashboard summary UI PASS; Fabel 5 PENDING)
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 16 dashboard summary UI PASS added)
+   - `backend/tests/test_dashboard_notification_and_summary_ui_deployed_smoke_evidence_contract.py` (new — 25 static contract tests)
+   - Full backend tests: 2779/2779 passed
 
 128. Module 124 — Deployed Doctor Notification Smoke Evidence
    - Date: 2026-07-05
