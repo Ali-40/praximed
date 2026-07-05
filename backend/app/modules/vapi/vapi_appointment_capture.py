@@ -13,11 +13,14 @@ action_required=True so clinic staff can review before confirming.
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from backend.app.db.repositories import appointment_request_repo
 from backend.app.db.repositories import patient_repo
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -201,13 +204,18 @@ async def capture_vapi_appointment_request(
     )
 
     notification_created = False
+    notification_error: Optional[str] = None
+    # str() converts asyncpg uuid.UUID objects to plain strings before passing
+    # to notification_repo which stores related_resource_id as TEXT.
+    notification_request_id: Optional[str] = (
+        str(row["id"]) if isinstance(row, dict) and row.get("id") is not None else None
+    )
     try:
         from backend.app.modules.notifications import notification_router  # local import avoids circulars
-        request_id = row.get("id") if isinstance(row, dict) else None
         await notification_router.create_appointment_request_notification(
             pool=pool,
             clinic_id=clinic_id,
-            request_id=request_id,
+            request_id=notification_request_id,
             patient_name=patient_name,
             urgency_level=urgency_level,
             reason=reason,
@@ -215,7 +223,14 @@ async def capture_vapi_appointment_request(
             raw_payload=raw_payload,
         )
         notification_created = True
-    except Exception:
+    except Exception as exc:
+        notification_error = f"{type(exc).__name__}: {exc}"
+        logger.error(
+            "Notification creation failed for clinic_id=%s request_id=%s: %s",
+            clinic_id,
+            notification_request_id,
+            notification_error,
+        )
         notification_created = False
 
     return {
@@ -225,4 +240,5 @@ async def capture_vapi_appointment_request(
         "request":              row,
         "message":              message,
         "notification_created": notification_created,
+        "notification_error":   notification_error,
     }

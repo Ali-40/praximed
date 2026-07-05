@@ -1,6 +1,6 @@
-# Doctor Notification System Foundation — PraxisMed Sprint 17 / Module 123
+# Doctor Notification System Foundation — PraxisMed Sprint 17 / Module 123 / 123A
 
-**Status:** Implemented — internal notification record only. No external delivery.
+**Status:** Implemented and blocker-fixed — internal notification record only. No external delivery.
 **Date:** 2026-07-05
 **Safety:** No diagnosis. No medical advice. Fake/non-PHI staging data only. Production PHI NO-GO.
 
@@ -18,6 +18,37 @@ This foundation enables:
 - Dashboard alert badges and notification lists (current)
 - Future: email/SMS/WhatsApp/push delivery when hardening is complete
 - Future: doctor phone call notification via an outbound Vapi call
+
+---
+
+## 1A. Module 123A — Blocker Fix
+
+**Root cause:** `appointment_request_repo.create_appointment_request` returns
+`dict(asyncpg_record)`. asyncpg represents UUID columns as `uuid.UUID` Python
+objects, not strings. The notification block passed `row.get("id")` (a `uuid.UUID`)
+directly as `related_resource_id` to the notification INSERT, where the column type
+is `TEXT`. asyncpg sends a UUID-OID typed parameter; PostgreSQL may reject it for a
+TEXT column if the implicit UUID→TEXT cast is not applied in the binary protocol
+parameter context — this caused a silent exception that was swallowed by
+`except Exception: notification_created = False` with no logging.
+
+**Fixes applied in Module 123A:**
+
+1. `str(row["id"])` — convert asyncpg `uuid.UUID` to plain `str` before passing
+   as `related_resource_id` (TEXT column). asyncpg sends str with text OID → no
+   type mismatch.
+
+2. `logger.error(...)` — the exception is now logged at ERROR level. If another
+   cause exists, it will appear in Railway logs and is no longer invisible.
+
+3. `notification_error` — added to the return dict of
+   `capture_vapi_appointment_request`. `None` on success; `"ExcType: message"` on
+   failure. Allows tests and observability to distinguish success from failure.
+
+**Why tests passed before the fix:** All tests mocked `create_appointment_request_notification`
+at the module level — the real asyncpg INSERT call was never exercised. The fix adds
+test 16 which injects a `uuid.UUID` as the row id and asserts the notification call
+receives a `str`.
 
 ---
 

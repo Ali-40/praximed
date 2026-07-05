@@ -1675,3 +1675,14 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No diagnosis, no medical advice, no secrets, no real patient data
    - Fake/non-PHI staging only; production PHI readiness: NO-GO
    - Full backend tests: 2704/2704 passed
+
+127. Module 123A — Doctor Notification Creation Blocker Fix
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - Root cause: asyncpg returns UUID columns as uuid.UUID objects (not str); passing uuid.UUID to related_resource_id TEXT column causes a binary-protocol type-OID mismatch in PostgreSQL that failed silently (except Exception: notification_created = False with no logging)
+   - Why tests passed: create_appointment_request_notification was fully mocked; real DB path never exercised
+   - `backend/app/modules/vapi/vapi_appointment_capture.py` (updated — added logger; str(row["id"]) conversion before passing request_id to notification; logger.error in except block; notification_error added to return dict)
+   - `backend/tests/test_doctor_notification_foundation.py` (updated — 5 new tests 16–20: request_id is str not uuid.UUID; notification_error None on success; notification_error populated on failure; logger.error called on failure; notification_repo receives str related_resource_id)
+   - `docs/architecture/DOCTOR_NOTIFICATION_SYSTEM_FOUNDATION.md` (updated — Module 123A section added: root cause, fix summary, why tests passed before fix)
+   - No real patient data; no secrets; fake-data staging only; production PHI NO-GO
+   - Full backend tests: 2709/2709 passed
