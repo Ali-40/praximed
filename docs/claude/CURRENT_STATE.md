@@ -1475,3 +1475,18 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Sprint 16 in progress (Modules 110–117 complete)
 - Frontend/CORS/browser login/dashboard PASS; Vapi staging dashboard loop still PENDING
 - Next: Module 118 — Vapi Staging Dashboard Loop Evidence
+
+116. Module 118A — Vapi Staging Tenant Config Blocker Fix
+   - Date: 2026-07-05
+   - Vapi test call attempted in Module 118: Vapi UI showed "completed successfully" but staging_count=0; no DB row was inserted
+   - Module 118A diagnostic confirmed three blockers:
+     (1) X-Vapi-Service-Name header missing — get_machine_auth_context returns HTTP 401
+     (2) X-Clinic-Ref is not a recognized clinic ID alias — must use X-Vapi-Clinic-Id
+     (3) No tenant config on disk for staging UUID — ConfigNotFoundError → HTTP 404
+   - Fix applied: `backend/tenants/configs/1a5bbc75-c1b0-4488-94aa-64b3f1c50056/clinic_config.json` (new)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` updated: Vapi rows updated to BLOCKED; diagnostic findings recorded; correct required headers documented; staging_count=0 and "no DB row was inserted" recorded
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` updated: check 10 updated to BLOCKED with Module 118A evidence; overall BLOCKED/PENDING maintained
+   - `backend/tests/test_vapi_staging_tenant_config_blocker_fix_contract.py` (new — 20 static contract tests: tenant config exists/tenant_id/clinic_name/timezone/appointment_booking; wiring doc Vapi not PASS/staging_count=0/completed-but-no-row/Content-Type/X-Vapi-Service-Name/X-Vapi-Clinic-Id/X-Vapi-Scopes/X-Clinic-Ref/no-real-patient/fake-non-PHI/no-secrets; smoke doc blocked/Vapi not PASS)
+   - No runtime app logic changed; no secrets recorded; no real patient data; commit 40c3d7a (Module 117); tenant config blocker fix only
+   - Vapi dashboard loop still PENDING — requires Railway redeploy + correct Vapi headers + direct endpoint smoke + retest
+   - Full backend tests: 2443/2443 passed

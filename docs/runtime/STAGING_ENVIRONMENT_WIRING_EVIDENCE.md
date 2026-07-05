@@ -1,8 +1,8 @@
 # Staging Environment Wiring Evidence — PraxisMed
 
-**Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 117
-**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi/n8n PENDING
+**Date:** 2026-07-05
+**Sprint:** Sprint 16 / Module 118A
+**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi test attempted (Vapi UI "completed successfully" but staging_count=0; no DB row was inserted — Module 118A diagnostic); tenant config fix applied — Module 118A; Vapi/n8n PENDING
 
 ---
 
@@ -36,7 +36,7 @@ This document will be updated to PASS when:
 6. ~~`FRONTEND_CORS_ORIGINS` is set to exact Vercel URL in Railway backend~~ **PASS**
 7. ~~CORS preflight passes (no wildcard; `Access-Control-Allow-Origin` matches Vercel URL)~~ **PASS**
 8. ~~Fake login succeeds (JWT in sessionStorage; dashboard loads)~~ **PASS**
-9. Vapi test assistant URL/headers are set and a test call creates a row in the DB ← next step
+9. Vapi test assistant URL/headers are set and a test call creates a row in the DB ← blocker identified; tenant config fix applied (Module 118A); retest pending (Module 118B)
 10. Sanitized evidence is captured for each step above
 
 ---
@@ -56,7 +56,7 @@ This document will be updated to PASS when:
 | Vercel frontend URL known | **PASS** | `https://praximed.vercel.app` |
 | `NEXT_PUBLIC_API_BASE_URL` set in Vercel | **PASS** | Points to `https://web-production-fd91d.up.railway.app` |
 | `FRONTEND_CORS_ORIGINS` set in Railway | **PASS** | Set to `https://praximed.vercel.app` (no wildcard) |
-| Vapi test assistant configured | **PENDING** | Requires Railway backend URL and staging clinic UUID — Module 118 |
+| Vapi test assistant configured | **BLOCKED** | Module 118A: Vapi UI "completed successfully" but staging_count=0; no DB row was inserted; headers incorrect; tenant config missing (fixed — Module 118A); retest in Module 118B |
 | n8n staging workflow configured | **PENDING / DEFERRED** | Optional for initial smoke |
 
 **Repo-side readiness (no external services required):**
@@ -108,11 +108,12 @@ This document will be updated to PASS when:
 | CORS from browser | Browser login succeeded without CORS error — CORS is working | **PASS** |
 | Fake login succeeds (JWT returned) | Confirmed — browser login HTTP 200; token present (REDACTED) | **PASS** |
 | Dashboard loads after login | `https://praximed.vercel.app/dashboard` — all four sections visible | **PASS** |
-| Vapi test assistant server URL set | Not available yet | Expected: Railway URL + `/vapi/tools/capture-appointment-request` | PENDING |
-| Vapi `X-Vapi-Scopes: vapi:tool` confirmed (singular) | Not available yet | — | PENDING |
-| Vapi test call creates row in DB | Not available yet | — | PENDING |
-| Appointment row `status=new`, `action_required=True` | Not available yet | — | PENDING |
-| Staff Confirm flow (no auto-confirm) | Not available yet | — | PENDING |
+| Vapi test assistant server URL set | Module 118A: URL set (`https://web-production-fd91d.up.railway.app/vapi/tools/capture-appointment-request`); headers incorrect | Required headers: `Content-Type: application/json`, `X-Vapi-Service-Name: vapi`, `X-Vapi-Clinic-Id: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056`, `X-Vapi-Scopes: vapi:tool`; remove `X-Clinic-Ref` | BLOCKED — Module 118B |
+| Vapi `X-Vapi-Scopes: vapi:tool` confirmed (singular) | X-Vapi-Scopes was set but other required headers were missing or wrong | `X-Vapi-Service-Name` was absent; `X-Clinic-Ref` is not a recognized alias — must use `X-Vapi-Clinic-Id` | BLOCKED — Module 118B |
+| Vapi staging tenant config for UUID | Missing — caused ConfigNotFoundError (HTTP 404) | `backend/tenants/configs/1a5bbc75-c1b0-4488-94aa-64b3f1c50056/clinic_config.json` created — Module 118A; Railway redeploy required | FIXED — awaiting redeploy |
+| Vapi test call creates row in DB | Module 118A: Vapi UI "completed successfully" but staging_count=0; no DB row was inserted | Vapi treats HTTP 4xx as "completed"; root causes: wrong headers + missing tenant config (tenant config fixed — Module 118A) | BLOCKED — Module 118B |
+| Appointment row `status=new`, `action_required=True` | Not confirmed — staging_count=0 | — | PENDING |
+| Staff Confirm flow (no auto-confirm) | Not confirmed | — | PENDING |
 | n8n staging configured (if enabled) | Not available yet | — | PENDING/DEFERRED |
 | No secrets in any evidence record | Confirmed through Module 117 | **PASS** |
 | No real patient data in staging | Confirmed — dashboard shows zero rows; footer notes fake data | **PASS** |
@@ -137,7 +138,7 @@ All require manual developer action before the corresponding evidence row can be
 | 10 | `NEXT_PUBLIC_API_BASE_URL` not yet set in Vercel | **HIGH** | **RESOLVED — Module 117** |
 | 11 | `FRONTEND_CORS_ORIGINS` not yet set in Railway | **HIGH** | **RESOLVED — Module 117** |
 | 12 | Railway backend not redeployed after `FRONTEND_CORS_ORIGINS` set | **HIGH** | **RESOLVED — Module 117** |
-| 13 | Vapi test assistant not yet configured with Railway URL/headers | MEDIUM | PENDING — Module 118 |
+| 13 | Vapi headers incorrect: `X-Vapi-Service-Name` missing; `X-Clinic-Ref` not a recognized alias (must use `X-Vapi-Clinic-Id`); staging tenant config was missing (fixed — Module 118A) | MEDIUM | BLOCKED — Module 118B |
 | 14 | n8n staging workflow not yet configured | LOW (optional for initial smoke) | PENDING/DEFERRED |
 
 ---
@@ -173,7 +174,7 @@ following steps in order and capture evidence for each:
 6. **`NEXT_PUBLIC_API_BASE_URL` confirmed** — env var name set in Vercel; Vercel redeployed
 7. **CORS/API wiring proof** — `FRONTEND_CORS_ORIGINS` set; OPTIONS preflight → 200/204; `Access-Control-Allow-Origin` matches Vercel URL exactly; no wildcard
 8. **Fake login proof** — credentials accepted; JWT in sessionStorage; dashboard loads
-9. **Vapi staging tool proof** — Vapi test call → 200; row in DB; `status=new`; `action_required=True`
+9. **Vapi staging tool proof (Module 118B)** — correct Vapi headers (`Content-Type`, `X-Vapi-Service-Name: vapi`, `X-Vapi-Clinic-Id`, `X-Vapi-Scopes: vapi:tool`; remove `X-Clinic-Ref`); push tenant config fix; Railway redeploy; direct endpoint smoke → 200; DB check `staging_count > 0`; `status=new`; `action_required=True`
 10. **Staff Confirm proof** — no auto-confirm; staff action required for status change
 11. **n8n staging proof (if enabled)** — staging endpoint receives signed POST; no production calendar write
 

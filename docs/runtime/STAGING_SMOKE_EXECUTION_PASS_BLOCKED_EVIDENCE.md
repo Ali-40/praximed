@@ -1,8 +1,8 @@
 # Staging Smoke Execution PASS/BLOCKED Evidence — PraxisMed
 
-**Date:** 2026-07-04
-**Sprint:** Sprint 16 / Module 117
-**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi/n8n dashboard loop PENDING
+**Date:** 2026-07-05
+**Sprint:** Sprint 16 / Module 118A
+**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi dashboard loop BLOCKED (staging_count=0; no DB row was inserted — Module 118A diagnostic; tenant config fix applied); n8n PENDING
 
 ---
 
@@ -38,9 +38,14 @@ No production secrets. No fabricated success.
 **Overall result: BLOCKED/PENDING**
 
 Railway backend service (Module 112 PASS), Railway PostgreSQL, and migrations
-(Module 114 PASS) are confirmed. Staging fake clinic/user, Vercel frontend, CORS
-wiring, Vapi, and n8n remain PENDING. Overall staging smoke cannot be marked PASS
-until all smoke checklist steps in Section 4 are confirmed with real evidence.
+(Module 114 PASS) are confirmed. Staging fake clinic/user (Module 115 PASS),
+Vercel frontend, CORS wiring, browser login, and dashboard (Module 117 PASS) are
+confirmed. Vapi dashboard loop is BLOCKED: Vapi UI showed "completed successfully"
+but staging_count=0; no DB row was inserted. Module 118A diagnostic found wrong
+headers and missing tenant config; tenant config fix applied in Module 118A. Vapi
+dashboard loop retest pending in Module 118B. n8n remains PENDING. Overall staging
+smoke cannot be marked PASS until all smoke checklist steps in Section 4 are
+confirmed with real evidence.
 
 Sprint 15/16 runbooks confirmed READY:
 - Module 105: Railway backend service creation runbook (READY)
@@ -93,7 +98,7 @@ All are PENDING because no staging services exist at this time.
 | 7 | Protected dashboard | `/dashboard` returns 200; all four sections render | **PASS** — `https://praximed.vercel.app/dashboard` loaded; Appointments/Patients/Notifications/Consultations all visible (count 0) (Module 117) | — |
 | 8 | Dashboard sections render | Appointment cards / empty state visible; no 500 errors | **PASS** — all four sections showed zero-row empty states; footer confirms fake data (Module 117) | — |
 | 9 | Staff Confirm existing appointment | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff-initiated only | **PENDING** | No existing rows; no DB |
-| 10 | Vapi test assistant fake call | Vapi initiates POST to `/vapi/tools/capture-appointment-request` → HTTP 200; tool returns appointment data | **PENDING** | Vapi test assistant not configured for staging |
+| 10 | Vapi test assistant fake call | Vapi initiates POST to `/vapi/tools/capture-appointment-request` → HTTP 200; tool returns appointment data | **BLOCKED — Module 118B** | Module 118A: Vapi UI "completed successfully" but staging_count=0; no DB row was inserted; wrong headers + missing tenant config identified; tenant config fix applied — awaiting Railway redeploy and Vapi header correction |
 | 11 | Vapi-created row in dashboard | New `appointment_requests` row visible with `status=new` | **PENDING** | Requires Vapi call |
 | 12 | Staff Confirm Vapi row | Row status updates to `confirmed` after staff PATCH; `action_required` becomes `False` | **PENDING** | Requires Vapi row |
 | 13 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
@@ -125,7 +130,7 @@ staging deployment.
 | Wiring runbook | `docs/deployment/STAGING_ENVIRONMENT_WIRING_RUNBOOK.md` | READY |
 | DB migration/seed strategy | `docs/deployment/STAGING_DB_MIGRATION_AND_SEED_STRATEGY.md` | READY |
 | Smoke runbook | `docs/deployment/DEPLOYMENT_SMOKE_RUNBOOK.md` | READY |
-| All backend tests | `backend/tests/` | READY — 2237/2237 passed |
+| All backend tests | `backend/tests/` | READY — 2424/2424 passed (Module 117) |
 
 ---
 

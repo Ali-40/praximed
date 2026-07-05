@@ -1,0 +1,16 @@
+{
+  "tenant_id": "1a5bbc75-c1b0-4488-94aa-64b3f1c50056",
+  "clinic_name": "Staging Fake Clinic",
+  "language": "de",
+  "country": "AT",
+  "timezone": "Europe/Vienna",
+  "ai_persona_name": "Test",
+  "ai_tone": "professional",
+  "specialties": ["Allgemeinmedizin"],
+  "features": {
+    "appointment_booking": true,
+    "sms_reminders": false,
+    "prescription_renewal": false,
+    "lab_result_notifications": false
+  }
+}
