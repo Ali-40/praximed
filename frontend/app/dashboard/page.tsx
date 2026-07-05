@@ -2,6 +2,7 @@
 
 // Dashboard page — PraxisMed Sprint 11 / Module 81
 // Updated Sprint 17 / Module 120 — cookie-based session; no token/sessionStorage.
+// Updated Sprint 17 / Module 125 — notifications show message+status; appointments have View summary toggle.
 // Module 81: Confirm action on appointment request rows (status === 'new' only).
 // Module 79: Visual polish — header subtitle, count pills, badge tokens, footer.
 
@@ -14,10 +15,12 @@ import {
   fetchPatients,
   fetchNotifications,
   fetchConsultations,
+  fetchPreAppointmentSummary,
   AppointmentRequest,
   Patient,
   Notification,
   ConsultationSession,
+  PreAppointmentSummary,
 } from '@/lib/api'
 
 // ---------------------------------------------------------------------------
@@ -89,6 +92,10 @@ export default function DashboardPage() {
   const [confirmingIds, setConfirmingIds] = useState<Set<string>>(new Set())
   const [apptActionError, setApptActionError] = useState<string | null>(null)
 
+  // Pre-appointment summary state: open row id + fetched summaries cache.
+  const [summaryOpenId, setSummaryOpenId] = useState<string | null>(null)
+  const [summaries, setSummaries] = useState<Record<string, PreAppointmentSummary | 'loading' | 'error'>>({})
+
   useEffect(() => {
     getMe().then((user) => {
       if (!user) {
@@ -143,6 +150,23 @@ export default function DashboardPage() {
         next.delete(requestId)
         return next
       })
+    }
+  }
+
+  async function handleViewSummary(appt: AppointmentRequest) {
+    if (!clinicId) return
+    if (summaryOpenId === appt.id) {
+      setSummaryOpenId(null)
+      return
+    }
+    setSummaryOpenId(appt.id)
+    if (summaries[appt.id]) return
+    setSummaries((prev) => ({ ...prev, [appt.id]: 'loading' }))
+    try {
+      const summary = await fetchPreAppointmentSummary(appt.id, clinicId)
+      setSummaries((prev) => ({ ...prev, [appt.id]: summary }))
+    } catch {
+      setSummaries((prev) => ({ ...prev, [appt.id]: 'error' }))
     }
   }
 
@@ -245,35 +269,95 @@ export default function DashboardPage() {
           )}
           {!apptLoading && !apptError && appointments.length > 0 && (
             <ul data-state="list" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {appointments.map((appt) => (
-                <li key={appt.id} style={rowStyle}>
-                  <span style={{ flex: 1, fontWeight: 500 }}>
-                    {appt.patient_name ?? '—'}
-                  </span>
-                  <span style={badgePillStyle(appt.status)}>{appt.status}</span>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    {appt.urgency_level}
-                  </span>
-                  {appt.status === 'new' && (
-                    <button
-                      data-action="confirm"
-                      onClick={() => handleConfirm(appt.id)}
-                      disabled={confirmingIds.has(appt.id)}
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '2px 10px',
-                        borderRadius: 4,
-                        border: '1px solid var(--badge-green-text)',
-                        background: confirmingIds.has(appt.id) ? 'var(--color-border)' : 'var(--badge-green-bg)',
-                        color: confirmingIds.has(appt.id) ? 'var(--color-text-muted)' : 'var(--badge-green-text)',
-                        cursor: confirmingIds.has(appt.id) ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {confirmingIds.has(appt.id) ? 'Confirming…' : 'Confirm'}
-                    </button>
-                  )}
-                </li>
-              ))}
+              {appointments.map((appt) => {
+                const summaryEntry = summaries[appt.id]
+                const isOpen = summaryOpenId === appt.id
+                return (
+                  <li key={appt.id} style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '0.25rem' }}>
+                    <div style={{ ...rowStyle, borderBottom: 'none' }}>
+                      <span style={{ flex: 1, fontWeight: 500 }}>
+                        {appt.patient_name ?? '—'}
+                      </span>
+                      <span style={badgePillStyle(appt.status)}>{appt.status}</span>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                        {appt.urgency_level}
+                      </span>
+                      <button
+                        data-action="view-summary"
+                        onClick={() => handleViewSummary(appt)}
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '2px 10px',
+                          borderRadius: 4,
+                          border: '1px solid var(--color-border)',
+                          background: isOpen ? 'var(--color-surface)' : '#fff',
+                          color: 'var(--color-text-muted)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {isOpen ? 'Hide summary' : 'View summary'}
+                      </button>
+                      {appt.status === 'new' && (
+                        <button
+                          data-action="confirm"
+                          onClick={() => handleConfirm(appt.id)}
+                          disabled={confirmingIds.has(appt.id)}
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '2px 10px',
+                            borderRadius: 4,
+                            border: '1px solid var(--badge-green-text)',
+                            background: confirmingIds.has(appt.id) ? 'var(--color-border)' : 'var(--badge-green-bg)',
+                            color: confirmingIds.has(appt.id) ? 'var(--color-text-muted)' : 'var(--badge-green-text)',
+                            cursor: confirmingIds.has(appt.id) ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {confirmingIds.has(appt.id) ? 'Confirming…' : 'Confirm'}
+                        </button>
+                      )}
+                    </div>
+                    {isOpen && (
+                      <div
+                        data-state="summary-panel"
+                        style={{
+                          margin: '0.25rem 0 0.5rem 0',
+                          padding: '0.75rem',
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 4,
+                          fontSize: '0.8rem',
+                          color: 'var(--color-text)',
+                        }}
+                      >
+                        {summaryEntry === 'loading' && (
+                          <span style={{ color: 'var(--color-text-muted)' }}>Loading summary…</span>
+                        )}
+                        {summaryEntry === 'error' && (
+                          <span style={{ color: 'var(--color-danger)' }}>Could not load summary. Please try again.</span>
+                        )}
+                        {summaryEntry && summaryEntry !== 'loading' && summaryEntry !== 'error' && (
+                          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '0.25rem 0.75rem', margin: 0 }}>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Patient</dt>
+                            <dd style={{ margin: 0 }}>{summaryEntry.patient_name}</dd>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Type</dt>
+                            <dd style={{ margin: 0 }}>{summaryEntry.patient_type}</dd>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Reason</dt>
+                            <dd style={{ margin: 0 }}>{summaryEntry.reason ?? '—'}</dd>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Urgency</dt>
+                            <dd style={{ margin: 0 }}>{summaryEntry.urgency_level}</dd>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Prior visits</dt>
+                            <dd style={{ margin: 0 }}>{summaryEntry.previous_request_count}</dd>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Suggested action</dt>
+                            <dd style={{ margin: 0 }}>{summaryEntry.suggested_next_action}</dd>
+                            <dt style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Safety note</dt>
+                            <dd style={{ margin: 0, color: 'var(--color-text-muted)' }}>{summaryEntry.safety_note}</dd>
+                          </dl>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
           {apptActionError && (
@@ -349,17 +433,40 @@ export default function DashboardPage() {
           )}
           {!notifLoading && !notifError && notifications.length > 0 && (
             <ul data-state="list" style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {notifications.map((notif) => (
-                <li key={notif.id} style={rowStyle}>
-                  <span style={{ flex: 1, fontWeight: 500 }}>
-                    {notif.title ?? '—'}
-                  </span>
-                  <span style={badgePillStyle(notif.priority)}>{notif.priority ?? '—'}</span>
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
-                    {notif.notification_type ?? '—'}
-                  </span>
-                </li>
-              ))}
+              {notifications.map((notif) => {
+                const truncatedMsg = notif.message
+                  ? notif.message.length > 100
+                    ? notif.message.slice(0, 100) + '…'
+                    : notif.message
+                  : null
+                const isPending = notif.status === 'pending'
+                return (
+                  <li
+                    key={notif.id}
+                    data-notification-status={notif.status}
+                    style={{
+                      ...rowStyle,
+                      alignItems: 'flex-start',
+                      flexDirection: 'column',
+                      gap: '0.25rem',
+                      background: isPending ? 'var(--color-surface)' : undefined,
+                      padding: isPending ? '0.5rem' : '0.5rem 0',
+                      borderRadius: isPending ? 4 : undefined,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%' }}>
+                      <span style={{ flex: 1, fontWeight: 500 }}>{notif.title ?? '—'}</span>
+                      <span style={badgePillStyle(notif.status ?? undefined)}>{notif.status ?? '—'}</span>
+                      <span style={badgePillStyle(notif.priority)}>{notif.priority ?? '—'}</span>
+                    </div>
+                    {truncatedMsg && (
+                      <span data-notification-message style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        {truncatedMsg}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </section>

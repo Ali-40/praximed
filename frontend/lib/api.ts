@@ -162,3 +162,42 @@ export async function fetchNotifications(
   const data = (await resp.json()) as { ok: boolean; notifications: Notification[] }
   return data.notifications ?? []
 }
+
+// ---------------------------------------------------------------------------
+// Pre-appointment summary — Sprint 17 / Module 125
+// ---------------------------------------------------------------------------
+
+export interface PreAppointmentSummary {
+  request_id: string
+  clinic_id: string
+  patient_name: string
+  patient_phone: string | null
+  patient_type: string
+  previous_request_count: number
+  reason: string | null
+  preferred_starts_at: string | null
+  preferred_ends_at: string | null
+  source: string
+  status: string
+  action_required: boolean
+  urgency_level: string
+  suggested_next_action: string
+  generated_at: string
+  safety_note: string
+}
+
+// Fetches GET /appointment-requests/{requestId}/pre-appointment-summary?clinic_id=<clinicId>.
+// Returns the structured safe summary dict. Never contains diagnosis or medical advice.
+export async function fetchPreAppointmentSummary(
+  requestId: string,
+  clinicId: string,
+): Promise<PreAppointmentSummary> {
+  const resp = await apiFetch(
+    `/appointment-requests/${encodeURIComponent(requestId)}/pre-appointment-summary?clinic_id=${encodeURIComponent(clinicId)}`,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load pre-appointment summary (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; summary: PreAppointmentSummary }
+  return data.summary
+}

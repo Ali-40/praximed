@@ -1687,6 +1687,16 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No real patient data; no secrets; fake-data staging only; production PHI NO-GO
    - Full backend tests: 2709/2709 passed
 
+129. Module 125 — Dashboard Notification and Summary UI Foundation
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - `frontend/lib/api.ts` (updated — `PreAppointmentSummary` interface added; `fetchPreAppointmentSummary(requestId, clinicId)` added; calls GET /appointment-requests/{id}/pre-appointment-summary; uses shared apiFetch with credentials: include)
+   - `frontend/app/dashboard/page.tsx` (updated — imports fetchPreAppointmentSummary, PreAppointmentSummary; summaryOpenId/summaries state; handleViewSummary: toggle open/close, fetch on first open, cache; appointment rows have "View summary"/"Hide summary" button; inline summary-panel: patient_name, patient_type, reason, urgency_level, previous_request_count, suggested_next_action, safety_note; NO diagnosis, NO medical advice; notifications section shows message (truncated 100 chars) + status badge; pending status highlighted; Confirm button unchanged)
+   - `backend/tests/test_frontend_notification_and_summary_ui_contract.py` (new — 21 static contract tests: PreAppointmentSummary interface, fetchPreAppointmentSummary, endpoint, credentials, dashboard import, view-summary button, summary-panel, suggested_next_action, safety_note, patient_name, patient_type, reason, no diagnosis, no medical advice, message field, status field, pending highlighted, Confirm remains, fetchNotifications intact, no token storage, no secrets)
+   - `docs/architecture/DASHBOARD_NOTIFICATION_AND_SUMMARY_UI_FOUNDATION.md` (new)
+   - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
+   - Full backend tests: 2754/2754 passed
+
 128. Module 124 — Deployed Doctor Notification Smoke Evidence
    - Date: 2026-07-05
    - Sprint 17 / Commercial MVP build track
