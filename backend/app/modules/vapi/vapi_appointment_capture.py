@@ -17,6 +17,7 @@ from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from backend.app.db.repositories import appointment_request_repo
+from backend.app.db.repositories import patient_repo
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +160,21 @@ async def capture_vapi_appointment_request(
     config = await config_loader.load(clinic_ref)
     clinic_id = config.tenant_id
 
+    # Find or create the patient record, scoped strictly to this clinic.
+    # Matching is done by phone when available; a new row is created otherwise.
+    # This links the appointment request to a durable patient identity so that
+    # notifications, pre-appointment summaries, consultation drafts, and patient
+    # timelines can all reference the same patient record.
+    patient = await patient_repo.find_or_create_patient_from_vapi(
+        pool=pool,
+        clinic_id=clinic_id,
+        full_name=patient_name,
+        phone=caller_phone,
+        email=patient_email,
+        date_of_birth=date_of_birth,
+    )
+    patient_id = patient["id"]
+
     row = await appointment_request_repo.create_appointment_request(
         pool=pool,
         clinic_id=clinic_id,
@@ -174,6 +190,7 @@ async def capture_vapi_appointment_request(
         status="new",
         urgency_level=urgency_level,
         action_required=True,
+        patient_id=patient_id,
         raw_payload=raw_payload,
     )
 
@@ -200,9 +217,10 @@ async def capture_vapi_appointment_request(
         notification_created = False
 
     return {
-        "ok":                  True,
-        "clinic_id":           clinic_id,
-        "request":             row,
-        "message":             message,
+        "ok":                   True,
+        "clinic_id":            clinic_id,
+        "patient_id":           patient_id,
+        "request":              row,
+        "message":              message,
         "notification_created": notification_created,
     }

@@ -305,3 +305,33 @@ def test_migration_0002_revision_id_is_short():
         f"Expected revision '0002_password_hash', got {rev!r}"
     )
     assert len(rev) <= 32, f"revision {rev!r} is {len(rev)} chars — exceeds 32"
+
+
+# ---------------------------------------------------------------------------
+# 24-26  Migration 0003 — patient_id on appointment_requests (Module 121)
+# ---------------------------------------------------------------------------
+
+def test_migration_0003_exists():
+    """Test 24 — Migration 0003 (patient_id on appointment_requests) file exists."""
+    assert (VERSIONS / "0003_patient_id_appt_requests.py").is_file()
+
+
+def test_migration_0003_revision_id_is_short():
+    """Test 25 — Migration 0003 revision ID is ≤32 chars and matches expected value."""
+    path = VERSIONS / "0003_patient_id_appt_requests.py"
+    rev = _extract_revision(path)
+    assert rev is not None, "Could not parse revision from 0003 migration file"
+    assert rev == "0003_patient_id_appt_requests", (
+        f"Expected revision '0003_patient_id_appt_requests', got {rev!r}"
+    )
+    assert len(rev) <= 32, f"revision {rev!r} is {len(rev)} chars — exceeds 32"
+
+
+def test_migration_0003_mentions_patient_id():
+    """Test 26 — Migration 0003 must mention patient_id and patients table."""
+    text = (VERSIONS / "0003_patient_id_appt_requests.py").read_text()
+    assert "patient_id" in text, "0003 migration must mention patient_id"
+    assert "patients" in text, "0003 migration must mention the patients table"
+    assert "appointment_requests" in text, (
+        "0003 migration must mention appointment_requests"
+    )

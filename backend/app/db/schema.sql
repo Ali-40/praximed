@@ -222,6 +222,11 @@ CREATE TABLE IF NOT EXISTS appointment_requests (
     urgency_level       TEXT        NOT NULL DEFAULT 'normal',
     action_required     BOOLEAN     NOT NULL DEFAULT true,
     assigned_user_id    UUID        REFERENCES clinic_users(id) ON DELETE SET NULL,
+    -- patient_id added Module 121 / migration 0003 — links to the matched or
+    -- created patient row. Nullable (pre-121 rows and staff entries without
+    -- patient lookup have no linked patient). The patients table is defined later
+    -- in this file and the FK is applied at runtime via migration 0003.
+    patient_id          UUID,
     raw_payload         JSONB,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -256,6 +261,10 @@ CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_preferred_starts
 
 CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_source
     ON appointment_requests (clinic_id, source);
+
+-- Added Module 121 / migration 0003
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_clinic_patient
+    ON appointment_requests (clinic_id, patient_id);
 
 -- ---------------------------------------------------------------------------
 -- H) clinic_notifications  (Module 19)

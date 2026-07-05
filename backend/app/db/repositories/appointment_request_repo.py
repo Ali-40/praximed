@@ -77,6 +77,7 @@ async def create_appointment_request(
     urgency_level: str = "normal",
     action_required: bool = True,
     assigned_user_id: Optional[str] = None,
+    patient_id: Optional[str] = None,
     raw_payload: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
@@ -106,13 +107,13 @@ async def create_appointment_request(
             patient_email, date_of_birth, reason,
             preferred_starts_at, preferred_ends_at,
             status, urgency_level, action_required,
-            assigned_user_id, raw_payload
+            assigned_user_id, patient_id, raw_payload
         ) VALUES (
             $1, $2, $3, $4, $5,
             $6, $7, $8,
             $9, $10,
             $11, $12, $13,
-            $14, $15::jsonb
+            $14, $15, $16::jsonb
         )
         RETURNING *
     """
@@ -122,7 +123,7 @@ async def create_appointment_request(
         patient_email, date_of_birth, reason,
         preferred_starts_at, preferred_ends_at,
         status, urgency_level, action_required,
-        assigned_user_id, raw_payload_json,
+        assigned_user_id, patient_id, raw_payload_json,
     )
     return _row_to_dict(row)
 

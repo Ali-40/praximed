@@ -1,70 +1,81 @@
-# Sprint 17 / Module 121 — Patient and Appointment Data Linking Foundation
+# Sprint 17 / Module 122 — Pre-Appointment Summary Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Architecture Checkpoint 17 complete:
-- Commercial acceleration mode active — clinic outreach starts immediately with fake-data demo
-- Module 120B PASS: deployed browser auth/session smoke confirmed
-- praximed_session httpOnly Secure SameSite=None cookie works in Vercel→Railway staging
-- Full test suite: 2570/2570 passed
-- Commit base: 38e9234
-
-Production hardening blockers C3–C8 remain open (Modules 121–124 on hardening track).
-Commercial MVP build track now runs in parallel with hardening track.
+Module 121 complete:
+- `appointment_requests.patient_id` FK implemented (migration 0003)
+- `find_or_create_patient_from_vapi` live in patient_repo
+- Vapi capture links every new appointment request to a patient row
+- Tenant isolation tested; second-call reuse tested; no real patient data
+- Full test suite: 2611/2611 passed
+- Commercial acceleration mode active — clinic outreach in parallel
 
 ## Goal
 
-Build the data model and repository layer that links `appointment_requests` to `patients`,
-and introduces a new `appointments` table with full lifecycle states. This is the highest-
-leverage technical step for commercial readiness — it directly enables appointment lifecycle
-management, doctor notification, pre-appointment summaries, and consultation summary drafts
-that pilot clinics will need.
+Generate a safe, structured pre-appointment brief from the linked patient + appointment
+request data. This gives the doctor or reception team a compact summary before the
+appointment is confirmed, reducing the time spent on intake calls.
 
 ## Scope
 
-Backend only. No frontend changes. Full test suite must pass.
+Backend only. No frontend changes in this module. Full test suite must pass.
 
-## What Module 121 must do
+## What Module 122 must do
 
-1. **Schema changes** — define a new `appointments` table (or extend `appointment_requests`)
-   with lifecycle states: `new → scheduled → confirmed → completed → cancelled`
+1. **Repository layer** — query the linked `patients` + `appointment_requests` data
+   for a given `appointment_request_id` and `clinic_id`
 
-2. **Repository layer** — implement `appointment_repo.py` (or extend `appointment_request_repo.py`)
-   with CRUD and state transition methods; link to `patients` via `patient_id` FK
+2. **Summary service** — produce a structured plain-text or JSON brief containing:
+   - Patient: name, date of birth (age), phone
+   - Request: reason, urgency_level, preferred_starts_at / preferred_ends_at
+   - Status: current appointment request status
+   - Source: vapi / staff
 
-3. **API routes** — add or update routes for the linked appointment/patient data
+3. **API route** — `GET /appointment-requests/{request_id}/summary` (staff-facing;
+   requires authentication; returns the pre-appointment brief)
 
-4. **Tests** — full test suite must pass; new module tests cover the schema, repo, and routes
+4. **Tests** — full test suite must pass; new module tests cover the service and route
 
 ## What not to do
 
+- Do not generate diagnosis, prognosis, or medical advice of any kind
+- Do not call any external AI API (Claude, GPT, etc.) — this module is structured data only
+- Do not auto-confirm the appointment
+- Do not store any real patient data
+- Do not expose the summary to unauthenticated callers
+- Do not implement doctor push notifications yet (Module 123)
 - Do not generate, record, or commit any real secrets or credential values
 - Do not deploy to production
 - Do not change auth/session code (separate hardening track)
-- Do not expose any existing secrets from Railway, Vercel, or any other service
-- Do not use real patient data
+
+## Safety constraints
+
+- Fake/non-PHI data only in all tests and staging
+- Production PHI readiness: NO-GO (C3–C8 hardening blockers still open)
+- No real patient name, phone, DOB, or medical history in any file
+- Doctor/staff approval remains required — no automated confirmation path
 
 ## Reference docs
 
-- `docs/architecture/ARCHITECTURE_CHECKPOINT_17_COMMERCIAL_MVP_OUTREACH_ACCELERATION.md`
-  — commercial MVP feature map and priority order
-- `backend/app/db/schema.sql` — current schema
-- `backend/app/db/repositories/appointment_request_repo.py` — current appointment repo
-- `backend/app/db/repositories/patient_repo.py` — patient repo
+- `docs/architecture/PATIENT_APPOINTMENT_DATA_LINKING_FOUNDATION.md` — Module 121 schema and linking behavior
+- `backend/app/db/schema.sql` — current schema (patients + appointment_requests + patient_id FK)
+- `backend/app/db/repositories/patient_repo.py` — patient repo including find_or_create_patient_from_vapi
+- `backend/app/db/repositories/appointment_request_repo.py` — appointment request repo
 
 ## Acceptance
 
-- Schema updated with lifecycle states and patient linkage
-- Repository methods implemented and tested
-- API routes updated or added
+- Pre-appointment summary service implemented and tested
+- Route returns structured brief for a valid appointment_request_id
+- Unauthorized access returns 401
+- No medical advice / no diagnosis generated
 - Full test suite passes
-- Commit: `Sprint 17 / Module 121 — Patient and appointment data linking foundation`
+- Commit: `Sprint 17 / Module 122 — Pre-appointment summary foundation`
 
 ---
 
-## Parallel non-code task (runs alongside Module 121)
+## Parallel non-code task (runs alongside Module 122)
 
 **Build first list of 50 private clinics in Vienna and start outreach immediately.**
 
@@ -74,12 +85,11 @@ Target: 50 clinics identified; 10–15 first-contact messages or calls within 14
 
 ---
 
-## Upcoming (commercial MVP build track, post-Module 121)
+## Upcoming (commercial MVP build track, post-Module 122)
 
-- **Module 122** — Appointment lifecycle states and workflow
 - **Module 123** — Doctor/reception notification (email or push)
-- **Module 124** — Pre-appointment patient summary
-- **Module 125** — Consultation summary draft generator
+- **Module 124** — Consultation summary draft generator
+- **Module 125** — Patient timeline
 - **Module 126** — Follow-up and reminder workflow
 
 ## Upcoming (production hardening track, parallel)

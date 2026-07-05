@@ -303,6 +303,59 @@ async def update_patient(
 # ---------------------------------------------------------------------------
 
 
+async def find_or_create_patient_from_vapi(
+    pool: Any,
+    clinic_id: str,
+    full_name: str,
+    phone: Optional[str] = None,
+    email: Optional[str] = None,
+    date_of_birth: Optional[date] = None,
+) -> Dict[str, Any]:
+    """
+    Return an existing patient matched by phone within this clinic, or create one.
+
+    Matching strategy (in order):
+    1. If phone is provided: match on (clinic_id, normalized_phone). Returns the
+       earliest-created matching patient. Tenant isolation is enforced — matching
+       is always scoped by clinic_id so the same phone number in two different
+       clinics resolves to two separate patient records.
+    2. If no phone, or no match found: create a new patient row.
+
+    Phone normalization: leading/trailing whitespace is stripped; E.164 format
+    (e.g. "+43123456789") is preserved as-is.
+
+    Callers should not rely on name deduplication — if two Vapi calls provide
+    the same name but different (or no) phone numbers, two patient rows are
+    created. Name-based deduplication requires human review.
+    """
+    _assert_nonempty(clinic_id, "clinic_id")
+    _assert_nonempty(full_name, "full_name")
+
+    normalized_phone: Optional[str] = phone.strip() if phone and phone.strip() else None
+
+    if normalized_phone:
+        sql = """
+            SELECT *
+            FROM patients
+            WHERE clinic_id = $1
+              AND phone     = $2
+            ORDER BY created_at ASC
+            LIMIT 1
+        """
+        row = await pool.fetchrow(sql, clinic_id, normalized_phone)
+        if row is not None:
+            return _row_to_dict(row)
+
+    return await create_patient(
+        pool=pool,
+        clinic_id=clinic_id,
+        full_name=full_name,
+        phone=normalized_phone,
+        email=email,
+        date_of_birth=date_of_birth,
+    )
+
+
 async def archive_patient(
     pool: Any,
     clinic_id: str,

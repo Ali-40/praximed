@@ -129,7 +129,7 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "date_of_birth", "reason",
         "preferred_starts_at", "preferred_ends_at",
         "status", "urgency_level", "action_required",
-        "assigned_user_id", "raw_payload", "created_at", "updated_at",
+        "assigned_user_id", "patient_id", "raw_payload", "created_at", "updated_at",
     ],
     "clinic_notifications": [
         "id", "clinic_id", "recipient_user_id",
@@ -193,6 +193,7 @@ REQUIRED_INDEXES = [
     ("idx_appointment_requests_clinic_urgency",        "appointment_requests", "urgency_level"),
     ("idx_appointment_requests_clinic_preferred_starts", "appointment_requests", "preferred_starts_at"),
     ("idx_appointment_requests_clinic_source",         "appointment_requests", "source"),
+    ("idx_appointment_requests_clinic_patient",        "appointment_requests", "patient_id"),
     ("idx_clinic_notifications_clinic_created",    "clinic_notifications", "created_at"),
     ("idx_clinic_notifications_clinic_status",     "clinic_notifications", "status"),
     ("idx_clinic_notifications_clinic_priority",   "clinic_notifications", "priority"),
@@ -443,6 +444,28 @@ def test_appointment_requests_time_range_check(sql_lower: str):
     block = _table_block(sql_lower, "appointment_requests")
     assert re.search(r"preferred_ends_at.*>.*preferred_starts_at", block, re.DOTALL), (
         "appointment_requests must have CHECK (preferred_ends_at > preferred_starts_at)"
+    )
+
+
+# Module 121 — patient_id column in appointment_requests
+
+def test_appointment_requests_patient_id_column(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert "patient_id" in block, (
+        "appointment_requests must have a patient_id column (added Module 121)"
+    )
+
+
+def test_appointment_requests_patient_id_is_uuid(sql_lower: str):
+    block = _table_block(sql_lower, "appointment_requests")
+    assert re.search(r"patient_id\s+uuid", block), (
+        "appointment_requests.patient_id must be UUID type"
+    )
+
+
+def test_appointment_requests_clinic_patient_index(sql_lower: str):
+    assert "idx_appointment_requests_clinic_patient" in sql_lower, (
+        "Schema must define idx_appointment_requests_clinic_patient index"
     )
 
 

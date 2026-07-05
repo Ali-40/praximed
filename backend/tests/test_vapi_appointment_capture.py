@@ -1,6 +1,7 @@
 """
 Unit tests for vapi_appointment_capture service — PraxisMed Sprint 1 / Module 18
 Updated: Sprint 11 / Module 88 — adapter tests for nested Vapi tool-call shape
+Updated: Sprint 17 / Module 121 — patient linking mock (autouse fixture)
 
 All tests use AsyncMock objects; no real database or config loader is used.
 """
@@ -45,6 +46,34 @@ FAKE_ROW = {
 }
 
 REPO_PATH = "backend.app.modules.vapi.vapi_appointment_capture.appointment_request_repo"
+PATIENT_REPO_PATH = "backend.app.modules.vapi.vapi_appointment_capture.patient_repo"
+
+FAKE_PATIENT = {
+    "id":        "33333333-3333-4333-8333-333333333333",
+    "clinic_id": CLINIC_ID,
+    "full_name": PATIENT,
+    "phone":     None,
+    "status":    "active",
+}
+
+# ---------------------------------------------------------------------------
+# Module 121 — autouse fixture: mock patient linking for all existing tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _mock_patient_linking():
+    """Patch find_or_create_patient_from_vapi for all tests in this file.
+
+    Module 121 introduced patient matching/creation inside capture_vapi_appointment_request.
+    This autouse fixture keeps all pre-121 tests passing without modification.
+    """
+    with patch(
+        f"{PATIENT_REPO_PATH}.find_or_create_patient_from_vapi",
+        new=AsyncMock(return_value=FAKE_PATIENT),
+    ):
+        yield
+
 
 # ---------------------------------------------------------------------------
 # Helpers

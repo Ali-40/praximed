@@ -1592,3 +1592,19 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
 - Founding clinic discount: 50% off for 12 months for first 5 clinics
 - Safety constraints enforced: no real patient data; no production PHI; no secrets; no compliance claims; no automated confirmation
 - `backend/tests/test_architecture_checkpoint_17_commercial_mvp_outreach_acceleration_contract.py` (new — 24 static contract tests)
+
+122. Module 121 — Patient and Appointment Data Linking Foundation
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - `backend/app/db/schema.sql` (updated — `patient_id UUID` column added to `appointment_requests`; `idx_appointment_requests_clinic_patient` index added)
+   - `backend/migrations/versions/0003_patient_id_appt_requests.py` (new — revision `"0003_patient_id_appt_requests"` / down_revision `"0002_password_hash"`; upgrade adds `patient_id UUID REFERENCES patients(id) ON DELETE SET NULL` column + index; downgrade drops both)
+   - `backend/app/db/repositories/patient_repo.py` (updated — `find_or_create_patient_from_vapi` added: phone-based match within clinic_id, create new patient if no match or no phone; whitespace phone treated as None; tenant isolation enforced)
+   - `backend/app/db/repositories/appointment_request_repo.py` (updated — `patient_id: Optional[str] = None` parameter added to `create_appointment_request`; SQL INSERT updated to `$15` patient_id / `$16::jsonb` raw_payload; backward compatible)
+   - `backend/app/modules/vapi/vapi_appointment_capture.py` (updated — `patient_repo` imported; `find_or_create_patient_from_vapi` called before appointment create; `patient_id` passed to `create_appointment_request`; `"patient_id"` included in return dict)
+   - `backend/tests/test_vapi_appointment_capture.py` (updated — autouse fixture patches `find_or_create_patient_from_vapi` for all 31 existing tests)
+   - `backend/tests/test_schema_contract.py` (updated — `patient_id` column and `idx_appointment_requests_clinic_patient` index assertions added)
+   - `backend/tests/test_migration_contract.py` (updated — 3 new tests 24–26: migration 0003 file exists; revision `"0003_patient_id_appt_requests"` ≤32 chars; mentions `patient_id`/`patients`/`appointment_requests`)
+   - `backend/tests/test_patient_appointment_linking.py` (new — 17 tests: find_or_create existing/new/no-phone/whitespace/strip/clinic_id-scope/tenant-isolation; create_appointment_request patient_id; vapi capture integration; second-call reuse; error propagation; no real patient data safety check)
+   - `docs/architecture/PATIENT_APPOINTMENT_DATA_LINKING_FOUNDATION.md` (new — schema changes; migration 0003; patient matching algorithm; what this enables next: Modules 122–126)
+   - No real patient data; no secrets; fake-data staging only; production PHI NO-GO
+   - Full backend tests: 2611/2611 passed
