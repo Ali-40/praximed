@@ -1546,3 +1546,15 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Closes critical blockers C1 and C2 from PRODUCTION_HARDENING_GAP_REVIEW.md
    - No real patient data; no secrets recorded; staging/local implementation only; production PHI NO-GO remains
    - Full backend tests: 2532/2532 passed
+
+120. Module 120A — Cross-site Staging Cookie Compatibility Fix
+   - Date: 2026-07-05
+   - Problem: SameSite=Lax cookies are not sent on cross-site fetch/XHR; Vercel (vercel.app) → Railway (railway.app) are different eTLD+1 → cross-site; SameSite=None; Secure is required
+   - Fix: `SESSION_COOKIE_SAMESITE` env var added to `backend/app/api/routes/auth.py`; default "none" for cross-site staging; valid values: none | lax | strict; unknown values fall back to "none"; value is case-insensitive
+   - `_get_cookie_samesite()` helper function added; reads env at call time (testable via monkeypatch)
+   - `test_auth_session_hardening_module120.py` updated: `test_login_cookie_has_samesite_lax` replaced with `test_login_cookie_has_samesite_attribute` + `test_login_cookie_default_samesite_is_none`; `login_client` fixture now deletes SESSION_COOKIE_SAMESITE to ensure clean default
+   - `backend/tests/test_auth_session_hardening_module120a.py` (new — 16 tests: default→none; explicit none/lax/strict; case-insensitive; unknown→none; httpOnly+Secure retained for both none and lax; Max-Age retained; direct _get_cookie_samesite unit tests)
+   - `docs/security/AUTH_SESSION_HARDENING_EVIDENCE.md` updated: SameSite configuration table; cross-site explanation; full test coverage table
+   - To deploy fix in staging: set `SESSION_COOKIE_SAMESITE=none` (or leave unset, since "none" is now the default) in Railway env vars
+   - No secrets recorded; no real patient data; production PHI NO-GO remains
+   - Full backend tests: 2549/2549 passed

@@ -2,7 +2,8 @@
 Sprint 17 / Module 120 — Auth/session hardening tests.
 
 Verifies:
-  - POST /auth/login sets praximed_session cookie (httpOnly, Secure, SameSite=Lax)
+  - POST /auth/login sets praximed_session cookie (httpOnly, Secure, SameSite configurable)
+  - Default SameSite is "none" (cross-site Vercel→Railway staging) — Module 120A
   - POST /auth/logout clears the cookie (Max-Age=0 / delete_cookie)
   - GET  /auth/me resolves via session cookie (no Bearer header needed)
   - No Bearer + no cookie → 401 from get_current_user
@@ -92,13 +93,15 @@ async def _protected(user: AuthContext = Depends(get_current_user)) -> dict:
 
 
 # ===========================================================================
-# 1. Login sets httpOnly Secure SameSite=Lax cookie
+# 1. Login sets httpOnly Secure cookie (SameSite=None default for cross-site staging)
 # ===========================================================================
 
 
 @pytest.fixture()
 def login_client(monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", JWT_SECRET)
+    # Default SESSION_COOKIE_SAMESITE is "none" (cross-site Vercel→Railway staging).
+    monkeypatch.delenv("SESSION_COOKIE_SAMESITE", raising=False)
     pool = _make_pool(_fake_user())
     _auth_app.dependency_overrides[get_db_pool] = lambda: pool
     with patch("backend.app.api.routes.auth.verify_password", return_value=True):
@@ -129,12 +132,21 @@ def test_login_cookie_is_secure(login_client):
     assert "secure" in set_cookie.lower()
 
 
-def test_login_cookie_has_samesite_lax(login_client):
-    """4 — Cookie must use SameSite=Lax."""
+def test_login_cookie_has_samesite_attribute(login_client):
+    """4 — Cookie must carry a SameSite attribute (value is env-configurable;
+    default is 'none' for cross-site Vercel→Railway staging)."""
     resp = login_client.post("/auth/login", json=_valid_login_body())
     assert resp.status_code == 200
     set_cookie = resp.headers.get("set-cookie", "")
-    assert "samesite=lax" in set_cookie.lower()
+    assert "samesite=" in set_cookie.lower()
+
+
+def test_login_cookie_default_samesite_is_none(login_client):
+    """4b — Default SameSite is 'none' (SESSION_COOKIE_SAMESITE not set → cross-site staging)."""
+    resp = login_client.post("/auth/login", json=_valid_login_body())
+    assert resp.status_code == 200
+    set_cookie = resp.headers.get("set-cookie", "")
+    assert "samesite=none" in set_cookie.lower()
 
 
 def test_login_cookie_has_max_age(login_client):

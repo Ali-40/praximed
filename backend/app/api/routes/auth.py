@@ -1,14 +1,25 @@
 """
 Auth routes — PraxisMed Sprint 7 / Module 60
-Updated Sprint 17 / Module 120 — httpOnly Secure SameSite cookie session model.
+Updated Sprint 17 / Module 120  — httpOnly Secure SameSite cookie session model.
+Updated Sprint 17 / Module 120A — SameSite configurable via SESSION_COOKIE_SAMESITE
+                                   (default "none" for cross-site Vercel→Railway staging).
 
-POST /auth/login  — issue a JWT and set it as an httpOnly Secure SameSite=Lax cookie.
+POST /auth/login  — issue a JWT and set it as an httpOnly Secure cookie.
 POST /auth/logout — clear the session cookie; return HTTP 200.
 GET  /auth/me     — return current user info (resolved via cookie or Bearer JWT).
+
+Cookie SameSite policy
+----------------------
+Set SESSION_COOKIE_SAMESITE to one of: none | lax | strict
+  - "none"   (default) — required for cross-site fetch from Vercel to Railway.
+             Must be paired with Secure=True (already always set).
+  - "lax"              — appropriate for same-site deployments (custom domain).
+  - "strict"           — most restrictive; only for tightly coupled same-origin setups.
 """
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -29,6 +40,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 _COOKIE_NAME = "praximed_session"
 _COOKIE_MAX_AGE = DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES * 60  # 3600 s
+
+_VALID_SAMESITE = {"none", "lax", "strict"}
+
+
+def _get_cookie_samesite() -> str:
+    """Read SESSION_COOKIE_SAMESITE; default 'none' for cross-site staging."""
+    raw = os.getenv("SESSION_COOKIE_SAMESITE", "none").strip().lower()
+    if raw not in _VALID_SAMESITE:
+        return "none"
+    return raw
 
 _INVALID_CREDENTIALS = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -81,7 +102,7 @@ async def login(
         value=token,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite=_get_cookie_samesite(),
         path="/",
         max_age=_COOKIE_MAX_AGE,
     )

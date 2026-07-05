@@ -1,4 +1,5 @@
 # Sprint 17 / Module 121 — Secrets and Environment Hardening Review
+<!-- Module 120A complete: SameSite configurable; default "none" for cross-site staging. -->
 
 Status: pending implementation of production secrets rotation and environment hardening review.
 

@@ -1,8 +1,8 @@
-# Auth/Session Hardening Evidence — Sprint 17 / Module 120
+# Auth/Session Hardening Evidence — Sprint 17 / Modules 120 + 120A
 
 **Date:** 2026-07-05
-**Sprint:** Sprint 17 / Module 120
-**Result:** IMPLEMENTATION COMPLETE — httpOnly Secure SameSite cookie session model
+**Sprint:** Sprint 17 / Module 120 + Module 120A
+**Result:** IMPLEMENTATION COMPLETE — httpOnly Secure configurable-SameSite cookie session model
 
 ---
 
@@ -21,13 +21,31 @@
 ### Cookie Attributes
 
 ```
-Set-Cookie: praximed_session=<JWT>; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600
+Set-Cookie: praximed_session=<JWT>; HttpOnly; Secure; SameSite=<value>; Path=/; Max-Age=3600
 ```
 
+SameSite is controlled by the `SESSION_COOKIE_SAMESITE` environment variable:
+
+| `SESSION_COOKIE_SAMESITE` | SameSite value | Use case |
+|---|---|---|
+| not set (default) | `None` | Cross-site staging — Vercel frontend + Railway backend |
+| `none` | `None` | Same as default |
+| `lax` | `Lax` | Same-site / custom-domain production deployment |
+| `strict` | `Strict` | Most restrictive; tightly coupled same-origin setups |
+| any other value | `None` | Falls back to cross-site-safe default |
+
+**Deployed staging (Vercel→Railway):** `SESSION_COOKIE_SAMESITE` not set → `SameSite=None; Secure`
+
 - `HttpOnly` — not readable by JavaScript; protects against XSS token theft
-- `Secure` — transmitted over HTTPS only
-- `SameSite=Lax` — protects against most CSRF attack vectors
+- `Secure` — transmitted over HTTPS only (required when SameSite=None)
+- `SameSite=None` — required for cross-site `credentials: include` fetches from Vercel to Railway
 - `Max-Age=3600` — matches the 60-minute JWT expiry
+
+**Why SameSite=None is needed for staging:**
+`praximed.vercel.app` and `web-production-fd91d.up.railway.app` have different eTLD+1
+(`vercel.app` vs `railway.app`), making them cross-site. Browsers only send cookies on
+cross-site requests when `SameSite=None; Secure` is set. `SameSite=Lax` would cause the
+cookie to be silently dropped, breaking all authenticated API calls from the frontend.
 
 ### Frontend
 
@@ -67,30 +85,51 @@ All tests pass locally. No real database. No real secrets. No real patient data.
 
 | Test | Count | Status |
 |---|---|---|
-| New Module 120 tests (`test_auth_session_hardening_module120.py`) | 16 | **PASS** |
+| Module 120 tests (`test_auth_session_hardening_module120.py`) | 17 | **PASS** |
+| Module 120A tests (`test_auth_session_hardening_module120a.py`) | 16 | **PASS** |
 | Existing login route tests (`test_auth_login_route.py`) | 10 | **PASS** |
 | Existing current-user dependency tests (`test_current_user_dependency.py`) | 10 | **PASS** |
 | Updated frontend contract tests | 7 updated | **PASS** |
-| Full test suite | 2532 | **PASS** |
+| Full test suite | 2549 | **PASS** |
 
-### New test coverage (Module 120)
+### Module 120 test coverage (cookie session model)
 
 1. Login sets `praximed_session` cookie
 2. Cookie is httpOnly
 3. Cookie is Secure
-4. Cookie has SameSite=Lax
-5. Cookie has Max-Age (not session-only)
-6. JSON body still returned (backward compat)
-7. Logout returns HTTP 200
-8. Logout returns `{"ok": true}`
-9. Logout clears cookie (Max-Age=0)
-10. Cookie auth accepted by `get_current_user`
-11. No Bearer + no cookie → 401
-12. Bearer header still works (backward compat)
-13. Expired cookie token → 401
-14. Invalid cookie token → 401
-15. `GET /auth/me` resolves via cookie → 200 with user info
-16. `GET /auth/me` unauthenticated → 401
+4. Cookie has SameSite attribute
+5. Default SameSite is `none` (cross-site staging)
+6. Cookie has Max-Age (not session-only)
+7. JSON body still returned (backward compat)
+8. Logout returns HTTP 200
+9. Logout returns `{"ok": true}`
+10. Logout clears cookie (Max-Age=0)
+11. Cookie auth accepted by `get_current_user`
+12. No Bearer + no cookie → 401
+13. Bearer header still works (backward compat)
+14. Expired cookie token → 401
+15. Invalid cookie token → 401
+16. `GET /auth/me` resolves via cookie → 200 with user info
+17. `GET /auth/me` unauthenticated → 401
+
+### Module 120A test coverage (configurable SameSite)
+
+1. Default (env not set) → SameSite=None
+2. `SESSION_COOKIE_SAMESITE=none` → SameSite=None
+3. `SESSION_COOKIE_SAMESITE=lax` → SameSite=Lax
+4. `SESSION_COOKIE_SAMESITE=strict` → SameSite=Strict
+5. Env var is case-insensitive (LAX accepted)
+6. Mixed case (None) accepted
+7. Unknown value falls back to SameSite=None
+8. SameSite=None cookie is still HttpOnly
+9. SameSite=None cookie is still Secure
+10. SameSite=None cookie still carries Max-Age
+11. SameSite=Lax cookie is still HttpOnly
+12. SameSite=Lax cookie is still Secure
+13. `_get_cookie_samesite()` returns "none" when env absent
+14. `_get_cookie_samesite()` returns "lax" when SESSION_COOKIE_SAMESITE=lax
+15. `_get_cookie_samesite()` returns "strict" when SESSION_COOKIE_SAMESITE=strict
+16. `_get_cookie_samesite()` returns "none" for unrecognised values
 
 ---
 
