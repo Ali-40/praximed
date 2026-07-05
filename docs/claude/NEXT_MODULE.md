@@ -1,77 +1,91 @@
-# Sprint 18 / Module 128 — Clinic Outreach List Builder and First 50 Targets
+# Sprint 18 / Module 129 — First 50 Vienna Clinic Targets Research
 
 Status: pending implementation.
 
 ## Context
 
-Module 127 complete:
-- Full outreach and 30-day pilot offer pack created (`docs/business/CLINIC_OUTREACH_30_DAY_PILOT_PACK.md`)
-- English + German email scripts, phone script, WhatsApp/LinkedIn message, demo script
-- 30-day pilot: free, no setup fee, €299–€499/month after pilot
-- 50-clinic outreach list schema defined
-- Objection handling guide ready
-- Immediate outreach can begin
-- Production PHI readiness: NO-GO
-- Full backend tests: 2853/2853 passed
+Module 128 complete:
+- Outreach list tracker structure created with 50 empty rows ready to fill
+- 9 outreach status stages defined; A/B/C fit scoring; 7 specialty priorities
+- Daily execution rules: 10 clinics/day research, 5 contacts/day minimum
+- Suggested public research sources listed (WKO, Google Maps, docfinder.at, etc.)
+- Full backend tests: 2868/2868 passed
 
 ## Goal
 
-Build a structured first-50 clinic outreach list as a practical working document.
-The list is a tracking tool for real clinic contacts — not scraped, not automated,
-built manually from public sources.
+Populate the first 50 rows of the clinic outreach tracker with real, publicly sourced
+private clinic targets in Vienna. This gives Ali an immediately actionable outreach
+list ready for first contact.
 
 ## Scope
 
-Docs only. No runtime code changes. No scraping automation. No secrets.
-No real patient data. No production PHI. Do not mark production ready.
+Docs/business only. No runtime code. No scraping automation. No real patient data.
+No secrets. No production PHI. Public information only.
 
-## What Module 128 must do
+## What Module 129 must do
 
-1. **First 50 clinic outreach list** — a table (or CSV-format doc) with the first
-   50 private clinic targets in Austria (AT), Germany (DE), or Switzerland (CH),
-   populated from public sources (clinic websites, Google Maps listings, medical
-   directories). Fields per the schema in Module 127 Section 7.
+1. **Research 50 private clinics in Vienna** — using public sources only:
+   WKO, Google Maps, docfinder.at, herold.at, ärzteliste.at, clinic websites.
 
-2. **Priority scoring** — score each clinic 1–5 on fit (specialty match, city size,
-   likely call volume).
+2. **Fill all 50 rows** in `docs/business/CLINIC_OUTREACH_LIST_TRACKER.md` with:
+   - Clinic name (from public source)
+   - Specialty
+   - Website URL (from public listing)
+   - Public email (from clinic website Impressum or contact page)
+   - Public phone (from clinic website or directory)
+   - Address (from public listing)
+   - Doctor/Owner name (from clinic website "Team" or "Über uns" page)
+   - Fit score (A/B/C)
+   - Pain point guess
+   - Contact method (email / phone / LinkedIn)
+   - Outreach status: Not contacted
+   - Source URL noted in Notes column
 
-3. **Outreach status tracking** — starting status: `not_started` for all 50.
+3. **Mark top 10 Week 1 priority clinics** — identify the 10 highest-fit (A-score)
+   clinics and add "WEEK 1 PRIORITY" in their Notes field.
 
-4. **Week 1 shortlist** — mark the top 10 highest-fit clinics for Week 1 outreach.
+4. **Specialty distribution target for the 50:**
+   - 12 private GPs (Allgemeinmedizin privat)
+   - 8 dermatology (Dermatologie/Hautklinik privat)
+   - 8 gynecology (Gynäkologie privat)
+   - 6 orthopedics (Orthopädie privat)
+   - 6 dentistry (Zahnarzt privat)
+   - 6 aesthetics / private medicine
+   - 4 physiotherapy / private rehab
 
 ## Constraints
 
-- Public information only — clinic name, specialty, city, public phone, public email,
-  website URL from clinic's own website or public directories
-- No data from data brokers, scrapers, or aggregated private datasets
-- No real patient data
+- **Public information only** — clinic website, Google Maps, WKO, docfinder.at,
+  herold.at, ärzteliste.at, clinic Impressum (legally required in Austria)
+- No data brokers, no scrapers, no aggregated non-public data
+- No real patient data in any field
 - No secrets
-- No DSGVO-restricted personal data beyond what clinics publish publicly
+- If a clinic's email is not publicly listed, leave Email blank and use phone/LinkedIn
 
 ## Allowed changes
 
-- `docs/business/CLINIC_OUTREACH_LIST_FIRST_50.md` (new)
+- `docs/business/CLINIC_OUTREACH_LIST_TRACKER.md` (updated — 50 rows filled)
 - `docs/claude/CURRENT_STATE.md` (updated)
 - `docs/claude/NEXT_MODULE.md` (updated)
 
-No tests required for this module (data list doc, no runtime code).
+No tests required (data list only, no runtime code).
 
 ## Acceptance
 
-- First 50 clinic targets listed with all schema fields
-- Priority scores assigned
-- Week 1 shortlist (top 10) identified
-- All information is publicly sourced
+- All 50 rows populated with real publicly sourced Vienna clinic data
+- Fit scores assigned to all 50
+- Top 10 Week 1 priorities marked
+- All information traceable to a public source
 - No real patient data; no secrets
-- Commit: `Sprint 18 / Module 128 — Clinic outreach list builder and first 50 targets`
+- Commit: `Sprint 18 / Module 129 — First 50 Vienna clinic targets research`
 
 ---
 
-## Upcoming (commercial MVP build track, post-Module 128)
+## Upcoming (commercial MVP build track, post-Module 129)
 
-- **Module 129** — Consultation summary draft generator
-- **Module 130** — Patient timeline
-- **Module 131** — Follow-up and reminder workflow
+- **Module 130** — First outreach batch execution (send first 10 emails)
+- **Module 131** — Consultation summary draft generator
+- **Module 132** — Patient timeline
 
 ## Upcoming (production hardening track, parallel)
 

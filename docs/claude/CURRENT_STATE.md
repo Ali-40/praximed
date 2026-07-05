@@ -1698,6 +1698,22 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
    - Full backend tests: 2754/2754 passed
 
+134. Module 128 — Clinic Outreach List Tracker Foundation
+   - Date: 2026-07-05
+   - Sprint 18 / Commercial MVP + clinic outreach track
+   - Docs/static-tests only — no runtime code changes, no scraping, no real clinic data
+   - `docs/business/CLINIC_OUTREACH_LIST_TRACKER.md` (new):
+     purpose + how to use; 9 outreach status stages (Not contacted → Pilot interested/Not interested/Follow-up later);
+     A/B/C fit scoring; 7 Vienna clinic specialties in priority order;
+     50-row tracker table (all rows pre-populated with Not contacted status and blank fields ready to fill);
+     daily execution rules (10 clinics/day research; 5 contacts/day minimum; 3-business-day follow-up rule; weekly review);
+     safe claim reminder (fake-data staging only, no PHI claim, no DSGVO claim);
+     suggested public research sources (WKO, Google Maps, docfinder.at, herold.at, ärzteliste.at)
+   - `backend/tests/test_clinic_outreach_list_tracker_contract.py` (new — 15 static contract tests)
+   - Clinic research and outreach can begin immediately from this tracker
+   - Production PHI readiness: NO-GO
+   - Full backend tests: 2868/2868 passed
+
 133. Module 127 — Clinic Outreach Asset and 30-Day Pilot Offer Pack
    - Date: 2026-07-05
    - Sprint 18 / Commercial MVP + clinic outreach track
