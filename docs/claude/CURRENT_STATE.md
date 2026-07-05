@@ -1558,3 +1558,16 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - To deploy fix in staging: set `SESSION_COOKIE_SAMESITE=none` (or leave unset, since "none" is now the default) in Railway env vars
    - No secrets recorded; no real patient data; production PHI NO-GO remains
    - Full backend tests: 2549/2549 passed
+
+121. Module 120B — Deployed Auth/Session Browser Smoke Evidence
+   - Date: 2026-07-05
+   - Real deployed browser smoke passed after Module 120 + 120A cookie hardening
+   - Frontend: https://praximed.vercel.app; Backend: https://web-production-fd91d.up.railway.app
+   - Evidence: browser login PASS; dashboard load PASS; session survives refresh PASS; appointments visible PASS; logout clears session PASS; /dashboard after logout blocks/redirects PASS
+   - Cookie context: praximed_session; HttpOnly; Secure; SameSite=None (cross-site Vercel→Railway); credentials: include; no sessionStorage/Bearer dependency
+   - Safety: no password/token/cookie value/DATABASE_URL/secrets recorded; fake/non-PHI staging only; production PHI NO-GO
+   - `docs/security/AUTH_SESSION_DEPLOYED_BROWSER_SMOKE_EVIDENCE.md` (new — 8-section evidence doc: purpose; PASS result; environment/checks table; cookie/session context; safety boundary; what this proves; what this does not prove (production PHI NO-GO; C3–C8 blockers still open); recommended next module 121)
+   - `backend/tests/test_auth_session_deployed_browser_smoke_evidence_contract.py` (new — 21 static contract tests: doc exists/PASS/frontend URL/backend URL/login PASS/dashboard PASS/refresh/logout/post-logout/praximed_session/HttpOnly/Secure/SameSite=None/credentials include/no token/no password/no cookie value/no real patient data/fake non-PHI/production PHI NO-GO/Module 121)
+   - No runtime code changed; docs/static-tests only
+   - UI/UX Fabel 5 premium demo polish remains upcoming after critical hardening (Sprint 18)
+   - Full backend tests: 2570/2570 passed
