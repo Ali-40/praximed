@@ -1698,6 +1698,24 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
    - Full backend tests: 2754/2754 passed
 
+135. Module 129 — First 50 Vienna Clinic Targets Research Workflow
+   - Date: 2026-07-05
+   - Sprint 18 / Commercial MVP + clinic outreach track
+   - Docs/static-tests only — no runtime code, no fabricated data, no scraping
+   - `docs/business/FIRST_50_VIENNA_CLINIC_TARGETS_RESEARCH_WORKFLOW.md` (new):
+     purpose + safe research rules (public-only, no guessing, no scraping, source URL required);
+     7 public sources (Google Maps, clinic websites, Impressum, Herold, DocFinder, WKO, Ärzteliste);
+     7 target specialties with German search terms and target count (GP 12, dermatology 8, gynecology 8, orthopedics 6, dentistry 6, aesthetics 6, physiotherapy 4);
+     data quality rules per field; A/B/C prioritization criteria;
+     first batch execution: research 10 → contact 5 → 3-business-day follow-up → add 10/day continue;
+     safe outreach wording reminders (fake-data demo, early pilot, no production PHI, no DSGVO claim);
+     manual tracker filling instructions (step-by-step per field);
+     next action checklist (10-step ready-to-execute list)
+   - `backend/tests/test_first_50_vienna_clinic_targets_research_workflow_contract.py` (new — 25 static contract tests)
+   - First real manual action: open CLINIC_OUTREACH_LIST_TRACKER.md, search Google Maps "Privatarzt Wien Allgemeinmedizin", fill rows 1–10, contact top 5
+   - Production PHI readiness: NO-GO
+   - Full backend tests: 2893/2893 passed
+
 134. Module 128 — Clinic Outreach List Tracker Foundation
    - Date: 2026-07-05
    - Sprint 18 / Commercial MVP + clinic outreach track
