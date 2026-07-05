@@ -1,60 +1,53 @@
-# Sprint 18 / Module 126 — Fabel 5 Premium Dashboard UI/UX Polish
+# Sprint 18 / Module 126B — Deployed Fabel 5 Dashboard UI/UX Smoke Evidence
 
 Status: pending implementation.
 
 ## Context
 
-Module 125 complete:
-- Dashboard Notifications section displays `clinic_notifications` rows (title, message truncated, status badge, priority badge; pending rows highlighted)
-- Dashboard Appointments section has per-row "View summary" / "Hide summary" toggle with inline summary panel (patient_name, patient_type, reason, urgency_level, previous_request_count, suggested_next_action, safety_note)
-- No diagnosis; no medical advice; Confirm button unchanged; cookie-based auth intact
-- Full backend tests: 2754/2754 passed
+Module 126 complete:
+- Fabel 5 premium dashboard UI/UX polish implemented
+- Sticky header with brand + staging demo badge + logout
+- 4-card metrics row: Appointments, Patients, Notifications, Pending confirmations
+- Appointments as primary full-width section
+- Two-column responsive grid: Patients + Notifications side by side
+- Pending notifications with brand-blue left border accent
+- Summary panel: blue-50 elevated card, labeled fields, suggested action in brand blue
+- Safety note rendered below a rule in muted text
+- All existing functionality preserved (Confirm, View summary, login/session/logout)
+- Full backend tests: 2801/2801 passed
 
 ## Goal
 
-Transform the functional PraxisMed dashboard into a premium, doctor-facing product.
-This is the Fabel 5 sprint — high priority for demo quality and sales conversion.
-
-The current dashboard is functional but visually minimal. Sprint 18 is the premium polish
-pass that makes the UI look like a real clinical product.
+Document real deployed browser evidence that the Fabel 5 premium dashboard UI is
+live on Vercel and all key interactions work correctly in the deployed environment.
 
 ## Scope
 
-Frontend only + visual/UX improvements. No backend code changes. No new APIs.
-No real patient data. No production PHI. No secrets. Do not mark production ready.
+Docs/static-tests only. No runtime code changes. No new migrations. No secrets.
+No real patient data. No production PHI. Do not mark production ready.
 
-## What Module 126 must do
+## What Module 126B must do
 
-1. **Visual design system** — replace CSS variable stubs with a real premium design:
-   typography scale, consistent spacing, professional color palette (not flat gray/white),
-   subtle shadows, refined borders.
+1. Push/deploy the Module 126 frontend to Vercel (developer action).
+2. Verify the premium dashboard loads in browser.
+3. Verify metric cards are visible.
+4. Verify appointment rows with View summary / Hide summary work.
+5. Verify summary panel opens and closes inline.
+6. Verify Confirm button works for status=new rows.
+7. Verify logout works.
+8. Verify staging demo badge is visible.
+9. Document all evidence in a new runtime evidence doc.
+10. Add static contract tests for the evidence doc.
+11. Update staging wiring and smoke execution docs.
 
-2. **Header and navigation** — premium header with clinic branding, user role indicator,
-   notification bell with count badge.
+## Allowed changes
 
-3. **Appointments section** — card-based rows instead of flat list; status chip colors
-   more distinct; "View summary" inline panel styled as an elevated card with clear
-   section labels; Confirm button more prominent.
-
-4. **Notifications section** — distinct "pending" row treatment (accent left border or
-   icon badge); message line styled as secondary text; clear empty state.
-
-5. **Patients and Consultations sections** — same card-based row treatment for visual
-   consistency.
-
-6. **Loading and error states** — skeleton loaders instead of text-only loading strings;
-   styled error banners.
-
-7. **Responsive layout** — ensure the 900px max-width container looks correct on tablet.
-
-## What not to do
-
-- Do not add new API endpoints
-- Do not add push/email/SMS/WhatsApp delivery
-- Do not add diagnosis or medical advice to any display
-- Do not store any real patient data
-- Do not generate, record, or commit any real secrets or credential values
-- Do not deploy to production
+- `docs/runtime/FABEL5_PREMIUM_DASHBOARD_DEPLOYED_SMOKE_EVIDENCE.md` (new)
+- `backend/tests/test_fabel5_premium_dashboard_deployed_smoke_evidence_contract.py` (new)
+- `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` (updated)
+- `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated)
+- `docs/claude/CURRENT_STATE.md` (updated)
+- `docs/claude/NEXT_MODULE.md` (updated)
 
 ## Safety constraints
 
@@ -62,31 +55,29 @@ No real patient data. No production PHI. No secrets. Do not mark production read
 - Production PHI readiness: NO-GO (C3–C8 hardening blockers still open)
 - No real patient name, phone, DOB, or medical history in any file
 - Doctor/staff approval remains required — no automated confirmation path
-- No medical advice or diagnosis in any display
+- No medical advice or diagnosis in notification body or summary display
 - No secrets recorded in any evidence
 
 ## Reference docs
 
-- `frontend/app/dashboard/page.tsx` — current dashboard (Module 125)
-- `frontend/lib/api.ts` — API helpers
-- `docs/architecture/DASHBOARD_NOTIFICATION_AND_SUMMARY_UI_FOUNDATION.md` — Module 125
+- `docs/architecture/FABEL_5_PREMIUM_DASHBOARD_UI_UX_POLISH.md` — Module 126
+- `docs/runtime/DASHBOARD_NOTIFICATION_AND_SUMMARY_UI_DEPLOYED_SMOKE_EVIDENCE.md` — Module 125B
+- `frontend/app/dashboard/page.tsx` — current dashboard (Module 126)
 
 ## Acceptance
 
-- Dashboard visually looks like a premium clinical product
-- All four sections (Appointments, Patients, Notifications, Consultations) use consistent premium card/row styling
-- Notifications pending rows have a clear visual accent
-- Summary panel renders with elevated card style and labeled fields
-- Loading states use skeleton loaders
-- Error states are styled banners, not plain text
-- Confirm button is prominent and accessible
-- All existing functionality intact (Confirm, View summary, Logout)
+- Deployed Fabel 5 premium dashboard smoke documented as PASS
+- Metric cards visible
+- View summary / Hide summary confirmed in browser
+- Confirm flow confirmed
+- Logout confirmed
+- Staging demo badge visible
 - Full tests pass
-- Commit: `Sprint 18 / Module 126 — Fabel 5 premium dashboard UI/UX polish`
+- Commit: `Sprint 18 / Module 126B — Deployed Fabel 5 dashboard UI smoke evidence`
 
 ---
 
-## Upcoming (commercial MVP build track, post-Module 126)
+## Upcoming (commercial MVP build track, post-Module 126B)
 
 - **Module 127** — Consultation summary draft generator
 - **Module 128** — Patient timeline

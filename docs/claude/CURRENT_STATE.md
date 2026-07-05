@@ -1698,6 +1698,17 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
    - Full backend tests: 2754/2754 passed
 
+131. Module 126 — Fabel 5 Premium Dashboard UI/UX Polish
+   - Date: 2026-07-05
+   - Sprint 18 / Commercial MVP + clinic outreach track
+   - `frontend/app/globals.css` (updated — extended premium design token set: --color-card, --color-bg, --color-text-sub/muted/faint hierarchy, --color-brand-50/100, --color-success/success-bg, --color-warning-bg, --badge-amber-bg/text, --radius-sm/lg/xl, --shadow-xs/md/panel, antialiased fonts)
+   - `frontend/app/dashboard/page.tsx` (updated — Fabel 5 full redesign: sticky premium header with brand + staging demo badge + logout; 4-card metrics row (Appointments/Patients/Notifications/Pending confirmations); SectionCard/SectionHeader/EmptyState/LoadingState/ErrorState reusable components; appointments as primary full-width; two-column responsive grid for patients+notifications; pending notifications have brand-blue left border accent; summary panel styled as blue-50 elevated card with labeled dl; suggested action in brand blue bold; safety note below rule in muted; footer with fake-data staging wording; all data- attributes preserved)
+   - `backend/tests/test_frontend_fabel5_premium_dashboard_contract.py` (new — 22 static contract tests: premium header, staging demo indicator, metric cards, pending confirmations, all 4 sections, view/hide summary, confirm, suggested_next_action, safety_note, no diagnosis, no medical advice, credentials include, no token storage, internal only, fake/non-PHI wording, premium card component, premium globals.css tokens, no secrets)
+   - `docs/architecture/FABEL_5_PREMIUM_DASHBOARD_UI_UX_POLISH.md` (new)
+   - All existing functionality preserved: login/session/logout, appointments/patients/notifications/consultations, View summary, Confirm, credentials: include, no token storage
+   - No backend API changes; no migration; no external delivery; no diagnosis; no medical advice; no real patient data; no secrets; production PHI NO-GO
+   - Full backend tests: 2801/2801 passed
+
 130. Module 125B — Deployed Dashboard Notification and Summary UI Smoke Evidence
    - Date: 2026-07-05
    - Sprint 17 / Commercial MVP build track
