@@ -1661,3 +1661,17 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 14 pre-appointment summary PASS added)
    - `backend/tests/test_pre_appointment_summary_deployed_smoke_evidence_contract.py` (new — 24 static contract tests)
    - Full backend tests: 2689/2689 passed
+
+126. Module 123 — Doctor Notification System Foundation
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - `backend/app/modules/notifications/notification_router.py` (updated — `create_appointment_request_notification` enhanced: `reason` and `suggested_next_action` params added; richer message body with patient_name, reason, suggested action)
+   - `backend/app/modules/vapi/vapi_appointment_capture.py` (updated — passes `reason=reason` and `suggested_next_action="Review and confirm"` to notification call)
+   - `backend/tests/test_doctor_notification_foundation.py` (new — 15 tests: notification_type/related_resource_type/related_resource_id/clinic_id/channel/message-patient_name/message-reason/message-suggested_action/no-diagnosis/no-medical-advice/omits-reason-when-missing/vapi-capture-notification_created-true/vapi-capture-notification_created-false/list-401/list-403)
+   - `docs/architecture/DOCTOR_NOTIFICATION_SYSTEM_FOUNDATION.md` (new — data model; tenant isolation; no external delivery; safety boundaries; future delivery path; how to enable doctor phone notification later; production PHI NO-GO)
+   - Existing notification infrastructure reused: clinic_notifications table, notification_repo, notification_router, notification routes — no new table or migration required
+   - Notification scoped by clinic_id; references appointment_request_id via related_resource_id
+   - Notification channel = "internal" only; no SMS/push/email/webhook
+   - No diagnosis, no medical advice, no secrets, no real patient data
+   - Fake/non-PHI staging only; production PHI readiness: NO-GO
+   - Full backend tests: 2704/2704 passed

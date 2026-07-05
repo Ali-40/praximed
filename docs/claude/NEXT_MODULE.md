@@ -1,4 +1,4 @@
-# Sprint 17 / Module 123 — Doctor Notification System Foundation
+# Sprint 17 / Module 124 — Deployed Doctor Notification Smoke Evidence
 
 Status: pending implementation.
 
@@ -14,50 +14,61 @@ Modules 122 and 122B complete:
 - `build_pre_appointment_summary` service: structured factual brief; no AI; no diagnosis
 - 25 tests; full suite: 2689/2689 passed
 - Deployed smoke PASS (Module 122B): doctor cookie auth → summary with `patient_type: returning`, `suggested_next_action: Review and confirm`, safety_note present
-- Commercial acceleration mode active — clinic outreach in parallel
+
+Module 123 complete:
+- Internal `clinic_notifications` row created for every Vapi appointment capture
+- Notification includes patient_name, reason, suggested_next_action ("Review and confirm")
+- Notification scoped by clinic_id; references appointment_requests.id
+- channel = "internal"; no external delivery
+- No diagnosis, no medical advice
+- 15 new tests; full suite: 2704/2704 passed
 
 ## Goal
 
-Build the foundation for notifying doctors and clinic reception when a new
-appointment request arrives or requires action. Initial scope: a safe internal
-notification record (the same `clinic_notifications` table already in the schema),
-later extended to email/push delivery.
+Document real deployed staging evidence that Module 123 is live:
+a new Vapi appointment request creates a notification row, and the
+notification list endpoint returns it for authenticated staff/doctors.
 
 ## Scope
 
-Backend only. No frontend changes in this module. Full test suite must pass.
+**Docs/static-tests only.** No runtime code changes. No new migrations. No secrets.
+No real patient data. No production PHI. Do not mark production ready.
 
-## What Module 123 must do
+## What Module 124 must do
 
-1. **Notification creation** — when a new appointment_request is created via Vapi
-   capture, create a `clinic_notifications` row for the clinic's doctors/staff.
-   Include a brief summary (patient name, reason, suggested action) as the
-   notification body.
+1. **Redeploy** — push/redeploy Module 123 to Railway staging.
 
-2. **Notification type** — use `notification_type = "appointment_request"` (or a
-   new type if it doesn't exist); link `related_resource_id` to the
-   `appointment_requests.id`.
+2. **Create a fake Vapi appointment request** — call the Vapi capture endpoint
+   with fake non-PHI data (e.g., patient name "Notification Smoke Patient",
+   reason "annual check-up", fake call_id).
 
-3. **Pre-appointment summary integration** — the notification body should reference
-   the pre-appointment summary fields (patient_name, reason, suggested_next_action)
-   without repeating the full summary.
+3. **Verify notification row exists** — query the notification list endpoint
+   (`GET /notifications?clinic_id=...`) with doctor cookie auth; confirm the
+   new `appointment_request` notification appears with status `pending`,
+   `related_resource_type = "appointment_requests"`, and the correct
+   `related_resource_id`.
 
-4. **Recipient targeting** — notification should target clinic staff (broadcast to
-   all active staff/doctors in the clinic, or use a configurable role targeting).
+4. **Verify notification content** — confirm the message includes the patient
+   name; confirm no diagnosis or medical advice appears.
 
-5. **Tests** — full test suite must pass; new module tests cover notification creation
-   and content fields.
+5. **Optional: dashboard notification count** — if the frontend notification
+   badge/list already queries `/notifications`, confirm the count updates.
+
+6. **Document evidence** — write evidence doc; no secrets, no real patient data.
+
+7. **Update wiring/smoke docs** — mark doctor notification PASS in
+   `STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` and
+   `STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md`.
 
 ## What not to do
 
-- Do not send real email or push notifications yet (delivery is a later module)
+- Do not send real email or push notifications
 - Do not expose notification content to unauthenticated callers
-- Do not generate diagnosis or medical advice in notification bodies
+- Do not generate diagnosis or medical advice
 - Do not auto-confirm the appointment
 - Do not store any real patient data
 - Do not generate, record, or commit any real secrets or credential values
 - Do not deploy to production
-- Do not change auth/session code (separate hardening track)
 
 ## Safety constraints
 
@@ -66,42 +77,35 @@ Backend only. No frontend changes in this module. Full test suite must pass.
 - No real patient name, phone, DOB, or medical history in any file
 - Doctor/staff approval remains required — no automated confirmation path
 - No medical advice or diagnosis in notification body
+- No secrets recorded in evidence docs
 
 ## Reference docs
 
+- `docs/architecture/DOCTOR_NOTIFICATION_SYSTEM_FOUNDATION.md` — Module 123
 - `docs/architecture/PRE_APPOINTMENT_SUMMARY_FOUNDATION.md` — Module 122 summary service
-- `docs/architecture/PATIENT_APPOINTMENT_DATA_LINKING_FOUNDATION.md` — Module 121 linking
-- `backend/app/db/repositories/notification_repo.py` — existing notification repo
-- `backend/app/modules/notifications/notification_router.py` — existing notification router
-- `backend/app/db/schema.sql` — `clinic_notifications` table definition
+- `backend/app/modules/notifications/notification_router.py` — notification router
+- `backend/app/api/routes/notifications.py` — notification API routes
+- `backend/app/db/repositories/notification_repo.py` — notification repo
 
 ## Acceptance
 
-- Notification created when Vapi appointment request is captured
-- Notification body includes patient name, reason, and suggested next action
-- Notification is scoped by clinic_id (tenant isolation)
+- Railway redeployed with Module 123 changes
+- Fake Vapi appointment request created in staging
+- Notification row confirmed in Railway PostgreSQL via list endpoint
+- Notification message includes patient name and reason
 - No diagnosis or medical advice in notification content
-- Existing Vapi/dashboard/Confirm flow remains compatible
-- Full test suite passes
-- Commit: `Sprint 17 / Module 123 — Doctor notification system foundation`
+- No secrets recorded
+- Fake/non-PHI data only
+- Production PHI readiness: NO-GO
+- Commit: `Sprint 17 / Module 124 — Deployed doctor notification smoke evidence`
 
 ---
 
-## Parallel non-code task (runs alongside Module 123)
+## Upcoming (commercial MVP build track, post-Module 124)
 
-**Build first list of 50 private clinics in Vienna and start outreach immediately.**
-
-Sources: Docfinder.at, WKO Ärzteliste, Google Maps, LinkedIn.
-Format: clinic name / specialty / contact name / phone / email / Google Maps link / notes.
-Target: 50 clinics identified; 10–15 first-contact messages or calls within 14 days.
-
----
-
-## Upcoming (commercial MVP build track, post-Module 123)
-
-- **Module 124** — Consultation summary draft generator
-- **Module 125** — Patient timeline
-- **Module 126** — Follow-up and reminder workflow
+- **Module 125** — Consultation summary draft generator
+- **Module 126** — Patient timeline
+- **Module 127** — Follow-up and reminder workflow
 
 ## Upcoming (production hardening track, parallel)
 

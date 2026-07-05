@@ -210,14 +210,21 @@ async def create_appointment_request_notification(
     request_id: str,
     patient_name: str,
     urgency_level: str = "normal",
+    reason: Optional[str] = None,
+    suggested_next_action: Optional[str] = None,
     recipient_user_id: Optional[str] = None,
     raw_payload: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    reason_part = f" Reason: {reason}." if reason else ""
+    action_part = f" Action: {suggested_next_action}." if suggested_next_action else ""
+    message = (
+        f"New appointment request from {patient_name}.{reason_part}{action_part}"
+    )
     return await route_notification_event(pool, {
         "clinic_id":             clinic_id,
         "notification_type":     "appointment_request",
         "title":                 "New appointment request",
-        "message":               f"A new appointment request has been received from {patient_name}.",
+        "message":               message,
         "channel":               "internal",
         "urgency_level":         urgency_level,
         "recipient_user_id":     recipient_user_id,

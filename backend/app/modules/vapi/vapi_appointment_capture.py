@@ -210,6 +210,8 @@ async def capture_vapi_appointment_request(
             request_id=request_id,
             patient_name=patient_name,
             urgency_level=urgency_level,
+            reason=reason,
+            suggested_next_action="Review and confirm",
             raw_payload=raw_payload,
         )
         notification_created = True
