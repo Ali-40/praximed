@@ -82,8 +82,8 @@ services and evidence is provided by the developer.
 ## 4. Smoke Checklist Status
 
 Each check below reflects the expected verification during real staging smoke execution.
-Core checks 1–16 are confirmed PASS against live deployed staging services (Modules 112–125B).
-Check 17 (n8n) is NOT ENABLED / DEFERRED. Checks 18–19 remain PENDING.
+Core checks 1–17 are confirmed PASS against live deployed staging services (Modules 112–126B).
+Check 18 (n8n) is NOT ENABLED / DEFERRED. Checks 19–20 remain PENDING.
 
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
@@ -103,9 +103,10 @@ Check 17 (n8n) is NOT ENABLED / DEFERRED. Checks 18–19 remain PENDING.
 | 14 | Pre-appointment summary (Module 122B) | `GET /appointment-requests/{id}/pre-appointment-summary` → 200; structured non-diagnostic summary; `suggested_next_action: Review and confirm`; `safety_note` present; no diagnosis; doctor cookie auth | **PASS** — deployed smoke PASS; commercial MVP data foundation improved (Module 122B) | — |
 | 15 | Internal doctor notification (Module 124) | Vapi appointment capture creates `clinic_notifications` row; `notification_count=1`; clinic_id scoped; `related_resource_id` links to appointment_request; `channel: internal`; no external delivery | **PASS** — deployed smoke PASS; UUID→str fix (Module 123A); dashboard notification UI partially pending; external delivery pending (Module 124) | — |
 | 16 | Dashboard summary UI (Module 125B) | Deployed dashboard shows "View summary" / "Hide summary" toggle; inline summary panel with Patient/Type/Reason/Urgency/Prior visits/Suggested action/Safety note; Confirm button remains compatible; no diagnosis; no medical advice; deployed commit `ab08b7a` | **PASS** — deployed browser smoke PASS (Module 125B) | — |
-| 17 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
-| 18 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | Pending manual review |
-| 19 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | Documented in runbooks |
+| 17 | Fabel 5 premium dashboard (Module 126B) | Premium header; staging demo badge; Clinic Overview heading; fake-data subtitle; metric cards (Appts 9 / Patients 6 / Notifications 1 / Pending 0); appointment rows; confirmed badges; View summary buttons; Notifications card; pending notification badge; footer safety text; deployed commit `36b91be` | **PASS** — deployed browser smoke PASS (Module 126B) | — |
+| 18 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
+| 19 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | Pending manual review |
+| 20 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | Documented in runbooks |
 
 ---
 

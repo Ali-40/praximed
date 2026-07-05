@@ -122,7 +122,7 @@ Production PHI launch remains NO-GO.
 | Dashboard summary UI (Module 125B) | View summary / Hide summary; inline summary panel; Patient/Type/Reason/Urgency/Prior visits/Suggested action/Safety note all visible; Confirm compatible; deployed commit `ab08b7a` | **PASS** |
 | Dashboard notification UI display | Internal notification DB proven (Module 124); notification list display in dashboard UI not separately verified in Module 125B browser smoke — partially pending | PARTIALLY PENDING |
 | External phone/email/SMS/WhatsApp delivery | Not implemented — future module | — | PENDING |
-| Fabel 5 premium UI/UX polish | Not yet implemented — Sprint 18 / Module 126 | — | PENDING |
+| Fabel 5 premium UI/UX polish (Module 126B) | Premium header, staging demo badge, metric cards, appointment rows, notifications, View summary buttons, footer safety text all visible; deployed commit `36b91be` | **PASS** |
 | n8n staging configured (if enabled) | Not available yet | — | PENDING/DEFERRED |
 | No secrets in any evidence record | Confirmed through Module 121B | **PASS** |
 | No real patient data in staging | Confirmed — fake/non-PHI data only | **PASS** |

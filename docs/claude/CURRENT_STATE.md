@@ -1698,6 +1698,31 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
    - Full backend tests: 2754/2754 passed
 
+132. Module 126B — Deployed Fabel 5 Premium Dashboard UI/UX Smoke Evidence
+   - Date: 2026-07-05
+   - Sprint 18 / Commercial MVP + clinic outreach track
+   - Docs/static-tests only — no runtime code changes, no migrations, no secrets
+   - Vercel deployment status: Ready
+   - Deployed commit: 36b91be
+   - Premium header visible: PraxisMed / Clinic Dashboard — **PASS**
+   - Staging demo badge visible — **PASS**
+   - Clinic Overview heading visible — **PASS**
+   - Fake-data staging subtitle visible — **PASS**
+   - Metric cards: Appointments 9 / Patients 6 / Notifications 1 / Pending confirmations 0 — **PASS**
+   - Appointment Requests primary card visible — **PASS**
+   - Appointment rows, confirmed badges, normal urgency badges visible — **PASS**
+   - View summary buttons visible — **PASS**
+   - Patients card visible — **PASS**
+   - Notifications card visible; pending badge + message preview visible — **PASS**
+   - Footer safety text: "Staging demo — fake data only · No real patient data · Production PHI: NO-GO" — **PASS**
+   - Confirm not re-tested (all rows already confirmed; prior proof stands from 118B/125B)
+   - No real patient data; no secrets; production PHI NO-GO
+   - `docs/runtime/FABEL_5_PREMIUM_DASHBOARD_DEPLOYED_SMOKE_EVIDENCE.md` (new)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` (updated — Fabel 5 premium dashboard UI/UX PASS)
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 17 Fabel 5 PASS added)
+   - `backend/tests/test_fabel_5_premium_dashboard_deployed_smoke_evidence_contract.py` (new — 27 static contract tests)
+   - Full backend tests: 2828/2828 passed
+
 131. Module 126 — Fabel 5 Premium Dashboard UI/UX Polish
    - Date: 2026-07-05
    - Sprint 18 / Commercial MVP + clinic outreach track
