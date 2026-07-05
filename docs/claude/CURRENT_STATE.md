@@ -1571,3 +1571,24 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No runtime code changed; docs/static-tests only
    - UI/UX Fabel 5 premium demo polish remains upcoming after critical hardening (Sprint 18)
    - Full backend tests: 2570/2570 passed
+
+## Architecture Checkpoint 17
+
+- Architecture Checkpoint 17 created: `docs/architecture/ARCHITECTURE_CHECKPOINT_17_COMMERCIAL_MVP_OUTREACH_ACCELERATION.md`
+- Date: 2026-07-05
+- Mode: Commercial acceleration — outreach starts now while product build continues
+- Technical base commit: 38e9234 (Module 120B)
+- Full backend tests at checkpoint: 2570/2570 passed
+- Key decisions:
+  - Clinic outreach: **START IMMEDIATELY** — fake-data staging demo is compelling; no code changes required for outreach
+  - 30-day pilot offer: **ACTIVE** — fake/test data only; no real PHI; founding clinic partner framing
+  - Production PHI launch: **NO-GO** — C3–C8 hardening blockers still open
+  - Fabel 5 premium UI/UX: **Sprint 18 — high priority** after critical hardening complete
+  - Commercial MVP next module: **Module 121 — Patient and Appointment Data Linking Foundation**
+  - Parallel non-code task: **Build first 50 private clinic list (Vienna) and start outreach**
+- What can be shown now: AI phone call → dashboard → staff Confirm workflow; secure login; multi-tenant architecture
+- What must not be claimed: GDPR/HIPAA compliant; ready for real patient data; automated confirmation; full calendar integration
+- Indicative pricing: €149–199/month (Starter) / €299–399/month (Growth) / €599–799/month (Practice)
+- Founding clinic discount: 50% off for 12 months for first 5 clinics
+- Safety constraints enforced: no real patient data; no production PHI; no secrets; no compliance claims; no automated confirmation
+- `backend/tests/test_architecture_checkpoint_17_commercial_mvp_outreach_acceleration_contract.py` (new — 24 static contract tests)
