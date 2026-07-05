@@ -1698,6 +1698,23 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO; premium polish deferred to Sprint 18 (Fabel 5)
    - Full backend tests: 2754/2754 passed
 
+133. Module 127 — Clinic Outreach Asset and 30-Day Pilot Offer Pack
+   - Date: 2026-07-05
+   - Sprint 18 / Commercial MVP + clinic outreach track
+   - Docs/static-tests only — no runtime code changes, no migrations, no secrets
+   - `docs/business/CLINIC_OUTREACH_30_DAY_PILOT_PACK.md` (new — 18-section outreach pack):
+     product positioning; what we can safely show now; what not to claim; 30-day pilot offer;
+     pricing recommendation (€299/€499/month; setup fee waived for pilot clinics);
+     ideal clinic types; 50-clinic outreach list schema; email script (EN); German script (DE);
+     phone call script; WhatsApp/LinkedIn message; 15-minute demo call structure;
+     demo script using live dashboard; objection handling (6 objections with honest answers);
+     follow-up sequence; contract/pilot next steps; safety/legal boundaries; daily outreach targets
+   - `backend/tests/test_clinic_outreach_30_day_pilot_pack_contract.py` (new — 25 static contract tests)
+   - Safe claims only: fake-data staging demo; no production PHI claim; no DSGVO/GDPR compliance claim
+   - Immediate outreach can begin using the pack
+   - Production PHI readiness: NO-GO
+   - Full backend tests: 2853/2853 passed
+
 132. Module 126B — Deployed Fabel 5 Premium Dashboard UI/UX Smoke Evidence
    - Date: 2026-07-05
    - Sprint 18 / Commercial MVP + clinic outreach track
