@@ -82,8 +82,8 @@ services and evidence is provided by the developer.
 ## 4. Smoke Checklist Status
 
 Each check below reflects the expected verification during real staging smoke execution.
-Core checks 1–12 are confirmed PASS against live deployed staging services (Modules 112–118B).
-Check 13 (n8n) is NOT ENABLED / DEFERRED. Checks 14–15 remain PENDING.
+Core checks 1–15 are confirmed PASS against live deployed staging services (Modules 112–124).
+Check 16 (n8n) is NOT ENABLED / DEFERRED. Checks 17–18 remain PENDING.
 
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
@@ -101,9 +101,10 @@ Check 13 (n8n) is NOT ENABLED / DEFERRED. Checks 14–15 remain PENDING.
 | 12 | Staff Confirm Vapi row | Row status updates to `confirmed` after staff PATCH; `action_required` becomes `False` | **PASS** — two rows confirmed via dashboard Confirm; one row remained `status: new`; no auto-confirm observed (Module 118B) | — |
 | 13 | Patient/appointment linking (Module 121B) | Vapi endpoint creates appointment_request with non-null `patient_id`; joined patients row exists; `clinic_id` scoped | **PASS** — direct Vapi endpoint smoke; `patient_id` column and index confirmed in Railway PostgreSQL; commercial MVP data foundation improved (Module 121B) | — |
 | 14 | Pre-appointment summary (Module 122B) | `GET /appointment-requests/{id}/pre-appointment-summary` → 200; structured non-diagnostic summary; `suggested_next_action: Review and confirm`; `safety_note` present; no diagnosis; doctor cookie auth | **PASS** — deployed smoke PASS; commercial MVP data foundation improved (Module 122B) | — |
-| 15 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
-| 16 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | Pending manual review |
-| 17 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | Documented in runbooks |
+| 15 | Internal doctor notification (Module 124) | Vapi appointment capture creates `clinic_notifications` row; `notification_count=1`; clinic_id scoped; `related_resource_id` links to appointment_request; `channel: internal`; no external delivery | **PASS** — deployed smoke PASS; UUID→str fix (Module 123A); dashboard notification UI pending; external delivery pending (Module 124) | — |
+| 16 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
+| 17 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | Pending manual review |
+| 18 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | Documented in runbooks |
 
 ---
 

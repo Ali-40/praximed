@@ -1686,3 +1686,30 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/architecture/DOCTOR_NOTIFICATION_SYSTEM_FOUNDATION.md` (updated — Module 123A section added: root cause, fix summary, why tests passed before fix)
    - No real patient data; no secrets; fake-data staging only; production PHI NO-GO
    - Full backend tests: 2709/2709 passed
+
+128. Module 124 — Deployed Doctor Notification Smoke Evidence
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - Docs/static-tests only — no runtime code changes, no migrations, no secrets
+   - Deployed commit: b74a7ee (Module 123A — doctor notification creation blocker fix)
+   - Fake Vapi appointment request created after redeploy
+   - Railway DB notification_count=1 after fake Vapi call — **PASS**
+   - Notification id: 5d84860d-0adc-45bb-995b-955e388d46e5
+   - clinic_id: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056 (staging fake clinic — tenant isolation holds)
+   - channel: internal (no external delivery confirmed)
+   - notification_type: appointment_request
+   - title: New appointment request
+   - message: "New appointment request from Doctor Notification Patient. Reason: Routine checkup doctor notification smoke. Action: Review and confirm."
+   - status: pending
+   - related_resource_type: appointment_requests
+   - related_resource_id: a7d25ac1-31a8-4179-904e-6a06617e040f (linked to appointment request)
+   - error_message: None
+   - Dashboard: Appointments count 9; Doctor Notification Patient visible; Patients count 6
+   - Dashboard notification UI: not proven (display pending — Module 125)
+   - External phone/email/SMS/WhatsApp delivery: not attempted (future module)
+   - No real patient data; no secrets; no diagnosis; no medical advice; fake-data staging only; production PHI NO-GO
+   - `docs/runtime/DOCTOR_NOTIFICATION_DEPLOYED_SMOKE_EVIDENCE.md` (new)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` (updated — internal doctor notification DB PASS; dashboard UI PENDING; external delivery PENDING)
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 15 internal doctor notification PASS added)
+   - `backend/tests/test_doctor_notification_deployed_smoke_evidence_contract.py` (new — 24 static contract tests)
+   - Full backend tests: 2733/2733 passed

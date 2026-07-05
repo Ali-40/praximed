@@ -1,4 +1,4 @@
-# Sprint 17 / Module 124 — Deployed Doctor Notification Smoke Evidence
+# Sprint 17 / Module 125 — Dashboard Notification and Summary UI Foundation
 
 Status: pending implementation.
 
@@ -13,59 +13,56 @@ Modules 122 and 122B complete:
 - `GET /appointment-requests/{id}/pre-appointment-summary` live
 - `build_pre_appointment_summary` service: structured factual brief; no AI; no diagnosis
 - 25 tests; full suite: 2689/2689 passed
-- Deployed smoke PASS (Module 122B): doctor cookie auth → summary with `patient_type: returning`, `suggested_next_action: Review and confirm`, safety_note present
+- Deployed smoke PASS (Module 122B)
 
-Module 123 complete:
+Modules 123, 123A, and 124 complete:
 - Internal `clinic_notifications` row created for every Vapi appointment capture
-- Notification includes patient_name, reason, suggested_next_action ("Review and confirm")
-- Notification scoped by clinic_id; references appointment_requests.id
-- channel = "internal"; no external delivery
-- No diagnosis, no medical advice
-- 15 new tests; full suite: 2704/2704 passed
+- UUID→str blocker fixed (Module 123A)
+- Deployed smoke PASS (Module 124): notification_count=1; clinic-scoped; linked to appointment request
+- Dashboard notification UI not yet wired
 
 ## Goal
 
-Document real deployed staging evidence that Module 123 is live:
-a new Vapi appointment request creates a notification row, and the
-notification list endpoint returns it for authenticated staff/doctors.
+Surface the internal notification foundation and pre-appointment summary in the
+existing dashboard UI. The current dashboard has Notifications and Appointments
+sections — wire them to the live backend endpoints so clinic staff and doctors see
+notification alerts and per-appointment summaries without building a new UI from scratch.
+
+This module prepares the UI for the Fabel 5 premium polish sprint (Sprint 18).
 
 ## Scope
 
-**Docs/static-tests only.** No runtime code changes. No new migrations. No secrets.
-No real patient data. No production PHI. Do not mark production ready.
+Frontend + (minor backend if needed) + tests + docs.
+Fake-data staging only. No real patient data. No production PHI. No secrets.
+No external phone/email/SMS/WhatsApp delivery.
+Do not mark production ready.
 
-## What Module 124 must do
+## What Module 125 must do
 
-1. **Redeploy** — push/redeploy Module 123 to Railway staging.
+1. **Notifications section** — the dashboard Notifications section should display
+   the list of `clinic_notifications` from `GET /notifications?clinic_id=...`.
+   Show: title, message (truncated), status, created_at.
+   Highlight `status=pending` rows.
 
-2. **Create a fake Vapi appointment request** — call the Vapi capture endpoint
-   with fake non-PHI data (e.g., patient name "Notification Smoke Patient",
-   reason "annual check-up", fake call_id).
+2. **Pre-appointment summary link** — each appointment row in the Appointments section
+   should have a "View Summary" button or link that fetches and displays the
+   `GET /appointment-requests/{id}/pre-appointment-summary` for that row.
+   Summary display: patient_name, reason, suggested_next_action, safety_note.
+   No diagnosis, no medical advice in display.
 
-3. **Verify notification row exists** — query the notification list endpoint
-   (`GET /notifications?clinic_id=...`) with doctor cookie auth; confirm the
-   new `appointment_request` notification appears with status `pending`,
-   `related_resource_type = "appointment_requests"`, and the correct
-   `related_resource_id`.
+3. **Simple, functional UI** — not premium yet; Sprint 18 (Fabel 5) handles polish.
+   The goal is data wired and visible, not visual perfection.
 
-4. **Verify notification content** — confirm the message includes the patient
-   name; confirm no diagnosis or medical advice appears.
+4. **Fake data only** — all staging data is non-PHI. No real patient names.
 
-5. **Optional: dashboard notification count** — if the frontend notification
-   badge/list already queries `/notifications`, confirm the count updates.
-
-6. **Document evidence** — write evidence doc; no secrets, no real patient data.
-
-7. **Update wiring/smoke docs** — mark doctor notification PASS in
-   `STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` and
-   `STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md`.
+5. **Tests** — frontend component/integration tests if framework supports it.
+   Backend tests for any new API changes (should be minimal — endpoints exist).
 
 ## What not to do
 
-- Do not send real email or push notifications
-- Do not expose notification content to unauthenticated callers
-- Do not generate diagnosis or medical advice
-- Do not auto-confirm the appointment
+- Do not build push/email/SMS/WhatsApp notification delivery
+- Do not add diagnosis or medical advice to notification or summary display
+- Do not auto-confirm the appointment from the summary view
 - Do not store any real patient data
 - Do not generate, record, or commit any real secrets or credential values
 - Do not deploy to production
@@ -76,36 +73,35 @@ No real patient data. No production PHI. Do not mark production ready.
 - Production PHI readiness: NO-GO (C3–C8 hardening blockers still open)
 - No real patient name, phone, DOB, or medical history in any file
 - Doctor/staff approval remains required — no automated confirmation path
-- No medical advice or diagnosis in notification body
-- No secrets recorded in evidence docs
+- No medical advice or diagnosis in notification body or summary display
+- No secrets recorded in any evidence
 
 ## Reference docs
 
-- `docs/architecture/DOCTOR_NOTIFICATION_SYSTEM_FOUNDATION.md` — Module 123
-- `docs/architecture/PRE_APPOINTMENT_SUMMARY_FOUNDATION.md` — Module 122 summary service
-- `backend/app/modules/notifications/notification_router.py` — notification router
-- `backend/app/api/routes/notifications.py` — notification API routes
-- `backend/app/db/repositories/notification_repo.py` — notification repo
+- `docs/architecture/DOCTOR_NOTIFICATION_SYSTEM_FOUNDATION.md` — Module 123/123A
+- `docs/architecture/PRE_APPOINTMENT_SUMMARY_FOUNDATION.md` — Module 122
+- `backend/app/api/routes/notifications.py` — `GET /notifications?clinic_id=...`
+- `backend/app/api/routes/appointment_requests.py` — `GET /{id}/pre-appointment-summary`
+- `frontend/` — existing dashboard UI
 
 ## Acceptance
 
-- Railway redeployed with Module 123 changes
-- Fake Vapi appointment request created in staging
-- Notification row confirmed in Railway PostgreSQL via list endpoint
-- Notification message includes patient name and reason
-- No diagnosis or medical advice in notification content
-- No secrets recorded
-- Fake/non-PHI data only
-- Production PHI readiness: NO-GO
-- Commit: `Sprint 17 / Module 124 — Deployed doctor notification smoke evidence`
+- Dashboard Notifications section displays `clinic_notifications` rows from live API
+- Dashboard Appointments section has per-row "View Summary" that fetches pre-appointment summary
+- No diagnosis or medical advice displayed
+- Safety note present in summary display
+- Existing Vapi/dashboard/Confirm/notification flow remains compatible
+- Fake data only; production PHI NO-GO
+- Full tests pass
+- Commit: `Sprint 17 / Module 125 — Dashboard notification and summary UI foundation`
 
 ---
 
-## Upcoming (commercial MVP build track, post-Module 124)
+## Upcoming (commercial MVP build track, post-Module 125)
 
-- **Module 125** — Consultation summary draft generator
-- **Module 126** — Patient timeline
-- **Module 127** — Follow-up and reminder workflow
+- **Module 126** — Consultation summary draft generator
+- **Module 127** — Patient timeline
+- **Module 128** — Follow-up and reminder workflow
 
 ## Upcoming (production hardening track, parallel)
 
