@@ -1,83 +1,89 @@
-# Sprint 17 / Module 119 — Production Hardening Gap Review
+# Sprint 17 / Module 120 — Auth/Session Hardening Implementation Plan
 
-Status: pending structured review of production readiness gaps identified in Architecture Checkpoint 16.
+Status: pending implementation of httpOnly Secure SameSite cookie session model.
 
 ## Context
 
-Architecture Checkpoint 16 complete:
-- Sprint 16 fake-data staging core: FAKE-DATA STAGING CORE PASS
-- Full deployed loop confirmed: Vapi → Railway backend → Railway PostgreSQL → Vercel dashboard → staff Confirm
-- n8n staging: PENDING/DEFERRED
-- Production PHI readiness: NO-GO
-- Full test suite: 2468/2468 passed (+ Architecture Checkpoint 16 contract tests)
-- Commit: f602612 (Module 118B)
+Module 119 complete:
+- Production hardening gap review created: `docs/architecture/PRODUCTION_HARDENING_GAP_REVIEW.md`
+- Critical blockers C1–C8 identified; Module 120 is the first critical to close
+- Fake-data staging core: PASS
+- Production PHI readiness: NO-GO (auth/session hardening is the first blocking gap)
+- Full test suite: 2516/2516 passed
+- Commit: Sprint 17 / Module 119
 
-## Primary Recommendation
+## Goal
 
-**Sprint 17 / Module 119 — Production Hardening Gap Review**
-
-Before production use, clinic demos with real patients, or onboarding real data, the
-project needs a structured review of production hardening gaps. This module produces a
-prioritized, actionable module plan for closing those gaps.
+Implement the httpOnly Secure SameSite cookie session model (Option B from
+`docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` Section 6) to replace the
+`sessionStorage` JWT token storage that is flagged in the code as local-dev only.
 
 ## Scope
 
-Docs only. No runtime code changes. No deployment changes. No secrets. No production data.
+Implementation only. No secrets. No production deployment. No real patient data.
 
-## What Module 119 should deliver
+## What Module 120 must do
 
-### 1. Gap inventory
+### Backend changes
 
-Review each item from Architecture Checkpoint 16 Section 6 and produce a gap record:
+1. `POST /auth/login` — set httpOnly Secure SameSite=Lax cookie instead of (or
+   in addition to) returning the token in the JSON body during a migration window:
+   ```
+   Set-Cookie: praximed_session=<JWT>; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600
+   ```
 
-| Gap | Current state | Risk level | Recommended module(s) |
-|---|---|---|---|
-| Production auth/session hardening (httpOnly cookie for JWT) | sessionStorage (fake-data only; XSS-accessible) | HIGH | Module 120+ |
-| Production secrets rotation | Staging secrets still in use | HIGH | Module 120+ |
-| PHI/compliance review (GDPR/HIPAA) | Not reviewed | HIGH | Module 120+ |
-| Custom domain | Vercel/Railway default URLs | MEDIUM | Module 120+ |
-| Monitoring / logging / alerting / rollback | Not configured | MEDIUM | Module 120+ |
-| Real clinic onboarding flow | No admin workflow | MEDIUM | Module 121+ |
-| n8n staging workflow | PENDING/DEFERRED | LOW | Module 122+ (optional) |
-| UI/UX polish (Fabel 5 or equivalent) | Deferred | LOW | Separate UX sprint |
+2. `get_current_user` dependency — read JWT from cookie (`praximed_session`) in
+   addition to (or instead of) `Authorization: Bearer` header:
+   - File: `backend/app/api/dependencies/current_user.py`
+   - Try `Authorization` header first (backward compat); fall back to cookie
 
-### 2. Ordered module plan
+3. New `POST /auth/logout` route:
+   - Clear the `praximed_session` cookie (`Max-Age=0`)
+   - Return HTTP 200
 
-Produce a recommended ordered sprint/module plan (Sprint 17+) that addresses the HIGH
-priority items before any production or PHI-bearing use.
+4. (Optional for MVP) `POST /auth/refresh` — issue a new cookie from expiry check
 
-### 3. Production NO-GO confirmation
+### Frontend changes
 
-Explicitly confirm that the following must be true before production PHI access:
+5. `frontend/lib/api.ts` — add `credentials: "include"` to all `fetch` calls;
+   remove `Authorization: Bearer` header injection (or leave it for transition)
 
-- httpOnly cookie auth replaces sessionStorage JWT
-- JWT_SECRET_KEY, VAPI_WEBHOOK_SECRET, DATABASE_URL rotated to fresh production secrets
-- PHI/compliance review complete
-- Railway log stream sanitized (no secrets or PII in logs)
-- Rollback path confirmed
+6. `frontend/lib/auth.ts` — replace `storeToken`/`getToken`/`clearToken`/`isAuthenticated`
+   with a `/auth/me` call or cookie-presence approach
+
+7. `frontend/app/login/page.tsx` — update logout to call `POST /auth/logout`
+
+### Tests
+
+8. Update existing auth/route tests for cookie-based auth
+9. Add new tests: logout clears cookie; unauthenticated cookie request → 401
 
 ## What not to do
 
-- Do not implement httpOnly cookie auth in this module (plan only)
-- Do not deploy to production
-- Do not start Fabel 5/UX sprint
-- Do not configure n8n in this module (it is the alternative path below)
+- Do not implement httpOnly cookie in production — staging and local only
 - Do not record secrets
-- Do not use real patient data
+- Do not deploy to production
+- Do not change machine auth (Vapi/n8n endpoints are unaffected — they use machine
+  auth headers, not browser session)
+- Do not change CORS implementation beyond adding `credentials: "include"` support
 
-## Alternative path
+## Reference docs
 
-**Sprint 16 / Module 119 — n8n Staging Workflow Wiring Evidence**
-
-Choose this instead of the Production Hardening Gap Review only if n8n is immediately
-needed for a demo or integration milestone. n8n staging does not unblock production PHI
-access. Both paths are available — the recommendation is to address production hardening
-first.
+- `docs/deployment/PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md` — Option B cookie migration
+  (Section 6); CSRF strategy (Section 6.4); backend/frontend change tables
+- `docs/security/AUTH_SESSION_HARDENING_IMPLEMENTATION_PLAN.md` — existing plan
+- `backend/app/api/routes/auth.py` — current login route
+- `backend/app/api/dependencies/current_user.py` — current JWT dependency
+- `frontend/lib/auth.ts` — sessionStorage functions to replace
+- `frontend/lib/api.ts` — Bearer header injection to update
 
 ## Acceptance
 
-- Production hardening gap inventory created
-- Ordered module plan (Sprint 17+) produced
-- Production PHI NO-GO explicitly confirmed with gap conditions
-- Full tests pass
-- Commit: `Sprint 17 / Module 119 — Production hardening gap review`
+- `POST /auth/login` sets httpOnly Secure SameSite cookie
+- `get_current_user` reads from cookie (with Bearer header fallback)
+- `POST /auth/logout` clears cookie; returns 200
+- Frontend uses `credentials: "include"` instead of injecting Authorization header
+- Existing PHI route tests pass
+- New tests: logout clears cookie; cookie auth accepted; missing cookie → 401
+- Full test suite passes
+- Commit: `Sprint 17 / Module 120 — Auth/session hardening implementation`
