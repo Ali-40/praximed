@@ -1,8 +1,8 @@
 # Staging Smoke Execution PASS/BLOCKED Evidence — PraxisMed
 
 **Date:** 2026-07-05
-**Sprint:** Sprint 16 / Module 118A
-**Status:** PARTIAL PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard PASS; Vapi dashboard loop BLOCKED (staging_count=0; no DB row was inserted — Module 118A diagnostic; tenant config fix applied); n8n PENDING
+**Sprint:** Sprint 16 / Module 118B
+**Status:** CORE PASS — backend/PostgreSQL/migrations/fake clinic+user/login/Vercel/CORS/dashboard/Vapi/staff Confirm all PASS; n8n PENDING/DEFERRED; production PHI NO-GO
 
 ---
 
@@ -35,17 +35,14 @@ No production secrets. No fabricated success.
 
 ## 2. Current Result
 
-**Overall result: BLOCKED/PENDING**
+**Overall result: CORE PASS**
 
-Railway backend service (Module 112 PASS), Railway PostgreSQL, and migrations
-(Module 114 PASS) are confirmed. Staging fake clinic/user (Module 115 PASS),
-Vercel frontend, CORS wiring, browser login, and dashboard (Module 117 PASS) are
-confirmed. Vapi dashboard loop is BLOCKED: Vapi UI showed "completed successfully"
-but staging_count=0; no DB row was inserted. Module 118A diagnostic found wrong
-headers and missing tenant config; tenant config fix applied in Module 118A. Vapi
-dashboard loop retest pending in Module 118B. n8n remains PENDING. Overall staging
-smoke cannot be marked PASS until all smoke checklist steps in Section 4 are
-confirmed with real evidence.
+All core fake-data staging smoke checks are confirmed PASS (Modules 112–118B):
+Railway backend, Railway PostgreSQL, migrations, fake staging clinic/user, backend
+login, Vercel frontend, CORS, browser login, dashboard, Vapi appointment capture,
+and staff Confirm are all confirmed with real evidence from real deployed staging
+services. n8n staging workflow is PENDING/DEFERRED (optional for initial smoke).
+Production PHI launch remains NO-GO.
 
 Sprint 15/16 runbooks confirmed READY:
 - Module 105: Railway backend service creation runbook (READY)
@@ -72,10 +69,10 @@ services and evidence is provided by the developer.
 | CORS browser call | Browser login succeeds without CORS error; `FRONTEND_CORS_ORIGINS=https://praximed.vercel.app` | Browser login HTTP 200 — no CORS error — Module 117 | **PASS** |
 | Dashboard login | JWT returned; redirect to `/dashboard` | Browser login succeeded; dashboard loaded — Module 117 | **PASS** |
 | Dashboard protected route | `/dashboard` renders; all four sections visible | `https://praximed.vercel.app/dashboard` — Appointments/Patients/Notifications/Consultations visible (count 0) — Module 117 | **PASS** |
-| Appointment Confirm | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff action only | Not available yet | PENDING | Requires existing row |
-| Vapi test assistant call | POST to `/vapi/tools/capture-appointment-request` → 200 | Not available yet | PENDING | Requires Vapi config |
-| Vapi-created appointment row | Row in DB: `status=new`, `action_required=True` | Not available yet | PENDING | Requires Vapi call |
-| Staff Confirm Vapi row | Row updated to `status=confirmed` after staff action; no auto-confirmation | Not available yet | PENDING | Requires Vapi row |
+| Appointment Confirm | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff action only | Two rows updated to `status: confirmed` via dashboard Confirm button; no auto-confirmation — Module 118B | **PASS** |
+| Vapi test assistant call | POST to `/vapi/tools/capture-appointment-request` → 200 | Vapi tool calls created fake appointment rows; Appointments count reached 2 then 3 in dashboard — Module 118B | **PASS** |
+| Vapi-created appointment row | Row in DB: `status=new`, `action_required=True` | `Test Patient` rows visible with `status: new`, `priority: normal`, Confirm button visible — Module 118B | **PASS** |
+| Staff Confirm Vapi row | Row updated to `status=confirmed` after staff action; no auto-confirmation | Two rows confirmed via dashboard Confirm; one row remained `status: new`; no auto-confirm observed — Module 118B | **PASS** |
 | n8n staging fake sync | POST to n8n endpoint → 200; no production calendar write | Not available yet | NOT ENABLED / DEFERRED | Optional for initial smoke |
 | Logs sanitized | No `DATABASE_URL`, secrets, or PII in Railway log stream | Not available yet | PENDING | Confirmed from Railway log view |
 | Rollback path | Previous Railway/Vercel deployment can be restored | Not available yet | PENDING | Documented in runbooks |
@@ -85,7 +82,8 @@ services and evidence is provided by the developer.
 ## 4. Smoke Checklist Status
 
 Each check below reflects the expected verification during real staging smoke execution.
-All are PENDING because no staging services exist at this time.
+Core checks 1–12 are confirmed PASS against live deployed staging services (Modules 112–118B).
+Check 13 (n8n) is NOT ENABLED / DEFERRED. Checks 14–15 remain PENDING.
 
 | # | Smoke Check | Expected Pass Signal | Current Status | Blocker |
 |---|---|---|---|---|
@@ -97,10 +95,10 @@ All are PENDING because no staging services exist at this time.
 | 6 | Fake login (direct backend + browser) | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned | **PASS** — HTTP 200; `access_token` present (REDACTED); `token_type=bearer` (Modules 116 + 117) | — |
 | 7 | Protected dashboard | `/dashboard` returns 200; all four sections render | **PASS** — `https://praximed.vercel.app/dashboard` loaded; Appointments/Patients/Notifications/Consultations all visible (count 0) (Module 117) | — |
 | 8 | Dashboard sections render | Appointment cards / empty state visible; no 500 errors | **PASS** — all four sections showed zero-row empty states; footer confirms fake data (Module 117) | — |
-| 9 | Staff Confirm existing appointment | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff-initiated only | **PENDING** | No existing rows; no DB |
-| 10 | Vapi test assistant fake call | Vapi initiates POST to `/vapi/tools/capture-appointment-request` → HTTP 200; tool returns appointment data | **BLOCKED — Module 118B** | Module 118A: Vapi UI "completed successfully" but staging_count=0; no DB row was inserted; wrong headers + missing tenant config identified; tenant config fix applied — awaiting Railway redeploy and Vapi header correction |
-| 11 | Vapi-created row in dashboard | New `appointment_requests` row visible with `status=new` | **PENDING** | Requires Vapi call |
-| 12 | Staff Confirm Vapi row | Row status updates to `confirmed` after staff PATCH; `action_required` becomes `False` | **PENDING** | Requires Vapi row |
+| 9 | Staff Confirm existing appointment | `PATCH /appointment-requests/{id}/status` → `status=confirmed`; staff-initiated only | **PASS** — two `Test Patient` rows updated to `status: confirmed` via dashboard Confirm button; no auto-confirmation observed (Module 118B) | — |
+| 10 | Vapi test assistant fake call | Vapi initiates POST to `/vapi/tools/capture-appointment-request` → HTTP 200; tool returns appointment data | **PASS** — Vapi tool calls inserted fake appointment rows; Appointments count reached 2 then 3 in deployed Vercel dashboard (Module 118B) | — |
+| 11 | Vapi-created row in dashboard | New `appointment_requests` row visible with `status=new` | **PASS** — `Test Patient` rows visible with `status: new`, `priority: normal`, Confirm button visible (Module 118B) | — |
+| 12 | Staff Confirm Vapi row | Row status updates to `confirmed` after staff PATCH; `action_required` becomes `False` | **PASS** — two rows confirmed via dashboard Confirm; one row remained `status: new`; no auto-confirm observed (Module 118B) | — |
 | 13 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
 | 14 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | No Railway service |
 | 15 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | No deployments exist to roll back |

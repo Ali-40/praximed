@@ -1487,6 +1487,19 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` updated: Vapi rows updated to BLOCKED; diagnostic findings recorded; correct required headers documented; staging_count=0 and "no DB row was inserted" recorded
    - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` updated: check 10 updated to BLOCKED with Module 118A evidence; overall BLOCKED/PENDING maintained
    - `backend/tests/test_vapi_staging_tenant_config_blocker_fix_contract.py` (new — 20 static contract tests: tenant config exists/tenant_id/clinic_name/timezone/appointment_booking; wiring doc Vapi not PASS/staging_count=0/completed-but-no-row/Content-Type/X-Vapi-Service-Name/X-Vapi-Clinic-Id/X-Vapi-Scopes/X-Clinic-Ref/no-real-patient/fake-non-PHI/no-secrets; smoke doc blocked/Vapi not PASS)
-   - No runtime app logic changed; no secrets recorded; no real patient data; commit 40c3d7a (Module 117); tenant config blocker fix only
-   - Vapi dashboard loop still PENDING — requires Railway redeploy + correct Vapi headers + direct endpoint smoke + retest
+   - No runtime app logic changed; no secrets recorded; no real patient data; tenant config blocker fix only
+   - Commit: 12f88c4
+   - Vapi dashboard loop still PENDING at end of 118A — awaiting Railway redeploy + correct Vapi headers
    - Full backend tests: 2443/2443 passed
+
+117. Module 118B — Vapi Staging Direct Endpoint and Dashboard Retest Evidence
+   - Date: 2026-07-05
+   - Module 118A tenant config fix deployed to Railway; Vapi headers corrected (X-Clinic-Ref removed; X-Vapi-Service-Name: vapi added; X-Vapi-Clinic-Id used)
+   - Dashboard evidence: Appointments count reached 2 (two Test Patient rows; status: new; priority: normal; Confirm button visible)
+   - Dashboard evidence: Appointments count later reached 3 (two rows status: confirmed after staff Confirm; one row status: new); no auto-confirmation observed
+   - `docs/runtime/VAPI_STAGING_DASHBOARD_LOOP_EVIDENCE.md` (new — 8-section evidence doc: purpose (accuracy policy; fake/non-PHI; no production secrets), current result PASS, prerequisites (all PASS from Modules 112–118A), Vapi configuration (endpoint URL/Content-Type/X-Vapi-Service-Name/X-Vapi-Clinic-Id/X-Vapi-Scopes/X-Clinic-Ref removed/VAPI_WEBHOOK_SECRET name only), dashboard evidence (count 2: Test Patient/status new/priority normal/Confirm visible; count 3: two confirmed/one new/Confirm worked), safety (12 items all confirmed not recorded), what this proves (Vapi reaches backend/rows inserted/dashboard displays/staff Confirm works/no auto-confirm), what this does not prove (n8n PENDING/production PHI NO-GO/custom domain/auth hardening/logs/rollback))
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` updated: Vapi server URL/scopes/tenant config/test call/appointment row/staff Confirm all PASS; blocker 13 RESOLVED; overall CORE PASS; n8n PENDING/DEFERRED; production PHI NO-GO
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` updated: checks 9–12 PASS; Section 3 Vapi rows PASS; overall CORE PASS; n8n NOT ENABLED/DEFERRED; logs/rollback PENDING
+   - `backend/tests/test_vapi_staging_dashboard_loop_evidence_contract.py` (new — 25 static contract tests: evidence doc exists/PASS; endpoint URL; dashboard URL; Content-Type/X-Vapi-Service-Name/X-Vapi-Clinic-Id/X-Vapi-Scopes; X-Clinic-Ref removed; clinic UUID; Test Patient; count 2/count 3; status new/confirmed; priority normal; Confirm; fake data/no real patient/no production PHI; DATABASE_URL/token/password not recorded; n8n pending; production PHI NO-GO)
+   - No runtime code changed; no secrets recorded; no real patient data; fake/non-PHI staging only
+   - Full backend tests: 2468/2468 passed

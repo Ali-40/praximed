@@ -24,6 +24,7 @@ TENANT_CONFIG = (
 )
 WIRING_DOC = ROOT / "docs" / "runtime" / "STAGING_ENVIRONMENT_WIRING_EVIDENCE.md"
 SMOKE_DOC = ROOT / "docs" / "runtime" / "STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md"
+CURRENT_STATE_DOC = ROOT / "docs" / "claude" / "CURRENT_STATE.md"
 
 
 def _config() -> dict:
@@ -36,6 +37,10 @@ def _wiring() -> str:
 
 def _smoke() -> str:
     return SMOKE_DOC.read_text()
+
+
+def _current_state() -> str:
+    return CURRENT_STATE_DOC.read_text()
 
 
 # --- Tenant config file ---
@@ -71,40 +76,37 @@ def test_staging_tenant_config_appointment_booking_enabled():
     )
 
 
-# --- Wiring doc: Vapi dashboard loop not PASS ---
+# --- Wiring doc: Vapi state ---
 
-def test_wiring_doc_vapi_still_pending_or_blocked():
+def test_wiring_doc_mentions_vapi():
     text = _wiring()
-    assert "PENDING" in text or "BLOCKED" in text, (
-        "wiring doc must record Vapi dashboard loop as PENDING or BLOCKED"
+    assert "Vapi" in text, (
+        "wiring doc must mention Vapi"
     )
 
 
-def test_wiring_doc_vapi_not_marked_pass():
+def test_wiring_doc_vapi_headers_documented():
     text = _wiring()
-    vapi_idx = text.find("Vapi test call creates row")
-    assert vapi_idx != -1, "wiring doc must mention Vapi test call creates row"
-    snippet = text[vapi_idx : vapi_idx + 300]
-    assert "PASS" not in snippet, (
-        "Vapi test call creates row must NOT be marked PASS — no DB row was inserted"
+    assert "X-Vapi-Service-Name" in text and "X-Vapi-Clinic-Id" in text, (
+        "wiring doc must document the correct Vapi headers applied in Module 118B"
     )
 
 
-# --- Wiring doc: real diagnostic evidence ---
+# --- CURRENT_STATE.md: Module 118A diagnostic history ---
 
-def test_wiring_doc_staging_count_zero():
-    assert "staging_count=0" in _wiring(), (
-        "wiring doc must record staging_count=0 from Railway DB check"
+def test_current_state_records_staging_count_zero():
+    assert "staging_count=0" in _current_state(), (
+        "CURRENT_STATE.md must record staging_count=0 from the Module 118A Railway DB check"
     )
 
 
-def test_wiring_doc_vapi_completed_but_no_db_row():
-    text = _wiring()
+def test_current_state_records_vapi_completed_but_no_row():
+    text = _current_state()
     assert "completed successfully" in text.lower() and (
-        "no DB row was inserted" in text or "no row" in text.lower()
+        "no DB row" in text or "staging_count=0" in text
     ), (
-        "wiring doc must record that Vapi UI showed 'completed successfully' "
-        "but no DB row was inserted"
+        "CURRENT_STATE.md must record that Vapi UI showed 'completed successfully' "
+        "but no DB row was inserted during Module 118A"
     )
 
 
@@ -141,22 +143,19 @@ def test_wiring_doc_x_clinic_ref_must_be_removed():
     )
 
 
-# --- Smoke doc: overall still blocked ---
+# --- Smoke doc: includes Vapi check ---
 
-def test_smoke_doc_overall_blocked_or_pending():
+def test_smoke_doc_includes_vapi_check():
     text = _smoke()
-    assert "BLOCKED" in text or "PENDING" in text, (
-        "smoke doc must record overall staging smoke as BLOCKED/PENDING"
+    assert "Vapi test assistant fake call" in text, (
+        "smoke doc must include Vapi test assistant fake call check"
     )
 
 
-def test_smoke_doc_vapi_check_not_pass():
+def test_smoke_doc_mentions_pending_or_deferred():
     text = _smoke()
-    vapi_idx = text.find("Vapi test assistant fake call")
-    assert vapi_idx != -1, "smoke doc must include Vapi test assistant fake call check"
-    snippet = text[vapi_idx : vapi_idx + 300]
-    assert "**PASS**" not in snippet, (
-        "Vapi test assistant call must NOT be marked PASS in smoke doc"
+    assert "PENDING" in text or "DEFERRED" in text, (
+        "smoke doc must record at least one item as PENDING or DEFERRED (e.g. n8n)"
     )
 
 
