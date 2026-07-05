@@ -90,8 +90,11 @@ Production PHI launch remains NO-GO.
 | Railway backend `/health` response | `{"status":"ok","service":"PraxisMed API"}` — 200 | **PASS** |
 | Railway PostgreSQL service status | Online / Running | **PASS** |
 | `DATABASE_URL` auto-injected confirmed | Confirmed wired to backend service (name only; value not recorded) | **PASS** |
-| Migrations applied | `run_migrations.py` exit 0; both revisions applied | **PASS** |
-| `alembic current` output | `0002_password_hash (head)` (confirmed via migration output) | **PASS** |
+| Migrations applied | `run_migrations.py` exit 0; three revisions applied | **PASS** |
+| `alembic current` output | `0003_patient_id_appt_requests (head)` (confirmed — Module 121B) | **PASS** |
+| Migration 0003 — `patient_id` column | `appointment_requests.patient_id UUID` exists (Module 121B) | **PASS** |
+| Migration 0003 — `patient_id` index | `idx_appointment_requests_clinic_patient` exists (Module 121B) | **PASS** |
+| Patient/appointment linking smoke | Direct Vapi endpoint smoke created linked appointment_request; non-null `patient_id`; joined patients row confirmed (Module 121B) | **PASS** |
 | `db_smoke_test.py` result | 4 tables confirmed: clinics, patients, consultation_sessions, audit_log | **PASS** |
 | Railway backend `/health/ready` response | `{"status":"ready","checks":{"app":"ok"}}` — 200 | **PASS** |
 | Backend direct login smoke (`POST /auth/login`) | HTTP 200; `access_token` present (value REDACTED); `token_type=bearer` | **PASS** |
@@ -114,9 +117,12 @@ Production PHI launch remains NO-GO.
 | Vapi test call creates row in DB | Appointments count reached 2 then 3 in Vercel dashboard; fake `Test Patient` rows confirmed | Dashboard displayed rows from Railway PostgreSQL — Module 118B | **PASS** |
 | Appointment row `status=new`, `action_required=True` | Rows visible with `status: new`; `priority: normal`; Confirm button visible | Module 118B dashboard evidence | **PASS** |
 | Staff Confirm flow (no auto-confirm) | Two rows updated to `status: confirmed` via dashboard Confirm button; one row remained `status: new`; no auto-confirmation observed | Module 118B dashboard evidence | **PASS** |
+| Pre-appointment summary (Module 122) | Not yet implemented | — | PENDING |
+| Doctor notification (Module 123) | Not yet implemented | — | PENDING |
 | n8n staging configured (if enabled) | Not available yet | — | PENDING/DEFERRED |
-| No secrets in any evidence record | Confirmed through Module 117 | **PASS** |
-| No real patient data in staging | Confirmed — dashboard shows zero rows; footer notes fake data | **PASS** |
+| No secrets in any evidence record | Confirmed through Module 121B | **PASS** |
+| No real patient data in staging | Confirmed — fake/non-PHI data only | **PASS** |
+| Production PHI readiness | C3–C8 hardening blockers still open | **NO-GO** |
 
 ---
 

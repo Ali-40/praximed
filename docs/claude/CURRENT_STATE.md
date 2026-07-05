@@ -1607,4 +1607,27 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `backend/tests/test_patient_appointment_linking.py` (new — 17 tests: find_or_create existing/new/no-phone/whitespace/strip/clinic_id-scope/tenant-isolation; create_appointment_request patient_id; vapi capture integration; second-call reuse; error propagation; no real patient data safety check)
    - `docs/architecture/PATIENT_APPOINTMENT_DATA_LINKING_FOUNDATION.md` (new — schema changes; migration 0003; patient matching algorithm; what this enables next: Modules 122–126)
    - No real patient data; no secrets; fake-data staging only; production PHI NO-GO
-   - Full backend tests: 2611/2611 passed
+   - Full backend tests: 2619/2619 passed
+
+123. Module 121B — Staging Patient and Appointment Linking Migration Evidence
+   - Date: 2026-07-05
+   - Sprint 17 / Commercial MVP build track
+   - Docs/static-tests only — no runtime code changes, no new migrations, no secrets
+   - Railway redeployed after commit 02e8896
+   - Migration command run: `python backend/scripts/run_migrations.py`
+   - Migration `0003_patient_id_appt_requests` applied; head confirmed
+   - `appointment_requests.patient_id UUID` column exists in Railway PostgreSQL — **PASS**
+   - `idx_appointment_requests_clinic_patient` index exists in Railway PostgreSQL — **PASS**
+   - Direct Vapi endpoint smoke returned HTTP 200 with `ok: true` — **PASS**
+   - Latest appointment_request has non-null `patient_id` linking to a patient row — **PASS**
+   - Joined patients row confirmed; `clinic_id` scoped (tenant isolation holds) — **PASS**
+   - `source: vapi`, `status: new`, `action_required: true` confirmed
+   - Fake data only: Linked Test Patient / routine checkup / next Monday morning
+   - Pre-appointment summary: PENDING (Module 122)
+   - Doctor notification: PENDING (Module 123)
+   - Production PHI readiness: NO-GO
+   - `docs/runtime/PATIENT_APPOINTMENT_LINKING_STAGING_MIGRATION_EVIDENCE.md` (new)
+   - `docs/runtime/STAGING_ENVIRONMENT_WIRING_EVIDENCE.md` (updated — migration 0003 PASS; patient_id column/index PASS; linking smoke PASS; summaries/notifications PENDING; production PHI NO-GO)
+   - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 13 patient/appointment linking PASS added; migration head updated to 0003; commercial MVP data foundation improved)
+   - `backend/tests/test_patient_appointment_linking_staging_migration_evidence_contract.py` (new — 21 static contract tests)
+   - Full backend tests: 2640/2640 passed

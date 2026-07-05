@@ -89,7 +89,7 @@ Check 13 (n8n) is NOT ENABLED / DEFERRED. Checks 14–15 remain PENDING.
 |---|---|---|---|---|
 | 1 | Backend `/health` | HTTP 200; `{"status": "ok", "service": "PraxisMed API"}` | **PASS** — `https://web-production-fd91d.up.railway.app/health` → `{"status":"ok","service":"PraxisMed API"}` (commit `081121b`) | — |
 | 2 | Database connection `/health/ready` | HTTP 200; `{"status": "ready", "checks": {"app": "ok"}}` | **PASS** — `https://web-production-fd91d.up.railway.app/health/ready` → 200 (Module 116) | — |
-| 3 | Migrations applied | `alembic current` → `0002_password_hash (head)`; `run_migrations.py` exit 0 | **PASS** — exit 0; `0001_initial_schema` + `0002_password_hash` applied; 4 tables confirmed (Module 114) | — |
+| 3 | Migrations applied | `alembic current` → `0003_patient_id_appt_requests (head)`; `run_migrations.py` exit 0 | **PASS** — exit 0; all three revisions applied; `patient_id` column + `idx_appointment_requests_clinic_patient` index confirmed (Module 121B) | — |
 | 4 | Frontend `/login` | Page renders in browser; login form visible; no 404 or blank page | **PASS** — `https://praximed.vercel.app/login` loads (Module 117) | — |
 | 5 | CORS frontend to API | Browser login succeeds without CORS error; `FRONTEND_CORS_ORIGINS` = exact Vercel URL | **PASS** — browser login HTTP 200; no CORS error (Module 117) | — |
 | 6 | Fake login (direct backend + browser) | `POST /auth/login` with `doctor.staging@praximed.test` → JWT returned | **PASS** — HTTP 200; `access_token` present (REDACTED); `token_type=bearer` (Modules 116 + 117) | — |
@@ -99,9 +99,10 @@ Check 13 (n8n) is NOT ENABLED / DEFERRED. Checks 14–15 remain PENDING.
 | 10 | Vapi test assistant fake call | Vapi initiates POST to `/vapi/tools/capture-appointment-request` → HTTP 200; tool returns appointment data | **PASS** — Vapi tool calls inserted fake appointment rows; Appointments count reached 2 then 3 in deployed Vercel dashboard (Module 118B) | — |
 | 11 | Vapi-created row in dashboard | New `appointment_requests` row visible with `status=new` | **PASS** — `Test Patient` rows visible with `status: new`, `priority: normal`, Confirm button visible (Module 118B) | — |
 | 12 | Staff Confirm Vapi row | Row status updates to `confirmed` after staff PATCH; `action_required` becomes `False` | **PASS** — two rows confirmed via dashboard Confirm; one row remained `status: new`; no auto-confirm observed (Module 118B) | — |
-| 13 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
-| 14 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | No Railway service |
-| 15 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | No deployments exist to roll back |
+| 13 | Patient/appointment linking (Module 121B) | Vapi endpoint creates appointment_request with non-null `patient_id`; joined patients row exists; `clinic_id` scoped | **PASS** — direct Vapi endpoint smoke; `patient_id` column and index confirmed in Railway PostgreSQL; commercial MVP data foundation improved (Module 121B) | — |
+| 15 | n8n fake calendar sync | POST to n8n endpoint → 200; no production calendar write | **NOT ENABLED** | Deferred; not required for initial smoke PASS |
+| 16 | Logs sanitized | Railway log stream visible; no `DATABASE_URL`, secrets, or PII visible in log output | **PENDING** | Pending manual review |
+| 17 | Rollback path known | Previous Vercel deployment can be promoted; Railway service restartable; `alembic downgrade -1` known | **PENDING** | Documented in runbooks |
 
 ---
 

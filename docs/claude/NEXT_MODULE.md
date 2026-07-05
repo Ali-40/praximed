@@ -4,12 +4,14 @@ Status: pending implementation.
 
 ## Context
 
-Module 121 complete:
+Modules 121 and 121B complete:
 - `appointment_requests.patient_id` FK implemented (migration 0003)
 - `find_or_create_patient_from_vapi` live in patient_repo
 - Vapi capture links every new appointment request to a patient row
 - Tenant isolation tested; second-call reuse tested; no real patient data
-- Full test suite: 2611/2611 passed
+- Migration 0003 applied to Railway PostgreSQL staging — PASS (Module 121B)
+- Direct Vapi endpoint smoke with linked patient_id — PASS (Module 121B)
+- Full test suite: 2640/2640 passed
 - Commercial acceleration mode active — clinic outreach in parallel
 
 ## Goal
