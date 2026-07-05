@@ -36,15 +36,17 @@ def test_dashboard_calls_appointment_request_helper():
 
 
 # ---------------------------------------------------------------------------
-# 2. API helper attaches Authorization Bearer token
+# 2. API helper uses credentials: "include" for cookie-based auth (Module 120)
 # ---------------------------------------------------------------------------
 
 def test_api_helper_attaches_bearer_token():
     content = _read("lib/api.ts")
-    assert "Authorization" in content, \
-        "lib/api.ts must set an Authorization header"
-    assert "Bearer" in content, \
-        "lib/api.ts must use Bearer token scheme"
+    # Module 120: auth is handled via httpOnly cookie; apiFetch uses credentials: "include"
+    # rather than manually injecting an Authorization: Bearer header.
+    assert "credentials" in content, \
+        "lib/api.ts must include credentials field for cookie-based auth (Module 120)"
+    assert "include" in content, \
+        "lib/api.ts must set credentials: 'include' to send the session cookie"
 
 
 # ---------------------------------------------------------------------------

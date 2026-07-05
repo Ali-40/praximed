@@ -1525,3 +1525,24 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `backend/tests/test_production_hardening_gap_review_contract.py` (new — 25 static contract tests: doc exists/PRODUCTION PHI NO-GO/fake-data staging/auth-session hardening/token storage/production secrets/PHI logging/tenant isolation/audit/backups/rollback/monitoring/rate limiting/CORS domain/n8n staging/no real patient data/no production PHI/no secrets recorded/Module 120–126)
    - No runtime code changed; no deployment changes; no secrets recorded; no real patient data
    - Full backend tests: 2516/2516 passed
+
+119. Module 120 — Auth/Session Hardening Implementation
+   - Date: 2026-07-05
+   - httpOnly Secure SameSite=Lax cookie session model implemented (Option B from PRODUCTION_CORS_AUTH_DOMAIN_PLAN.md)
+   - Cookie name: `praximed_session`; Max-Age=3600; HttpOnly; Secure; SameSite=Lax; Path=/
+   - Backend changes:
+     - `backend/app/api/routes/auth.py`: `POST /auth/login` sets httpOnly cookie in addition to returning JSON body (transition window); `POST /auth/logout` clears cookie → HTTP 200; `GET /auth/me` returns user_id/clinic_id/role via cookie or Bearer auth
+     - `backend/app/api/dependencies/current_user.py`: reads Bearer header first; falls back to `praximed_session` cookie; raises 401 if neither present; machine auth (Vapi/n8n) routes unchanged
+   - Frontend changes:
+     - `frontend/lib/api.ts`: `credentials: "include"` added to all `fetch` calls; Bearer header injection removed; token parameter removed from all data fetcher signatures
+     - `frontend/lib/auth.ts`: sessionStorage removed; `storeToken`/`getToken`/`clearToken`/`isAuthenticated`/`getClinicId` removed; `getMe()` and `logout()` added
+     - `frontend/app/login/page.tsx`: `storeToken` call removed; login page relies on backend cookie
+     - `frontend/app/dashboard/page.tsx`: `getMe()` used for auth check and clinic_id; `logout()` called on Logout button; all data fetchers called without token parameter
+   - Tests:
+     - `backend/tests/test_auth_session_hardening_module120.py` (new — 16 tests: cookie flags/logout/cookie-auth/Bearer-compat/expired-cookie/invalid-cookie/me-endpoint)
+     - 7 stale frontend contract tests updated to reflect cookie-based model
+     - All existing auth/route tests pass (backward compat maintained)
+   - `docs/security/AUTH_SESSION_HARDENING_EVIDENCE.md` (new — implementation evidence doc)
+   - Closes critical blockers C1 and C2 from PRODUCTION_HARDENING_GAP_REVIEW.md
+   - No real patient data; no secrets recorded; staging/local implementation only; production PHI NO-GO remains
+   - Full backend tests: 2532/2532 passed

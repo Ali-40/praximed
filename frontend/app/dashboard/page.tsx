@@ -1,12 +1,13 @@
 'use client'
 
 // Dashboard page — PraxisMed Sprint 11 / Module 81
+// Updated Sprint 17 / Module 120 — cookie-based session; no token/sessionStorage.
 // Module 81: Confirm action on appointment request rows (status === 'new' only).
 // Module 79: Visual polish — header subtitle, count pills, badge tokens, footer.
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { clearToken, getClinicId, getToken, isAuthenticated } from '@/lib/auth'
+import { getMe, logout } from '@/lib/auth'
 import {
   confirmAppointmentRequest,
   fetchAppointmentRequests,
@@ -66,6 +67,8 @@ function CountPill({ count }: { count: number }) {
 export default function DashboardPage() {
   const router = useRouter()
 
+  const [clinicId, setClinicId] = useState<string | null>(null)
+
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([])
   const [apptLoading, setApptLoading] = useState(true)
   const [apptError, setApptError] = useState<string | null>(null)
@@ -87,56 +90,50 @@ export default function DashboardPage() {
   const [apptActionError, setApptActionError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.replace('/login')
-      return
-    }
+    getMe().then((user) => {
+      if (!user) {
+        router.replace('/login')
+        return
+      }
 
-    const token = getToken()
-    const clinicId = getClinicId()
+      setClinicId(user.clinic_id)
 
-    if (!token || !clinicId) {
-      router.replace('/login')
-      return
-    }
+      fetchAppointmentRequests(user.clinic_id)
+        .then((rows) => setAppointments(rows))
+        .catch(() => setApptError('Could not load appointment requests. Please try again.'))
+        .finally(() => setApptLoading(false))
 
-    fetchAppointmentRequests(clinicId, token)
-      .then((rows) => setAppointments(rows))
-      .catch(() => setApptError('Could not load appointment requests. Please try again.'))
-      .finally(() => setApptLoading(false))
+      fetchPatients(user.clinic_id)
+        .then((rows) => setPatients(rows))
+        .catch(() => setPatientsError('Could not load patients. Please try again.'))
+        .finally(() => setPatientsLoading(false))
 
-    fetchPatients(clinicId, token)
-      .then((rows) => setPatients(rows))
-      .catch(() => setPatientsError('Could not load patients. Please try again.'))
-      .finally(() => setPatientsLoading(false))
+      fetchNotifications(user.clinic_id)
+        .then((rows) => setNotifications(rows))
+        .catch(() => setNotifError('Could not load notifications. Please try again.'))
+        .finally(() => setNotifLoading(false))
 
-    fetchNotifications(clinicId, token)
-      .then((rows) => setNotifications(rows))
-      .catch(() => setNotifError('Could not load notifications. Please try again.'))
-      .finally(() => setNotifLoading(false))
-
-    fetchConsultations(clinicId, token)
-      .then((rows) => setConsultations(rows))
-      .catch(() => setConsultError('Could not load consultations. Please try again.'))
-      .finally(() => setConsultLoading(false))
+      fetchConsultations(user.clinic_id)
+        .then((rows) => setConsultations(rows))
+        .catch(() => setConsultError('Could not load consultations. Please try again.'))
+        .finally(() => setConsultLoading(false))
+    })
   }, [router])
 
-  function handleLogout() {
-    clearToken()
+  async function handleLogout() {
+    await logout()
     router.push('/login')
   }
 
   async function handleConfirm(requestId: string) {
-    const token = getToken()
-    const clinicId = getClinicId()
-    if (!token || !clinicId) return
+    if (!clinicId) return
 
     setConfirmingIds((prev) => new Set(prev).add(requestId))
     setApptActionError(null)
 
     try {
-      await confirmAppointmentRequest(requestId, clinicId, token)
-      const rows = await fetchAppointmentRequests(clinicId, token)
+      await confirmAppointmentRequest(requestId, clinicId)
+      const rows = await fetchAppointmentRequests(clinicId)
       setAppointments(rows)
     } catch {
       setApptActionError('Could not confirm appointment request. Please try again.')

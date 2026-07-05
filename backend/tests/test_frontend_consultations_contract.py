@@ -36,15 +36,16 @@ def test_api_helper_defines_fetch_consultations():
 
 
 # ---------------------------------------------------------------------------
-# 2. Consultation helper uses Authorization Bearer token (via apiFetch)
+# 2. Consultation helper uses credentials: "include" for cookie-based auth (Module 120)
 # ---------------------------------------------------------------------------
 
 def test_consultation_helper_uses_bearer_token():
     content = _read("lib/api.ts")
-    assert "Authorization" in content, \
-        "lib/api.ts must set an Authorization header"
-    assert "Bearer" in content, \
-        "lib/api.ts must use the Bearer token scheme"
+    # Module 120: auth is handled via httpOnly cookie; apiFetch uses credentials: "include".
+    assert "credentials" in content, \
+        "lib/api.ts must include credentials field for cookie-based auth (Module 120)"
+    assert "include" in content, \
+        "lib/api.ts must set credentials: 'include' to send the session cookie"
 
 
 # ---------------------------------------------------------------------------

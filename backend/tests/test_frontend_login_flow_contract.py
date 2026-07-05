@@ -53,13 +53,17 @@ def test_login_page_handles_generic_error():
 
 
 # ---------------------------------------------------------------------------
-# 3. Login page stores token through storeToken helper
+# 3. Login page does not store token in sessionStorage (Module 120: cookie session)
 # ---------------------------------------------------------------------------
 
 def test_login_page_stores_token():
     content = _read("app/login/page.tsx")
-    assert "storeToken" in content, \
-        "login/page.tsx must call storeToken after successful login"
+    # Module 120: backend sets httpOnly cookie on login; frontend must NOT call
+    # storeToken (sessionStorage). The login page just calls loginUser and redirects.
+    assert "storeToken" not in content, \
+        "login/page.tsx must not call storeToken after Module 120 cookie migration"
+    assert "loginUser" in content, \
+        "login/page.tsx must call loginUser to trigger the backend cookie set"
 
 
 # ---------------------------------------------------------------------------
@@ -76,28 +80,30 @@ def test_login_page_redirects_to_dashboard():
 
 
 # ---------------------------------------------------------------------------
-# 5. Dashboard checks authentication state before rendering
+# 5. Dashboard checks authentication state before rendering (Module 120: via getMe)
 # ---------------------------------------------------------------------------
 
 def test_dashboard_checks_auth_state():
     content = _read("app/dashboard/page.tsx")
-    assert "isAuthenticated" in content or "getToken" in content, \
-        "dashboard/page.tsx must check authentication state"
+    # Module 120: cookie-based session — auth state checked via getMe() call
+    assert "getMe" in content, \
+        "dashboard/page.tsx must check authentication state via getMe() (Module 120)"
     # Must redirect unauthenticated users
     assert "/login" in content, \
         "dashboard/page.tsx must reference /login for unauthenticated redirect"
 
 
 # ---------------------------------------------------------------------------
-# 6. Dashboard supports logout via clearToken
+# 6. Dashboard supports logout via backend logout call (Module 120: POST /auth/logout)
 # ---------------------------------------------------------------------------
 
 def test_dashboard_supports_logout():
     content = _read("app/dashboard/page.tsx")
-    assert "clearToken" in content, \
-        "dashboard/page.tsx must call clearToken for logout"
-    assert "logout" in content.lower() or "Logout" in content, \
-        "dashboard/page.tsx must have a logout control"
+    # Module 120: logout calls POST /auth/logout to clear the httpOnly cookie
+    assert "clearToken" not in content, \
+        "dashboard/page.tsx must not call clearToken after Module 120 cookie migration"
+    assert "logout" in content or "Logout" in content, \
+        "dashboard/page.tsx must have a logout control that calls the backend logout"
 
 
 # ---------------------------------------------------------------------------

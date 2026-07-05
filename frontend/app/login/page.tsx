@@ -5,7 +5,7 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { loginUser, storeToken } from '@/lib/auth'
+import { loginUser } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,8 +23,7 @@ export default function LoginPage() {
     const clinicId = (form.elements.namedItem('clinic_id') as HTMLInputElement).value
 
     try {
-      const result = await loginUser(email, password, clinicId)
-      storeToken(result.access_token)
+      await loginUser(email, password, clinicId)
       router.push('/dashboard')
     } catch {
       // Generic message only — do not reveal whether email or password was wrong.

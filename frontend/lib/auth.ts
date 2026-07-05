@@ -1,13 +1,11 @@
 // Auth helpers — PraxisMed Sprint 8 / Module 66
+// Updated Sprint 17 / Module 120 — httpOnly cookie session; no sessionStorage.
 //
-// Token storage uses sessionStorage (local development only).
-// For production: replace with httpOnly cookies set by the backend
-// /auth/session endpoint — do not store JWTs in localStorage or
-// sessionStorage in a production deployment.
+// Session state is owned by the backend: the praximed_session cookie is set on
+// POST /auth/login and cleared on POST /auth/logout. The browser never reads
+// the cookie value directly (httpOnly). Use getMe() to check session status.
 
 import { apiFetch } from './api'
-
-const TOKEN_KEY = 'praximed_access_token'
 
 export interface LoginResult {
   access_token: string
@@ -21,7 +19,14 @@ export interface LoginResult {
   }
 }
 
-// Calls POST /auth/login and returns the token payload.
+export interface CurrentUser {
+  user_id: string
+  clinic_id: string
+  role: string
+}
+
+// Calls POST /auth/login. On success the backend sets the praximed_session
+// httpOnly cookie. Returns the full login payload for display use.
 // Throws on non-2xx response.
 export async function loginUser(
   email: string,
@@ -41,39 +46,19 @@ export async function loginUser(
   return resp.json() as Promise<LoginResult>
 }
 
-export function storeToken(token: string): void {
-  if (typeof window !== 'undefined') {
-    sessionStorage.setItem(TOKEN_KEY, token)
-  }
-}
-
-export function getToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return sessionStorage.getItem(TOKEN_KEY)
-  }
-  return null
-}
-
-export function clearToken(): void {
-  if (typeof window !== 'undefined') {
-    sessionStorage.removeItem(TOKEN_KEY)
-  }
-}
-
-export function isAuthenticated(): boolean {
-  return getToken() !== null
-}
-
-// Decodes the clinic_id claim from the stored JWT payload without verifying
-// the signature (verification happens on the backend for every request).
-export function getClinicId(): string | null {
-  const token = getToken()
-  if (!token) return null
+// Calls GET /auth/me using the session cookie. Returns the current user or null
+// if the session is missing or expired. Safe to call on any page load.
+export async function getMe(): Promise<CurrentUser | null> {
   try {
-    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    const payload = JSON.parse(atob(b64)) as Record<string, unknown>
-    return typeof payload.clinic_id === 'string' ? payload.clinic_id : null
+    const resp = await apiFetch('/auth/me')
+    if (!resp.ok) return null
+    return resp.json() as Promise<CurrentUser>
   } catch {
     return null
   }
+}
+
+// Calls POST /auth/logout to clear the session cookie on the backend.
+export async function logout(): Promise<void> {
+  await apiFetch('/auth/logout', { method: 'POST' })
 }

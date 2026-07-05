@@ -1,4 +1,5 @@
 // API client — PraxisMed Sprint 8 / Module 66
+// Updated Sprint 17 / Module 120 — cookie-based session; credentials: "include" on all fetches.
 // Set NEXT_PUBLIC_API_BASE_URL in .env.local to point to your backend.
 // Falls back to the local dev backend when the env var is not set.
 
@@ -10,20 +11,16 @@ export { API_BASE_URL }
 export async function apiFetch(
   path: string,
   options: RequestInit = {},
-  token?: string,
 ): Promise<Response> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   }
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
   return fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
+    credentials: 'include',
   })
 }
 
@@ -41,16 +38,13 @@ export interface AppointmentRequest {
   [key: string]: unknown
 }
 
-// Fetches GET /appointment-requests?clinic_id=<clinicId> with a Bearer JWT.
+// Fetches GET /appointment-requests?clinic_id=<clinicId> using the session cookie.
 // Returns the requests array from the response body.
 export async function fetchAppointmentRequests(
   clinicId: string,
-  token: string,
 ): Promise<AppointmentRequest[]> {
   const resp = await apiFetch(
     `/appointment-requests?clinic_id=${encodeURIComponent(clinicId)}`,
-    {},
-    token,
   )
   if (!resp.ok) {
     throw new Error(`Failed to load appointment requests (HTTP ${resp.status})`)
@@ -73,16 +67,13 @@ export interface Patient {
   [key: string]: unknown
 }
 
-// Fetches GET /patients?clinic_id=<clinicId> with a Bearer JWT.
+// Fetches GET /patients?clinic_id=<clinicId> using the session cookie.
 // Returns the patients array from the response body.
 export async function fetchPatients(
   clinicId: string,
-  token: string,
 ): Promise<Patient[]> {
   const resp = await apiFetch(
     `/patients?clinic_id=${encodeURIComponent(clinicId)}`,
-    {},
-    token,
   )
   if (!resp.ok) {
     throw new Error(`Failed to load patients (HTTP ${resp.status})`)
@@ -105,16 +96,13 @@ export interface ConsultationSession {
   [key: string]: unknown
 }
 
-// Fetches GET /consultations?clinic_id=<clinicId> with a Bearer JWT.
+// Fetches GET /consultations?clinic_id=<clinicId> using the session cookie.
 // Returns the consultations array from the response body.
 export async function fetchConsultations(
   clinicId: string,
-  token: string,
 ): Promise<ConsultationSession[]> {
   const resp = await apiFetch(
     `/consultations?clinic_id=${encodeURIComponent(clinicId)}`,
-    {},
-    token,
   )
   if (!resp.ok) {
     throw new Error(`Failed to load consultations (HTTP ${resp.status})`)
@@ -132,7 +120,6 @@ export async function fetchConsultations(
 export async function confirmAppointmentRequest(
   requestId: string,
   clinicId: string,
-  token: string,
 ): Promise<void> {
   const resp = await apiFetch(
     `/appointment-requests/${encodeURIComponent(requestId)}/status?clinic_id=${encodeURIComponent(clinicId)}`,
@@ -140,7 +127,6 @@ export async function confirmAppointmentRequest(
       method: 'PATCH',
       body: JSON.stringify({ status: 'confirmed', action_required: false }),
     },
-    token,
   )
   if (!resp.ok) {
     throw new Error(`Failed to confirm appointment request (HTTP ${resp.status})`)
@@ -162,16 +148,13 @@ export interface Notification {
   [key: string]: unknown
 }
 
-// Fetches GET /notifications?clinic_id=<clinicId> with a Bearer JWT.
+// Fetches GET /notifications?clinic_id=<clinicId> using the session cookie.
 // Returns the notifications array from the response body.
 export async function fetchNotifications(
   clinicId: string,
-  token: string,
 ): Promise<Notification[]> {
   const resp = await apiFetch(
     `/notifications?clinic_id=${encodeURIComponent(clinicId)}`,
-    {},
-    token,
   )
   if (!resp.ok) {
     throw new Error(`Failed to load notifications (HTTP ${resp.status})`)

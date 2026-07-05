@@ -1,9 +1,10 @@
 """
 Current user dependency — PraxisMed Sprint 7 / Module 59
+Updated Sprint 17 / Module 120 — cookie fallback for browser sessions.
 
-Provides get_current_user: a FastAPI dependency that extracts a Bearer JWT
-from the Authorization header, decodes it, loads the user from the database,
-and returns an AuthContext.
+Provides get_current_user: a FastAPI dependency that extracts a JWT from:
+  1. Authorization: Bearer <token>  (machine clients, backward compat)
+  2. praximed_session cookie         (browser sessions, httpOnly)
 
 Not yet wired into existing PHI routes — this is the foundation layer.
 Route-level wiring happens in a subsequent module.
@@ -13,7 +14,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from backend.app.api.deps import get_db_pool
@@ -26,28 +27,40 @@ from backend.app.core.jwt_tokens import (
 )
 from backend.app.db.repositories import user_repo
 
+_COOKIE_NAME = "praximed_session"
+
 # HTTPBearer with auto_error=False lets us return a custom 401 message
 # instead of the generic FastAPI one.
 _bearer = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
     pool=Depends(get_db_pool),
 ) -> AuthContext:
-    """FastAPI dependency — decode Bearer JWT and load the authenticated user.
+    """FastAPI dependency — decode JWT from Bearer header or session cookie.
+
+    Auth priority:
+      1. Authorization: Bearer <token>
+      2. praximed_session cookie
 
     HTTP 401  missing token, invalid token, expired token, inactive user.
     HTTP 503  JWT_SECRET_KEY not configured.
     """
-    if credentials is None or not credentials.credentials:
+    token: Optional[str] = None
+
+    if credentials is not None and credentials.credentials:
+        token = credentials.credentials
+    else:
+        token = request.cookies.get(_COOKIE_NAME)
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid Authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    token = credentials.credentials
 
     try:
         payload = decode_access_token(token)
