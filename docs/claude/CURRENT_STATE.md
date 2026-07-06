@@ -2286,6 +2286,48 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+154. Module 140 — Live Tenant Language Settings Smoke Evidence
+   - Date: 2026-07-06
+   - Sprint 19 / Docs + static tests only. No backend changes. No frontend changes. No migration.
+   - docs/runtime/LIVE_TENANT_LANGUAGE_SETTINGS_SMOKE_EVIDENCE.md (new):
+     - Overall result: PASS
+     - Commit tested: 1cf85f0
+     - Frontend URL: https://praximed.vercel.app/developer-console/language-settings
+     - Clinic ID: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056 (Demo Wahlarzt Praxis Wien)
+     - Load settings: GET 200, form populated, updated_at displayed
+     - German-first defaults: primary_language=de, fallback_language=en,
+       supported_languages=["de","en"], default_patient_language=de,
+       vapi_assistant_language_mode=german_first, clinic_ui_language=de
+     - English fallback: fallback_language=en, English checkbox visible and checked
+     - PATCH/update: changed vapi_assistant_language_mode german_first→bilingual_auto,
+       "Language settings saved" confirmed
+     - Reload/persistence: reload confirmed update persisted; german_first restored on second save
+     - Safety: no PHI, no Vapi credentials, no sessionStorage, no localStorage,
+       production_phi_enabled=false, no production activation, no secrets
+     - What proves: GET returns German-first defaults, English fallback correct, PATCH persists,
+       admin UI round-trip end-to-end, credentials:include works, bilingual_auto accepted,
+       german_first restorable, "Language settings saved" confirmed
+     - What does not prove: production readiness, DSGVO compliance, Vapi assistant binding,
+       bilingual audio testing, security hardening
+     - Remaining blockers: C3–C8, DSGVO, Vapi binding
+   - backend/tests/test_live_tenant_language_settings_smoke_evidence_contract.py (new — 48 tests):
+     - File existence, module/sprint/commit identity, PASS result
+     - Frontend URL, GET/PATCH routes, /clinics/ path
+     - Clinic ID, staging clinic identified
+     - Load settings section, HTTP 200
+     - German-first: german_first, primary_language=de, clinic_ui_language, default_patient_language,
+       supported_languages, vapi_assistant_language_mode
+     - English fallback: fallback_language=en
+     - PATCH: bilingual_auto, language_settings_saved, vapi mode updated
+     - Reload/persistence: reload confirmed update persisted, german_first restored
+     - Safety: no PHI, no secrets, no Vapi credentials, NO-GO, production phi remains no-go,
+       no production activation, credentials:include
+     - Proves/does-not-prove sections, end-to-end, production readiness, Vapi binding
+     - Remaining blockers: C3–C8, DSGVO
+   - Full backend tests: 3853/3853 passed
+   - No frontend changes
+   - Production PHI remains NO-GO
+
 153. Module 139 — Admin Tenant Language Settings UI
    - Date: 2026-07-06
    - Sprint 19 / Frontend + api.ts helpers + contract tests + arch doc. No backend changes. No migration.
