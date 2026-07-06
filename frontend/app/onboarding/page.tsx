@@ -34,7 +34,7 @@ const STEPS = [
   {
     number: 3,
     title: 'Workflow Preferences',
-    description: 'Language (German / English), call routing rules, and office hours.',
+    description: 'Primary language (German / English fallback), call routing rules, and office hours.',
     status: 'pending',
   },
   {
@@ -173,6 +173,61 @@ export default function OnboardingPage() {
             </div>
           </div>
         ))}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Language foundation selector (Step 3 preview — scaffold only)       */}
+        {/* ------------------------------------------------------------------ */}
+        <div
+          data-section="language-foundation"
+          style={{
+            marginTop: '1.5rem',
+            marginBottom: '1rem',
+            padding: '1.25rem',
+            borderRadius: 14,
+            border: `1px solid ${BORDER}`,
+            background: '#ffffff',
+            boxShadow: '0 1px 2px 0 rgb(11 19 43 / 0.05)',
+          }}
+        >
+          <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: INK, marginBottom: '0.5rem' }}>
+            Language Configuration
+          </p>
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '1rem' }}>
+            Your clinic interface and AI receptionist will use German as the primary language, with English as the fallback. This is configurable during pilot setup.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {[
+              { code: 'de', label: 'Deutsch', description: 'Primary — Austrian clinic default', selected: true },
+              { code: 'en', label: 'English', description: 'Fallback — for non-German speakers', selected: false },
+            ].map((lang) => (
+              <div
+                key={lang.code}
+                data-language-option={lang.code}
+                style={{
+                  flex: '1 1 180px',
+                  padding: '0.875rem 1rem',
+                  borderRadius: 10,
+                  border: `1.5px solid ${lang.selected ? ACCENT : BORDER}`,
+                  background: lang.selected ? FILL : '#f9fafb',
+                  opacity: 0.85,
+                }}
+              >
+                <p style={{ fontWeight: 700, fontSize: '0.875rem', color: INK, marginBottom: '0.125rem' }}>
+                  {lang.label}
+                  {lang.selected && (
+                    <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', color: ACCENT, fontWeight: 700 }}>
+                      ✓ Default
+                    </span>
+                  )}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: MUTED }}>{lang.description}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: '0.7rem', color: MUTED, marginTop: '0.75rem' }}>
+            Language selection is not yet interactive — configurable during pilot onboarding.
+          </p>
+        </div>
 
         {/* CTA */}
         <div style={{ marginTop: '2rem', textAlign: 'center' }}>

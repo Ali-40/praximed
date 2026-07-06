@@ -1,6 +1,7 @@
 """
 Clinic Configuration Loader — PraxisMed Sprint 1 / Module 1
 Updated: Sprint 11 / Module 85 — uuid.UUID-based validation (accept any valid UUID)
+Updated: Sprint 19 / Module 130 — fallback_language, clinic_display_name, specialty, city fields
 
 Loads per-tenant clinic configuration from:
   1. A JSON file on disk  (backend/tenants/configs/<tenant_id>/clinic_config.json)
@@ -67,7 +68,17 @@ class ClinicConfig(BaseModel):
 
     tenant_id: str = Field(..., description="UUID identifying the tenant")
     clinic_name: str = Field(..., min_length=1)
-    language: str = Field("de", description="BCP-47 language tag, e.g. 'de', 'en'")
+    language: str = Field("de", description="Primary BCP-47 language tag, e.g. 'de', 'en'")
+    fallback_language: Optional[str] = Field(
+        None, description="Fallback BCP-47 language tag if primary language is not understood"
+    )
+    clinic_display_name: Optional[str] = Field(
+        None, description="Doctor-facing display name, e.g. 'Dr. Med. Alexander Huber'"
+    )
+    specialty: Optional[str] = Field(
+        None, description="Primary specialty display string, e.g. 'Innere Medizin'"
+    )
+    city: Optional[str] = Field(None, description="Clinic city, e.g. 'Wien'")
     country: str = Field("AT", description="ISO 3166-1 alpha-2 country code")
     timezone: str = Field("Europe/Vienna")
 
@@ -121,6 +132,15 @@ class ClinicConfig(BaseModel):
             raise ValueError(f"Invalid BCP-47 language tag: {v!r}")
         return v
 
+    @field_validator("fallback_language")
+    @classmethod
+    def _validate_fallback_language(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if not re.fullmatch(r"[a-z]{2,3}(-[A-Z]{2,4})?", v):
+            raise ValueError(f"Invalid BCP-47 fallback_language tag: {v!r}")
+        return v
+
     @field_validator("country")
     @classmethod
     def _validate_country(cls, v: str) -> str:
@@ -159,6 +179,25 @@ def build_voice_system_prompt(config: ClinicConfig) -> str:
         "If you are unsure about medical advice, always refer the patient to a "
         "qualified healthcare professional."
     )
+
+
+# ---------------------------------------------------------------------------
+# Language environment helpers (Sprint 19 / Module 130)
+# ---------------------------------------------------------------------------
+
+
+def get_default_clinic_language() -> str:
+    """Return DEFAULT_CLINIC_LANGUAGE env value, defaulting to 'de'."""
+    import os
+    val = os.getenv("DEFAULT_CLINIC_LANGUAGE", "de").strip().lower()
+    return val if val else "de"
+
+
+def get_supported_clinic_languages() -> list[str]:
+    """Return SUPPORTED_CLINIC_LANGUAGES env value as a list, defaulting to ['de', 'en']."""
+    import os
+    raw = os.getenv("SUPPORTED_CLINIC_LANGUAGES", "de,en").strip()
+    return [lang.strip().lower() for lang in raw.split(",") if lang.strip()] or ["de", "en"]
 
 
 # ---------------------------------------------------------------------------

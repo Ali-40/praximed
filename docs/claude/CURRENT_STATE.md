@@ -1945,3 +1945,34 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - backend/tests/test_operational_staging_readiness_contract.py (new — 44 static contract tests)
    - Full backend tests: 3151/3151 passed
    - Production PHI remains NO-GO
+
+142. Module 130 — Compliance Readiness Gate and Language Foundation
+   - Date: 2026-07-06
+   - Sprint 19 / Compliance and language readiness track
+   - backend/app/core/compliance.py (new)
+     - Hard production PHI circuit breaker
+     - get_environment(), is_production(), is_production_compliance_unlocked(), get_auth_method()
+     - get_default_clinic_language(), get_supported_clinic_languages() (reads DEFAULT_CLINIC_LANGUAGE, SUPPORTED_CLINIC_LANGUAGES env vars)
+     - assert_production_auth_ready() — AssertionError if production + AUTH_METHOD != COOKIE_HTTPONLY
+     - assert_production_compliance_ready() — AssertionError if production + PRODUCTION_COMPLIANCE_UNLOCKED != true
+     - enforce_phi_safeguard() — async FastAPI dependency; HTTP 403 in production if locked; no-op in local/staging
+     - Environment variables: ENVIRONMENT (local/staging/production), PRODUCTION_COMPLIANCE_UNLOCKED, AUTH_METHOD, PSEUDONYMIZATION_PEPPER, DEFAULT_CLINIC_LANGUAGE, SUPPORTED_CLINIC_LANGUAGES
+   - backend/app/core/pseudonymization.py (new)
+     - HMAC-SHA256 pseudonymization for PII in Vapi logs and audit records
+     - pseudonymize(value, context), pseudonymize_phone(), pseudonymize_name(), pseudonymize_email()
+     - Uses PSEUDONYMIZATION_PEPPER env var; falls back to staging sentinel if absent (not secret, not for production)
+     - assert_pseudonymization_ready() raises AssertionError if pepper not set
+     - Original value never returned or logged
+   - backend/app/core/config_loader.py (updated)
+     - ClinicConfig: added fallback_language (Optional[str], BCP-47 validated), clinic_display_name, specialty, city fields
+     - get_default_clinic_language() reads DEFAULT_CLINIC_LANGUAGE env var (default "de")
+     - get_supported_clinic_languages() reads SUPPORTED_CLINIC_LANGUAGES env var (default ["de","en"])
+   - frontend/app/onboarding/page.tsx (updated)
+     - Added Language Configuration section (data-section="language-foundation")
+     - Static display: Deutsch (Primary / Default) + English (Fallback) — not interactive, scaffold only
+     - Step 3 description updated: "Primary language (German / English fallback)"
+   - backend/tests/test_compliance_readiness_gate_contract.py (new — 67 tests)
+   - backend/tests/test_fabel5_premium_clinic_interface_overhaul_contract.py (updated — stale 126D assertion relaxed to accept current NEXT_MODULE)
+   - Frontend build: PASS (6 routes, clean)
+   - Full backend tests: 3218/3218 passed
+   - Production PHI remains NO-GO
