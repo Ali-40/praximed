@@ -2285,3 +2285,48 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: 3651/3651 passed
    - No frontend changes
    - Production PHI remains NO-GO
+
+152. Module 138 — Tenant Language Settings API Foundation
+   - Date: 2026-07-06
+   - Sprint 19 / Backend only + tests + docs. No frontend changes. No migration.
+   - Storage approach: clinics.locale (DB) + language_config section in tenant JSON config file. No new DB columns.
+   - backend/app/schemas/clinic_language_settings.py (new):
+     - ALLOWED_LANGUAGES = {"de", "en"}; ALLOWED_VAPI_MODES = {"german_first","english_first","bilingual_auto"}
+     - ClinicLanguageSettingsRead: ok, clinic_id, primary_language(de), fallback_language(en),
+       supported_languages(["de","en"]), default_patient_language(de), vapi_assistant_language_mode(german_first),
+       clinic_ui_language(de), updated_at
+     - ClinicLanguageSettingsUpdate: all optional; validators reject invalid language codes,
+       empty supported_languages, unsupported vapi mode, primary_language not in supported_languages
+   - backend/app/services/clinic_language_settings.py (new):
+     - GERMAN_FIRST_DEFAULTS dict with all 6 language fields defaulting to German-first
+     - _locale_to_primary_language: de-AT→de, en-US→en, fallback→de
+     - _primary_language_to_locale: de→de-AT, en→en-US
+     - _load_language_config_from_file: reads language_config section from tenant JSON
+     - _write_language_config_to_file: merges language_config into tenant JSON (creates file if absent)
+     - get_clinic_language_settings(pool, clinic_id): reads clinics.locale + JSON config; raises ClinicNotFoundError
+     - update_clinic_language_settings(pool, clinic_id, update, actor_user_id): partial update,
+       validates primary in supported, updates clinics.locale in DB, writes JSON file; raises LanguageSettingsValidationError
+   - backend/app/api/routes/clinic_language_settings.py (new):
+     - GET /clinics/{clinic_id}/language-settings — protected, returns German-first defaults if unconfigured
+     - PATCH /clinics/{clinic_id}/language-settings — protected, partial update
+     - 404 on ClinicNotFoundError, 400 on LanguageSettingsValidationError, 422 on Pydantic rejection
+   - backend/app/api/router.py (updated): clinic_language_settings router registered
+   - backend/app/services/tenant_provisioning.py (updated):
+     - After clinic shell INSERT, writes language_config JSON file with:
+       primary_language=preferred_language, fallback_language, supported_languages,
+       default_patient_language=preferred_language, vapi_assistant_language_mode=german_first (if de),
+       clinic_ui_language=preferred_language
+     - File write is best-effort (try/except); audit log remains authoritative
+   - backend/tests/test_tenant_language_settings_api_foundation.py (new — 87 tests):
+     - Static: all files exist, route uses get_current_user, no PHI/Vapi/secrets, GERMAN_FIRST_DEFAULTS
+     - Schema: defaults German-first, rejects fr/es/empty/unsupported/invalid vapi mode/primary-not-in-supported
+     - Service helpers: locale↔language mapping, German-first defaults struct
+     - Service async: clinic not found, German-first from de-AT, English from en-US, uses file config,
+       primary not in supported → error, partial update, locale updated in DB, file write called
+     - Provisioning: vapi german_first, preferred→primary, default_patient_language, clinic_ui_language
+     - Route: GET/PATCH require auth, 404 on missing, GET success+no PHI, PATCH success, 422 on invalid
+       language/vapi/empty, 400 on validation error, all fields in response
+   - docs/architecture/TENANT_LANGUAGE_SETTINGS_API_FOUNDATION.md (new)
+   - Full backend tests: 3738/3738 passed
+   - No frontend changes
+   - Production PHI remains NO-GO

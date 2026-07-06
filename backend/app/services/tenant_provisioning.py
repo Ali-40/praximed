@@ -24,6 +24,10 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from backend.app.db.repositories import audit_repo, clinic_onboarding_repo
+from backend.app.services.clinic_language_settings import (
+    GERMAN_FIRST_DEFAULTS,
+    _write_language_config_to_file,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -211,6 +215,21 @@ async def provision_clinic_shell_from_onboarding_request(
 
     clinic    = await _insert_clinic_shell(pool, clinic_name, slug, locale)
     clinic_id = str(clinic["id"])
+
+    # Step 4b — Persist language config to tenant JSON file
+    vapi_mode = "german_first" if preferred_language == "de" else "english_first"
+    language_config = {
+        "primary_language":             preferred_language,
+        "fallback_language":            fallback_language,
+        "supported_languages":          supported_languages,
+        "default_patient_language":     preferred_language,
+        "vapi_assistant_language_mode": vapi_mode,
+        "clinic_ui_language":           preferred_language,
+    }
+    try:
+        _write_language_config_to_file(clinic_id, language_config, clinic_name=clinic_name)
+    except Exception:
+        pass  # language config file write is best-effort; audit trail is the authoritative record
 
     # Step 5 — Write immutable audit event
     audit_metadata: Dict[str, Any] = {

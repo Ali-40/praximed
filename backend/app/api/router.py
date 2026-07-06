@@ -22,6 +22,7 @@ from backend.app.api.routes import patients
 from backend.app.api.routes import consultations
 from backend.app.api.routes import clinical_workflows
 from backend.app.api.routes import clinic_onboarding
+from backend.app.api.routes import clinic_language_settings
 
 api_router = APIRouter()
 
@@ -37,3 +38,4 @@ api_router.include_router(patients.router)
 api_router.include_router(consultations.router)
 api_router.include_router(clinical_workflows.router)
 api_router.include_router(clinic_onboarding.router)
+api_router.include_router(clinic_language_settings.router)

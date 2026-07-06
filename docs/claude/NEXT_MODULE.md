@@ -1,87 +1,89 @@
-# Sprint 19 / Module 138 — Tenant Language Settings API Foundation
+# Sprint 19 / Module 139 — Admin Tenant Language Settings UI
 
 Status: pending implementation.
 
 ## Context
 
-Module 137 complete:
-- `docs/runtime/LIVE_TENANT_PROVISIONING_SMOKE_EVIDENCE.md` — PASS; clinic shell provisioned from UI; idempotency verified
-- `backend/tests/test_live_tenant_provisioning_smoke_evidence_contract.py` — 39 tests, all pass
-- 3651/3651 backend tests pass
+Module 138 complete:
+- `backend/app/schemas/clinic_language_settings.py` — ClinicLanguageSettingsRead + ClinicLanguageSettingsUpdate
+- `backend/app/services/clinic_language_settings.py` — get/update with German-first defaults, locale↔lang mapping, JSON config file storage
+- `backend/app/api/routes/clinic_language_settings.py` — GET/PATCH /clinics/{id}/language-settings (protected)
+- `backend/app/services/tenant_provisioning.py` — updated to write language_config on clinic shell creation
+- `backend/tests/test_tenant_language_settings_api_foundation.py` — 87 tests, all pass
+- `docs/architecture/TENANT_LANGUAGE_SETTINGS_API_FOUNDATION.md`
+- 3738/3738 backend tests pass
 - No frontend changes
-- Commit: Sprint 19 / Module 137 — Live tenant provisioning smoke evidence
+- Commit: Sprint 19 / Module 138 — Tenant language settings API foundation
 
-A clinic shell now exists in staging (status=`pilot_setup`). The next step is
-to allow admin/staff to read and update the clinic's language settings —
-German-first by default, English fallback — via a protected API.
+The language settings API exists and is protected. There is no frontend UI to
+read or update it — admin must currently use curl or an API tool.
 
 Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Add a backend API foundation for reading and updating tenant language settings
-for a provisioned clinic shell.
+Add a "Language Settings" panel to the internal developer/admin console so that
+admin/staff can view and update clinic language settings for a provisioned clinic
+directly from the browser UI.
 
-Language settings are stored in the existing `clinics` table (`locale` column).
-The API must expose a clear, simple structure and enforce German-first defaults.
+## What Module 139 must implement
 
-## What Module 138 must implement
+### 1. Frontend — language settings panel in `/developer-console`
 
-### 1. Backend — language settings service
+`frontend/app/developer-console/page.tsx` (updated):
+- Add a new ConsolePanel "Clinic Language Settings" (after the Pilot Request Review panel)
+- Panel includes:
+  - Input for clinic_id (text field)
+  - "Load settings" button → GET /clinics/{id}/language-settings
+  - Display: primary_language, fallback_language, supported_languages,
+    default_patient_language, vapi_assistant_language_mode, clinic_ui_language, updated_at
+  - Select dropdowns for updatable fields
+  - "Update settings" button → PATCH /clinics/{id}/language-settings
+  - Loading, success, error states
+  - Safety copy: "Language settings do not activate production PHI."
+  - No PHI fields
+  - No Vapi credentials
+  - No sessionStorage, no localStorage
+  - credentials: 'include' on all fetches
 
-`backend/app/services/language_settings.py` (new):
-- `get_language_settings(pool, clinic_id)` → dict with `preferred_language`, `fallback_language`, `supported_languages`, `locale`
-- `update_language_settings(pool, clinic_id, preferred_language, fallback_language, supported_languages)` → updated dict
-- German-first default: `preferred_language=de`, `fallback_language=en`, `supported_languages=["de","en"]`
-- `locale` derived from `preferred_language`: `de` → `de-AT`, `en` → `en-US`
-- Validates `preferred_language` is in `supported_languages`
-- No Vapi credentials accepted or stored
-- No patient data
-- No production PHI
+### 2. api.ts helpers
 
-### 2. Backend — language settings route
+`frontend/lib/api.ts` (updated):
+- `getClinicLanguageSettings(clinicId: string)` → GET /clinics/{clinicId}/language-settings
+- `updateClinicLanguageSettings(clinicId: string, update: object)` → PATCH /clinics/{clinicId}/language-settings
+- Both: credentials: 'include'
 
-`backend/app/api/routes/language_settings.py` (new):
-- `GET /clinics/{clinic_id}/language-settings` — read current language settings
-  - Protected: requires `get_current_user`
-  - Returns: `{ ok, clinic_id, preferred_language, fallback_language, supported_languages, locale }`
-- `PATCH /clinics/{clinic_id}/language-settings` — update language settings
-  - Protected: requires `get_current_user`
-  - Body: `{ preferred_language, fallback_language?, supported_languages? }`
-  - Returns: same shape as GET
-  - 404 if clinic not found
-  - 400 if preferred_language not in supported_languages
+### 3. Tests
 
-### 3. Backend — schemas
+`backend/tests/test_admin_tenant_language_settings_ui_contract.py` (new):
+Static tests verifying:
+- Developer console page has "Language Settings" or "language settings" text
+- Panel has clinic_id input or field
+- "Load settings" or equivalent trigger
+- Shows primary_language, vapi_assistant_language_mode
+- PATCH /clinics/ and /language-settings called
+- credentials: 'include'
+- Safety copy about no production PHI
+- No sessionStorage, no localStorage
+- No Vapi API key field
+- api.ts has getClinicLanguageSettings
+- api.ts has updateClinicLanguageSettings
 
-`backend/app/schemas/language_settings.py` (new):
-- `LanguageSettingsResponse`: `ok`, `clinic_id`, `preferred_language`, `fallback_language`, `supported_languages`, `locale`
-- `LanguageSettingsUpdate`: `preferred_language`, `fallback_language` (optional), `supported_languages` (optional)
+### 4. Docs
 
-### 4. Tests
-
-`backend/tests/test_tenant_language_settings_api_foundation.py` (new):
-- Static: service/route/schema files exist, no Vapi, no patient data, no PHI, auth required
-- Service: get returns correct fields, de→de-AT locale mapping, en→en-US, default language
-- Service: update sets locale from preferred_language, validates preferred in supported
-- Route: unauth→401, GET→200+fields, PATCH→200+updated, 404 on missing, 400 on invalid language
-- No sessionStorage, no localStorage in any frontend file (not applicable to backend, skip)
-- Arch doc: exists, mentions German-first, no PHI, no Vapi
-
-### 5. Docs
-
-- `docs/architecture/TENANT_LANGUAGE_SETTINGS_API.md` — new
-- `docs/claude/CURRENT_STATE.md` — Module 138 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 139
+- `docs/architecture/INTERNAL_ONBOARDING_REVIEW_CONSOLE.md` — update: Module 139 adds language settings panel
+- `docs/claude/CURRENT_STATE.md` — Module 139 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 140
 
 ## Constraints
 
 - No production PHI activation
-- No Vapi credentials accepted or stored
-- German-first default enforced
-- `preferred_language` must be in `supported_languages`
-- Auth required for all language settings endpoints
+- No Vapi credentials shown or collected
+- No sessionStorage, no localStorage
+- credentials: 'include' on all fetches
+- German-first defaults displayed correctly
+- Safety copy visible near update button
 - Full test suite must remain green
-- Frontend build must pass (no frontend changes expected)
+- Frontend build must pass
 - Commit message:
-  Sprint 19 / Module 138 — Tenant language settings API foundation
+  Sprint 19 / Module 139 — Admin tenant language settings UI
