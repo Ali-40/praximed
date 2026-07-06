@@ -1,52 +1,55 @@
-# Sprint 18 / Module 126D — Deployed Fabel 5 Premium Clinic Interface Smoke Evidence
+# Sprint 18 / Module 127 — Clinic Outreach Asset & 30-Day Pilot Offer Pack
 
 Status: pending implementation.
 
 ## Context
 
-Module 126C-FABEL5 complete:
-- /dashboard replaced with premium 3-column split-screen clinical workspace
-  (Incoming AI Intake Queue · Active Resolution Workspace · Patient Registry)
-- Fabel 5 palette (#0B132B / #008080 / #E0F2F1 / #FFB703 / #E63946 / #F4F6F9)
-- Dynamic tenant/doctor header banner via tenantDisplay helper
-  ("Dr. Med. Alexander Huber | Innere Medizin Wien" staging fallback)
-- Audio Transcript & Call Recording placeholder engine (ingestion pending)
-- Onboarding gateway flow with fixed "Review & Pilot Activation" label
-- Developer console in dark #0B132B admin command theme
-- All existing behavior, API contracts, and safety boundaries preserved
+Module 126D complete:
+- Fabel 5 premium 3-panel clinical interface deployed smoke evidence documented
+- /dashboard: Incoming AI Intake Queue / Active Resolution Workspace / Patient Registry
+- Dynamic doctor/clinic banner: "Dr. Med. Alexander Huber | Innere Medizin Wien" via tenantDisplay
+- Audio Transcript & Call Recording placeholder with Vapi ingestion message
+- /onboarding: 5-step pilot wizard, Review & Pilot Activation (plain text, no HTML entity leak)
+- /developer-console: dark admin command theme, isolated from clinical UI, directly accessible
+- All safety boundaries enforced: STAGING DEMO / fake data / no real patient data / Production PHI: NO-GO
+- 3107/3107 backend tests pass
+
+## Staging Demo Asset State
+
+The premium Fabel 5 dashboard is live and demo-ready on Vercel staging.
+It demonstrates:
+- Professional 3-panel clinical workspace with deep navy / teal palette
+- AI intake queue workflow with patient card, summary, and confirm flow
+- Dynamic tenant identity banner (doctor name / specialty / clinic)
+- Safety boundaries clearly visible — no real patient data risk during demos
+- No login credentials or real patient data needed to understand the product value
+
+## Production Hardening Track (Parallel — C3–C8)
+
+All production hardening blockers remain open. No production PHI launch until resolved:
+- C3 — Secrets hardening
+- C4 — PHI logging/redaction hardening
+- C5 — Tenant isolation verification
+- C6 — Audit trail hardening
+- C7 — Backup/restore runbook
+- C8 — Legal / DSGVO review
 
 ## Goal
 
-Document deployed browser smoke evidence that the Fabel 5 premium clinic
-interface is live on the Vercel staging deployment after push.
+Build a clinic outreach asset pack for Austrian private clinic pilot outreach.
 
-## What Module 126D must verify (after push / Vercel deploy)
+## What Module 127 must deliver
 
-1. /dashboard loads
-2. 3-column interface visible
-3. "Incoming AI Intake Queue" visible
-4. "Active Resolution Workspace" visible
-5. "Audio Transcript & Call Recording" visible
-6. "Patient Registry" visible
-7. Dynamic doctor/clinic banner visible
-   ("Dr. Med. Alexander Huber | Innere Medizin Wien")
-8. /onboarding loads and the "Review & Pilot Activation" text is fixed
-   (no visible "&amp;" entity)
-9. /developer-console loads in the dark admin theme
-10. Safety boundaries visible (STAGING DEMO · Fake-data staging ·
-    No real patient data · Production PHI: NO-GO)
-11. Fake data only
-12. Production PHI remains NO-GO
-
-## Deliverables
-
-- `docs/runtime/FABEL5_PREMIUM_CLINIC_INTERFACE_DEPLOYED_SMOKE_EVIDENCE.md` (new)
-- `backend/tests/test_fabel5_premium_clinic_interface_deployed_smoke_evidence_contract.py` (new)
-- `docs/claude/CURRENT_STATE.md` and `docs/claude/NEXT_MODULE.md` updates
+1. Outreach one-pager template (Austrian private clinic audience, German/English)
+2. 30-day pilot offer framing (scope, terms, what the clinic gets)
+3. First 50 Vienna clinic targets shortlist (specialty, contact entry points)
+4. Demo script: how to show the staging dashboard in a 5-minute clinic walkthrough
+5. Pitch safety framing: staging only / fake data / production PHI: NO-GO communicated to prospects
 
 ## Constraints
 
-- Docs/static-tests only. No runtime code changes. No backend changes.
-- No fabricated evidence — only document what is actually observed.
-- No secrets. No real patient data. No production PHI. No production
-  readiness claim.
+- No real patient data
+- No production PHI claim
+- No secrets
+- Outreach materials must be honest about staging/pilot status
+- No production readiness claim before C3–C8 resolved

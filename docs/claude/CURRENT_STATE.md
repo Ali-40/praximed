@@ -1896,3 +1896,17 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - backend/tests/test_doctor_facing_interface_polish_contract.py (new — 31 static contract tests)
    - Frontend build: PASS (6 routes, clean)
    - Full backend tests: 3071/3071 passed
+
+140. Module 126D — Deployed Fabel 5 Premium Clinic Interface Smoke Evidence
+   - Date: 2026-07-06
+   - Sprint 18 / Commercial MVP build track
+   - Docs and static tests only — no runtime code changes, no backend changes, no secrets, no real patient data
+   - Committed baseline: 0d0f952 — Sprint 18 / Module 126C-FABEL5-FINAL
+   - Smoke result: PASS — Fabel 5 premium 3-panel clinical interface deployed and verified on Vercel staging
+   - Verified: /dashboard (3-column layout, Incoming AI Intake Queue, Active Resolution Workspace, Audio Transcript & Call Recording, Patient Registry, dynamic doctor/clinic banner, Dev Console link absent from clinical nav)
+   - Verified: /onboarding (Review & Pilot Activation plain text, STAGING SCAFFOLD badge, safety copy)
+   - Verified: /developer-console (dark admin theme, Never paste secrets guardrail, Production PHI NO-GO guardrail, direct route accessible)
+   - Verified: all three routes enforce staging safety boundary (STAGING DEMO / fake data / no real patient data / Production PHI: NO-GO)
+   - docs/runtime/FABEL5_PREMIUM_CLINIC_INTERFACE_DEPLOYED_SMOKE_EVIDENCE.md (new)
+   - backend/tests/test_fabel5_premium_clinic_interface_deployed_smoke_evidence_contract.py (new — 36 static contract tests)
+   - Full backend tests: 3107/3107 passed
