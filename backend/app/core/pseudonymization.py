@@ -1,5 +1,6 @@
 """
 PraxisMed Vapi/log pseudonymization helper — Sprint 19 / Module 130.
+Extended: sanitize_vapi_webhook_payload, sanitize_for_log, stable_hash, redact_transcript.
 
 Provides HMAC-SHA256 pseudonymization for PII values that appear in logs,
 Vapi payloads, and audit records. The pseudonymized token is stable across
@@ -103,3 +104,87 @@ def pseudonymize_name(name: str | None) -> str:
 def pseudonymize_email(email: str | None) -> str:
     """Pseudonymize a patient email for safe audit/log storage."""
     return pseudonymize(email, context="email")
+
+
+def stable_hash(value: str) -> str:
+    """Return a stable HMAC-SHA256 hex digest for *value* with no context prefix."""
+    return pseudonymize(value, context="")
+
+
+def redact_transcript(value: str | None) -> str:
+    """Return a safe placeholder for a transcript or audio content string.
+
+    Transcripts are never hashed (too large, may contain identifiable passages).
+    Instead a fixed sentinel is returned that signals "transcript redacted".
+    """
+    if not value:
+        return ""
+    return "[TRANSCRIPT REDACTED]"
+
+
+# ---------------------------------------------------------------------------
+# Keys considered sensitive in Vapi payloads and log objects.
+# Preserve operational keys: clinic_id, clinic_ref, call_id, source,
+# status, urgency_level, created_at, updated_at, action_required, ok.
+# ---------------------------------------------------------------------------
+
+_SENSITIVE_KEYS = frozenset({
+    "patient_name", "name", "full_name",
+    "phone", "phone_number", "mobile",
+    "email",
+    "transcript", "raw_transcript", "audio_transcript",
+    "recording_url", "audio_url",
+    "reason", "notes", "message",
+})
+
+_TRANSCRIPT_KEYS = frozenset({
+    "transcript", "raw_transcript", "audio_transcript",
+    "recording_url", "audio_url",
+})
+
+
+def _sanitize_value(key: str, value: object) -> object:
+    """Return a safe representation for a single key/value pair."""
+    if not isinstance(key, str):
+        return value
+    key_lower = key.lower()
+    if key_lower in _TRANSCRIPT_KEYS:
+        return redact_transcript(str(value) if value is not None else None)
+    if key_lower in _SENSITIVE_KEYS:
+        if value is None:
+            return None
+        return pseudonymize(str(value), context=key_lower)
+    return value
+
+
+def sanitize_for_log(obj: object) -> object:
+    """Recursively sanitize a dict/list/scalar for safe logging.
+
+    - dict values whose key matches a sensitive key are pseudonymized.
+    - Lists are recursively sanitized.
+    - Scalars are returned as-is.
+    - The original object is never mutated.
+    """
+    if isinstance(obj, dict):
+        return {
+            k: _sanitize_value(k, sanitize_for_log(v))
+            for k, v in obj.items()
+        }
+    if isinstance(obj, list):
+        return [sanitize_for_log(item) for item in obj]
+    return obj
+
+
+def sanitize_vapi_webhook_payload(payload: object) -> dict:
+    """Sanitize a raw Vapi webhook or tool-call payload for safe logging.
+
+    Sensitive fields (patient_name, phone, transcript, reason, message, etc.)
+    are replaced with deterministic hash placeholders or redaction sentinels.
+    Safe operational fields (clinic_id, clinic_ref, call_id, source, status,
+    urgency_level) are preserved verbatim.
+
+    Returns a new dict — the original payload is never mutated or logged.
+    """
+    if not isinstance(payload, dict):
+        return {"_sanitized": True, "_type": type(payload).__name__}
+    return sanitize_for_log(payload)  # type: ignore[return-value]

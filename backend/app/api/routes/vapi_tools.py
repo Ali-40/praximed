@@ -21,7 +21,9 @@ from backend.app.api.dependencies.machine_auth import (
 )
 from backend.app.modules.audit import audit_logger
 from backend.app.api.deps import get_config_loader, get_db_pool
+from backend.app.core.compliance import enforce_phi_safeguard
 from backend.app.core.machine_auth import MachineAuthContext
+from backend.app.core.pseudonymization import pseudonymize_name, pseudonymize_phone
 from backend.app.core.config_loader import ConfigNotFoundError, ConfigValidationError
 from backend.app.db.repositories.appointment_request_repo import InvalidAppointmentRequestError
 from backend.app.modules.calendar_sync import availability_engine
@@ -175,6 +177,7 @@ async def vapi_suggest_slots(
 @router.post(
     "/vapi/tools/capture-appointment-request",
     response_model=VapiAppointmentCaptureResponse,
+    dependencies=[Depends(enforce_phi_safeguard)],
 )
 async def vapi_capture_appointment_request(
     request: Request,
@@ -252,6 +255,8 @@ async def vapi_capture_appointment_request(
             metadata={
                 "route": "vapi_capture_appointment_request",
                 "call_id": body.call_id,
+                "patient_name_hash": pseudonymize_name(body.patient_name),
+                "caller_phone_hash": pseudonymize_phone(body.caller_phone),
             },
         ),
     )

@@ -1976,3 +1976,30 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Frontend build: PASS (6 routes, clean)
    - Full backend tests: 3218/3218 passed
    - Production PHI remains NO-GO
+
+143. Module 130 (continued) — Compliance Gate Route Wiring, Pseudonymization Pipeline, and Docs
+   - Date: 2026-07-06
+   - Sprint 19 / Compliance and language readiness track (continuation of Module 130)
+   - enforce_phi_safeguard wired to PHI-processing routers (router-level Depends):
+     - appointment_requests.py, patients.py, consultations.py, clinical_workflows.py
+     - vapi_tools.py: wired to capture-appointment-request route only
+   - Vapi audit log updated: patient_name_hash + caller_phone_hash (pseudonymized) in metadata; call_id preserved
+   - backend/app/core/pseudonymization.py (extended):
+     - stable_hash(), redact_transcript(), sanitize_for_log(), sanitize_vapi_webhook_payload()
+     - Sensitive keys: patient_name, name, full_name, phone, phone_number, mobile, email, transcript, raw_transcript, audio_transcript, recording_url, audio_url, reason, notes, message
+     - Safe operational keys preserved: clinic_id, clinic_ref, call_id, source, status, urgency_level
+   - backend/tenants/configs/1a5bbc75.../clinic_config.json (updated): staging_display section + language_config section (primary_language, fallback_language, supported_languages, default_patient_language)
+   - backend/tests/test_compliance_gate.py (new — 35 tests):
+     - Production auth gate blocks BEARER_SESSION_STORAGE in production
+     - Production safeguard blocks when PRODUCTION_COMPLIANCE_UNLOCKED unset/false; passes when true/1
+     - Staging/local always passes (no block)
+     - sanitize_vapi_webhook_payload: removes patient_name/phone/transcript/reason/message/email/recording_url; preserves call_id/clinic_ref/urgency_level/status; non-dict returns safe envelope; deterministic hashes; nested dicts sanitized
+     - sanitize_for_log: list items sanitized, scalars passed through, notes/audio_url sanitized
+     - Frontend auth regression: credentials include in api.ts, no sessionStorage/localStorage in dashboard
+     - Route wiring: enforce_phi_safeguard present on all 4 PHI routers
+   - backend/tests/test_fabel5_premium_clinic_interface_overhaul_contract.py (updated — stale NEXT_MODULE assertion relaxed)
+   - docs/runtime/COMPLIANCE_READINESS_GATE.md (new)
+   - docs/runtime/VAPI_PSEUDONYMIZED_LOGGING.md (new)
+   - docs/runtime/VAPI_GERMAN_ENGLISH_ASSISTANT_SETUP.md (existing — covers all spec requirements)
+   - Full backend tests: 3253/3253 passed
+   - Production PHI remains NO-GO

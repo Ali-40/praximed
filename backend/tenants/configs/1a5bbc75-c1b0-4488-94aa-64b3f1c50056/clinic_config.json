@@ -11,6 +11,17 @@
   "ai_persona_name": "Rezeptionistin",
   "ai_tone": "professional",
   "specialties": ["Innere Medizin"],
+  "staging_display": {
+    "clinic_display_name": "Dr. Med. Alexander Huber",
+    "specialty": "Innere Medizin",
+    "city": "Wien"
+  },
+  "language_config": {
+    "primary_language": "de",
+    "fallback_language": "en",
+    "supported_languages": ["de", "en"],
+    "default_patient_language": "de"
+  },
   "features": {
     "appointment_booking": true,
     "appointment_intake_enabled": true,

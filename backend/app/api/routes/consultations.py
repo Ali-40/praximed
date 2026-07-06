@@ -22,6 +22,7 @@ from backend.app.api.dependencies.auth import require_clinical_clinic_access
 from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
+from backend.app.core.compliance import enforce_phi_safeguard
 from backend.app.db.repositories import consultation_repo
 from backend.app.modules.audit import audit_logger
 from backend.app.db.repositories.consultation_repo import InvalidConsultationSessionError
@@ -39,7 +40,11 @@ from backend.app.schemas.consultations import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/consultations", tags=["consultations"])
+router = APIRouter(
+    prefix="/consultations",
+    tags=["consultations"],
+    dependencies=[Depends(enforce_phi_safeguard)],
+)
 
 
 @router.post("", response_model=ConsultationResponse)

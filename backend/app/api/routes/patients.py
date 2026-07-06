@@ -21,6 +21,7 @@ from backend.app.api.dependencies.auth import require_staff_clinic_access
 from backend.app.api.dependencies.current_user import get_current_user
 from backend.app.api.deps import get_db_pool
 from backend.app.core.auth_context import AuthContext
+from backend.app.core.compliance import enforce_phi_safeguard
 from backend.app.db.repositories import patient_repo
 from backend.app.db.repositories.patient_repo import InvalidPatientError
 from backend.app.modules.audit import audit_logger
@@ -34,7 +35,11 @@ from backend.app.schemas.patients import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/patients", tags=["patients"])
+router = APIRouter(
+    prefix="/patients",
+    tags=["patients"],
+    dependencies=[Depends(enforce_phi_safeguard)],
+)
 
 
 @router.post("", response_model=PatientResponse)
