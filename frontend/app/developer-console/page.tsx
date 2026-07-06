@@ -359,7 +359,32 @@ export default function DeveloperConsolePage() {
           </a>
         </ConsolePanel>
 
-        {/* 6. Safety guardrails */}
+        {/* 6. Tenant language settings */}
+        <ConsolePanel title="Tenant Language Settings">
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Read and update German-first language settings for a provisioned clinic shell.
+            Controls clinic UI language, patient language fallback, and future Vapi assistant
+            language mode. No PHI. No Vapi credentials. No production activation.
+          </p>
+          <a
+            href="/developer-console/language-settings"
+            style={{
+              display: 'inline-block',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.25rem',
+              borderRadius: 7,
+              border: `1px solid ${ACCENT}`,
+              background: 'rgba(0,128,128,0.15)',
+              color: ACCENT,
+              textDecoration: 'none',
+            }}
+          >
+            Configure language settings →
+          </a>
+        </ConsolePanel>
+
+        {/* 7. Safety guardrails */}
         <ConsolePanel title="Safety Guardrails">
           {[
             'Never paste secrets into browser UI.',

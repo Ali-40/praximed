@@ -2286,6 +2286,54 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+153. Module 139 — Admin Tenant Language Settings UI
+   - Date: 2026-07-06
+   - Sprint 19 / Frontend + api.ts helpers + contract tests + arch doc. No backend changes. No migration.
+   - frontend/app/developer-console/language-settings/page.tsx (new):
+     - LoadState: idle/loading/loaded/auth_error/not_found/error
+     - SaveState: idle/saving/saved/error
+     - Clinic ID text input → "Load settings" → GET /clinics/{id}/language-settings, credentials:'include'
+     - Form fields: primary_language (select), fallback_language (select),
+       supported_languages (checkboxes: Deutsch/English), default_patient_language (select),
+       vapi_assistant_language_mode (select: german_first/english_first/bilingual_auto),
+       clinic_ui_language (select)
+     - "Save language settings" → PATCH /clinics/{id}/language-settings, credentials:'include'
+     - Success: "Language settings saved"; error states: 401/403→"Admin session required",
+       404→"Clinic not found or no access", 400→"Unsupported language configuration"
+     - Safety copy: "No PHI. No secrets. No Vapi credentials."
+       "Language settings do not enable production PHI, Vapi credentials, or patient-data processing."
+       "Production PHI remains NO-GO."
+     - No sessionStorage, no localStorage, no Vapi API key, no webhook secret, no DATABASE_URL
+   - frontend/app/developer-console/page.tsx (updated):
+     - Added "Tenant Language Settings" panel with link to /developer-console/language-settings
+     - "Configure language settings →" button
+   - frontend/lib/api.ts (updated):
+     - ClinicLanguageSettings interface with all 8 fields
+     - ClinicLanguageSettingsUpdatePayload interface (all optional)
+     - fetchClinicLanguageSettings(clinicId): GET /clinics/{id}/language-settings, credentials:'include'
+     - updateClinicLanguageSettings(clinicId, payload): PATCH, credentials:'include'
+   - backend/tests/test_admin_tenant_language_settings_ui_contract.py (new — 67 tests):
+     - File existence (page, console, api.ts, arch doc)
+     - Page: title, badge, clinic ID input, load settings, /language-settings endpoint,
+       credentials:include, PATCH for save
+     - Form fields: primary/fallback/supported languages, Deutsch/English, default_patient_language,
+       vapi_assistant_language_mode (german_first/english_first/bilingual_auto), clinic_ui_language
+     - Save/success: "Save language settings", "Language settings saved"
+     - Error states: "Admin session required", not found, 401/403/404
+     - Safety: no PHI, no secrets, no Vapi credentials, NO-GO
+     - Exclusions: no Vapi API key, no webhook secret, no DATABASE_URL, no JWT secret,
+       no sessionStorage, no localStorage
+     - Console: links to /developer-console/language-settings, has language settings panel
+     - api.ts: fetchClinicLanguageSettings, updateClinicLanguageSettings, /language-settings path,
+       PATCH, credentials:include, ClinicLanguageSettings interface,
+       primary_language/vapi_assistant_language_mode/supported_languages fields
+     - Arch doc: Module 139, language settings, german first, english fallback,
+       no PHI, no Vapi credentials, NO-GO, GET/PATCH routes
+   - docs/architecture/ADMIN_TENANT_LANGUAGE_SETTINGS_UI.md (new)
+   - Full backend tests: 3805/3805 passed
+   - Frontend build: PASS (10/10 pages)
+   - Production PHI remains NO-GO
+
 152. Module 138 — Tenant Language Settings API Foundation
    - Date: 2026-07-06
    - Sprint 19 / Backend only + tests + docs. No frontend changes. No migration.

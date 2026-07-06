@@ -1,89 +1,102 @@
-# Sprint 19 / Module 139 — Admin Tenant Language Settings UI
+# Sprint 19 / Module 140 — Live Tenant Language Settings Smoke Evidence
 
 Status: pending implementation.
 
 ## Context
 
-Module 138 complete:
-- `backend/app/schemas/clinic_language_settings.py` — ClinicLanguageSettingsRead + ClinicLanguageSettingsUpdate
-- `backend/app/services/clinic_language_settings.py` — get/update with German-first defaults, locale↔lang mapping, JSON config file storage
-- `backend/app/api/routes/clinic_language_settings.py` — GET/PATCH /clinics/{id}/language-settings (protected)
-- `backend/app/services/tenant_provisioning.py` — updated to write language_config on clinic shell creation
-- `backend/tests/test_tenant_language_settings_api_foundation.py` — 87 tests, all pass
-- `docs/architecture/TENANT_LANGUAGE_SETTINGS_API_FOUNDATION.md`
-- 3738/3738 backend tests pass
-- No frontend changes
-- Commit: Sprint 19 / Module 138 — Tenant language settings API foundation
+Module 139 complete:
+- `frontend/app/developer-console/language-settings/page.tsx` — language settings admin page
+- `frontend/app/developer-console/page.tsx` — updated with language settings panel
+- `frontend/lib/api.ts` — fetchClinicLanguageSettings + updateClinicLanguageSettings helpers
+- `backend/tests/test_admin_tenant_language_settings_ui_contract.py` — 67 tests, all pass
+- `docs/architecture/ADMIN_TENANT_LANGUAGE_SETTINGS_UI.md`
+- 3805/3805 backend tests pass
+- Frontend build: PASS (10/10 pages)
+- Commit: Sprint 19 / Module 139 — Admin tenant language settings UI
 
-The language settings API exists and is protected. There is no frontend UI to
-read or update it — admin must currently use curl or an API tool.
+The language settings UI exists and is live on staging. Admin can now load and
+update clinic language settings from the browser. No live smoke evidence exists yet
+documenting that the UI actually works end-to-end against the staging backend.
 
 Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Add a "Language Settings" panel to the internal developer/admin console so that
-admin/staff can view and update clinic language settings for a provisioned clinic
-directly from the browser UI.
+Document real live staging evidence that the language settings admin UI works
+end-to-end: loading German-first defaults for a provisioned clinic, updating a
+field, and observing the change reflected on reload.
 
-## What Module 139 must implement
+## What Module 140 must implement
 
-### 1. Frontend — language settings panel in `/developer-console`
+### 1. Smoke evidence doc
 
-`frontend/app/developer-console/page.tsx` (updated):
-- Add a new ConsolePanel "Clinic Language Settings" (after the Pilot Request Review panel)
-- Panel includes:
-  - Input for clinic_id (text field)
-  - "Load settings" button → GET /clinics/{id}/language-settings
-  - Display: primary_language, fallback_language, supported_languages,
-    default_patient_language, vapi_assistant_language_mode, clinic_ui_language, updated_at
-  - Select dropdowns for updatable fields
-  - "Update settings" button → PATCH /clinics/{id}/language-settings
-  - Loading, success, error states
-  - Safety copy: "Language settings do not activate production PHI."
-  - No PHI fields
-  - No Vapi credentials
-  - No sessionStorage, no localStorage
-  - credentials: 'include' on all fetches
+`docs/runtime/LIVE_TENANT_LANGUAGE_SETTINGS_SMOKE_EVIDENCE.md` (new):
 
-### 2. api.ts helpers
+**Required sections:**
+- Purpose
+- Current Result: `PASS` or `PARTIAL` (if full round-trip not yet testable from staging)
+- Preconditions:
+  - Admin session active (staging)
+  - Clinic shell provisioned (use the Demo Wahlarzt Praxis Wien clinic_id from Module 137)
+  - Frontend URL: https://praximed.vercel.app/developer-console/language-settings
+  - Module 139 commit deployed
+- Live UI Evidence:
+  - Loaded page with clinic_id
+  - German-first defaults displayed (primary_language=de, fallback_language=en,
+    supported_languages=["de","en"], vapi_assistant_language_mode=german_first,
+    clinic_ui_language=de)
+  - updated_at value shown
+- Update Evidence:
+  - Changed a field (e.g. clinic_ui_language de → en)
+  - Clicked "Save language settings"
+  - "Language settings saved" confirmed
+  - Reloaded page — updated value persisted
+- Safety Boundaries:
+  - No PHI collected or displayed
+  - No Vapi credentials entered or stored
+  - No sessionStorage or localStorage used
+  - production_phi_enabled remained false
+  - No production activation
+- What This Proves:
+  - GET /clinics/{id}/language-settings returns correct German-first defaults
+  - PATCH /clinics/{id}/language-settings persists partial updates
+  - Admin UI round-trip works end-to-end on staging
+  - credentials: 'include' session auth works for this endpoint
+- What This Does Not Prove:
+  - Production readiness
+  - DSGVO compliance
+  - Vapi assistant binding
+- Remaining Blockers: C3–C8 as per Module 138 arch doc
 
-`frontend/lib/api.ts` (updated):
-- `getClinicLanguageSettings(clinicId: string)` → GET /clinics/{clinicId}/language-settings
-- `updateClinicLanguageSettings(clinicId: string, update: object)` → PATCH /clinics/{clinicId}/language-settings
-- Both: credentials: 'include'
+### 2. Tests
 
-### 3. Tests
+`backend/tests/test_live_tenant_language_settings_smoke_evidence_contract.py` (new):
 
-`backend/tests/test_admin_tenant_language_settings_ui_contract.py` (new):
 Static tests verifying:
-- Developer console page has "Language Settings" or "language settings" text
-- Panel has clinic_id input or field
-- "Load settings" or equivalent trigger
-- Shows primary_language, vapi_assistant_language_mode
-- PATCH /clinics/ and /language-settings called
-- credentials: 'include'
-- Safety copy about no production PHI
-- No sessionStorage, no localStorage
-- No Vapi API key field
-- api.ts has getClinicLanguageSettings
-- api.ts has updateClinicLanguageSettings
+- Doc exists
+- PASS or PARTIAL result stated
+- Module 140 referenced
+- Frontend URL present
+- Clinic ID referenced
+- German-first defaults mentioned (primary_language=de, german_first, fallback_language)
+- Load and update evidence sections present
+- "Language settings saved" confirmed
+- Safety: no PHI, no Vapi credentials, production_phi_enabled=false, NO-GO
+- What proves / what does not prove sections present
+- Remaining blockers (C3–C8) referenced
 
-### 4. Docs
+### 3. Docs
 
-- `docs/architecture/INTERNAL_ONBOARDING_REVIEW_CONSOLE.md` — update: Module 139 adds language settings panel
-- `docs/claude/CURRENT_STATE.md` — Module 139 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 140
+- `docs/claude/CURRENT_STATE.md` — Module 140 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 141
 
 ## Constraints
 
 - No production PHI activation
 - No Vapi credentials shown or collected
 - No sessionStorage, no localStorage
-- credentials: 'include' on all fetches
-- German-first defaults displayed correctly
-- Safety copy visible near update button
+- Production PHI remains NO-GO
 - Full test suite must remain green
 - Frontend build must pass
 - Commit message:
-  Sprint 19 / Module 139 — Admin tenant language settings UI
+  Sprint 19 / Module 140 — Live tenant language settings smoke evidence

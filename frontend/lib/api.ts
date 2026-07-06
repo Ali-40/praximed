@@ -236,6 +236,63 @@ export async function provisionClinicShell(
 }
 
 // ---------------------------------------------------------------------------
+// Clinic language settings — Sprint 19 / Module 139
+// ---------------------------------------------------------------------------
+
+export interface ClinicLanguageSettings {
+  ok: boolean
+  clinic_id: string
+  primary_language: string
+  fallback_language: string
+  supported_languages: string[]
+  default_patient_language: string
+  vapi_assistant_language_mode: string
+  clinic_ui_language: string
+  updated_at: string | null
+}
+
+export interface ClinicLanguageSettingsUpdatePayload {
+  primary_language?: string
+  fallback_language?: string
+  supported_languages?: string[]
+  default_patient_language?: string
+  vapi_assistant_language_mode?: string
+  clinic_ui_language?: string
+}
+
+// Fetches GET /clinics/{clinicId}/language-settings using the session cookie.
+// Protected — requires admin session. No PHI. No Vapi credentials.
+export async function fetchClinicLanguageSettings(
+  clinicId: string,
+): Promise<ClinicLanguageSettings> {
+  const resp = await apiFetch(`/clinics/${encodeURIComponent(clinicId)}/language-settings`)
+  if (!resp.ok) {
+    throw new Error(`Failed to load clinic language settings (HTTP ${resp.status})`)
+  }
+  return (await resp.json()) as ClinicLanguageSettings
+}
+
+// Updates language settings via PATCH /clinics/{clinicId}/language-settings.
+// Protected — requires admin session. Partial update — only provided fields are changed.
+// No PHI. No Vapi credentials. No secrets.
+export async function updateClinicLanguageSettings(
+  clinicId: string,
+  payload: ClinicLanguageSettingsUpdatePayload,
+): Promise<ClinicLanguageSettings> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/language-settings`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to update clinic language settings (HTTP ${resp.status})`)
+  }
+  return (await resp.json()) as ClinicLanguageSettings
+}
+
+// ---------------------------------------------------------------------------
 // Pre-appointment summary — Sprint 17 / Module 125
 // ---------------------------------------------------------------------------
 
