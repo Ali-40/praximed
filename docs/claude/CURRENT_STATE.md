@@ -2286,6 +2286,59 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+157. Module 143 — Live Vapi Assistant Config Preview Smoke Evidence
+   - Date: 2026-07-06
+   - Sprint 19 / Docs + static tests only. No backend changes. No frontend changes. No migration.
+   - docs/runtime/LIVE_VAPI_ASSISTANT_CONFIG_PREVIEW_SMOKE_EVIDENCE.md (new):
+     - Overall result: PASS
+     - Commit tested: 944b898
+     - Frontend URL: https://praximed.vercel.app/developer-console/vapi-config
+     - Clinic ID: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056 (Demo Wahlarzt Praxis Wien)
+     - Load config pack: GET 200, all 8 sections rendered
+     - German-first: KI-Rezeption, keine Diagnose, keine medizinische Beratung,
+       keine Terminbestätigung, Notruf 144, first_message_de confirmed
+     - English fallback: AI receptionist, No diagnosis, No medical advice,
+       no appointment confirmation promise, call 144, first_message_en confirmed
+     - Required capture fields: patient_name, phone, reason, preferred_time,
+       language_preference, urgency_level — all confirmed
+     - Tool schema: capture_appointment_request, X-Vapi-Service-Name, X-Vapi-Clinic-Id,
+       X-Vapi-Scopes visible; no secret values shown
+     - Safety rules: no diagnosis, no medical advice, no appointment confirmation,
+       emergency escalation 144 — all confirmed
+     - Forbidden claims section rendered
+     - Readiness flags: production_phi_enabled=false, recording_ingestion_enabled=false,
+       transcript_ingestion_enabled=false — all green
+     - Safety: no PHI, no Vapi API key, no webhook secret, no sessionStorage, no localStorage,
+       no live Vapi binding, production_phi_enabled=false, no production activation
+     - What proves: GET returns complete config pack, German-first/English prompts complete,
+       all capture fields present, tool schema renders without secrets, safety flags false,
+       admin UI round-trip end-to-end, credentials:include works, no live Vapi binding
+     - What does not prove: production readiness, DSGVO, Vapi binding, bilingual audio,
+       security hardening, multi-tenant isolation
+     - Remaining blockers: C3–C8, Vapi credential binding (Module 144), provisioning,
+       recording ingestion, transcript storage, bilingual audio
+   - backend/tests/test_live_vapi_assistant_config_preview_smoke_evidence_contract.py (new — 67 tests):
+     - File existence, module/sprint/commit identity, PASS result
+     - Frontend URL, GET route, /clinics/ path, clinic ID, staging clinic
+     - Load config pack, HTTP 200
+     - German: german_first, KI-Rezeption, keine Diagnose, keine medizinische Beratung,
+       Terminbestätigung, Notruf 144, first_message_de
+     - English: english fallback, AI receptionist, no diagnosis, no medical advice,
+       no appointment confirmation, call 144
+     - Capture fields: patient_name, phone, reason, preferred_time, language_preference, urgency_level
+     - Tool schema: capture_appointment_request, X-Vapi-Service-Name/Clinic-Id/Scopes,
+       no secret values
+     - Safety rules: no diagnosis, no medical advice, no appointment confirmation, 144
+     - Forbidden claims section
+     - Flags: production_phi_enabled/recording/transcript all false
+     - Safety: no PHI, no Vapi API key, no webhook secret, no secrets, no live Vapi binding,
+       NO-GO, production phi remains no-go
+     - Proves/does-not-prove sections, end-to-end, production readiness, Vapi binding, bilingual audio
+     - Remaining blockers: C3–C8, DSGVO
+   - Full backend tests: 4074/4074 passed
+   - No frontend changes
+   - Production PHI remains NO-GO
+
 156. Module 142 — Admin Vapi Assistant Config Preview UI
    - Date: 2026-07-06
    - Sprint 19 / Frontend + api.ts helper + contract tests + arch doc. No backend changes. No migration.
