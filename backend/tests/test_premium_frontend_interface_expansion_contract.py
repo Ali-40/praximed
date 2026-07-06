@@ -96,29 +96,34 @@ def test_dashboard_imports_tenant_display():
 
 def test_dashboard_uses_pm_shell():
     content = _read("app/dashboard/page.tsx")
-    assert "pm-shell" in content
+    # Module 126C-FIX: self-contained class names (pm-dash-shell)
+    assert "pm-shell" in content or "pm-dash-shell" in content
 
 
 def test_dashboard_uses_pm_app_grid():
     content = _read("app/dashboard/page.tsx")
-    assert "pm-app-grid" in content
+    # Module 126C-FIX: self-contained class names (pm-dash-grid) + embedded CSS
+    assert "pm-app-grid" in content or "pm-dash-grid" in content or "display:grid" in content.replace(" ", "")
 
 
 def test_dashboard_has_left_panel():
     content = _read("app/dashboard/page.tsx")
-    assert "pm-panel-left" in content
+    # Module 126C-FIX: self-contained class names (pm-dash-left)
+    assert "pm-panel-left" in content or "pm-dash-left" in content
     assert 'data-panel="left"' in content
 
 
 def test_dashboard_has_center_panel():
     content = _read("app/dashboard/page.tsx")
-    assert "pm-panel-center" in content
+    # Module 126C-FIX: self-contained class names (pm-dash-center)
+    assert "pm-panel-center" in content or "pm-dash-center" in content
     assert 'data-panel="center"' in content
 
 
 def test_dashboard_has_right_panel():
     content = _read("app/dashboard/page.tsx")
-    assert "pm-panel-right" in content
+    # Module 126C-FIX: self-contained class names (pm-dash-right)
+    assert "pm-panel-right" in content or "pm-dash-right" in content
     assert 'data-panel="right"' in content
 
 

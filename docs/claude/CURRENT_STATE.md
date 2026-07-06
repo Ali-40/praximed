@@ -1852,3 +1852,18 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - All existing behaviour preserved: login, logout, dashboard loads, appointments/patients/notifications/consultations load, View summary / Hide summary, Confirm, credentials: include, no token storage, no diagnosis, no medical advice, staging safety boundary visible
    - No backend API changes; no fake clinic data; no real patient data; no secrets; production PHI NO-GO
    - Full backend tests: 2949/2949 passed
+
+137. Module 126C-FIX — Activate Premium 3-Panel Dashboard Interface
+   - Date: 2026-07-06
+   - Sprint 18 / Commercial MVP build track
+   - Frontend fix only — no backend changes, no migrations, no secrets, no real patient data
+   - **Root cause:** Deployed /dashboard showed old Module 126 single-column layout despite Module 126C commit. Three causes: (1) layout depended on globals.css CSS classes with no inline fallback; (2) hex colours #0F172A / #0D9488 only referenced via CSS variables, not inlined; (3) panel headings used different text than the spec.
+   - **Fix:** dashboard/page.tsx rewritten to be self-contained — embedded `<style>` block (`pm-dash-*` classes) with responsive breakpoints (1200px, 768px), hardcoded `#0F172A` and `#0D9488` as JS constants, panel headings corrected to "Incoming AI Intake" and "Audio Transcript & Call Recording"
+   - All data-section/data-action/data-state attributes preserved; all API calls preserved; no sessionStorage; no diagnosis; staging safety footer
+   - `frontend/app/dashboard/page.tsx` (updated — self-contained layout)
+   - `backend/tests/test_premium_frontend_dashboard_activation_contract.py` (new — 37 static contract tests)
+   - `backend/tests/test_premium_frontend_interface_expansion_contract.py` (updated — 5 tests updated to accept pm-dash-* class names)
+   - `docs/architecture/PREMIUM_FRONTEND_APPLICATION_INTERFACE_EXPANSION.md` (updated — correction note added)
+   - /onboarding and /developer-console remain intact (verified in tests)
+   - Frontend build: PASS (Next.js build clean, all 8 static pages)
+   - Full backend tests: 2986/2986 passed

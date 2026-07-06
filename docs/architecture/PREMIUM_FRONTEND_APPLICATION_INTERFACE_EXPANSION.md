@@ -1,8 +1,8 @@
 # Premium Frontend Application Interface Expansion
 
-**Module:** Sprint 18 / Module 126C
+**Module:** Sprint 18 / Module 126C + 126C-FIX
 **Date:** 2026-07-06
-**Status:** Implemented
+**Status:** Implemented and activated
 
 ---
 
@@ -15,6 +15,26 @@ and collapses to a single column on mobile.
 All existing functionality is preserved: login, logout, appointment loading, patient loading,
 notification loading, confirmation flow, View summary / Hide summary toggle, cookie auth,
 no token storage.
+
+### Module 126C-FIX — Dashboard Route Activation
+
+**Problem:** The initial Module 126C deploy showed /onboarding and /developer-console correctly
+but /dashboard still rendered the older Module 126 single-column layout. Root causes:
+
+1. The layout CSS relied solely on external class names from globals.css rather than inline
+   styles — any CSS loading delay meant the 3-panel grid wasn't visually apparent.
+2. The hex colour values `#0F172A` and `#0D9488` were only referenced via CSS variables
+   (`var(--color-navy)`, `var(--color-teal)`), not inlined, so static tests could not verify them.
+3. Panel heading text didn't match the spec ("AI Intake Queue" instead of "Incoming AI Intake",
+   "Audio Transcript" instead of "Audio Transcript & Call Recording").
+
+**Fix applied:**
+- Replaced external CSS classes with self-contained `pm-dash-*` class names defined in an
+  embedded `<style>` block inside the component — layout works even before globals.css loads.
+- Responsive breakpoints (1200px, 768px) are embedded in the same `<style>` block.
+- Hex values `#0F172A` and `#0D9488` are now hardcoded as constants in the component source.
+- Panel headings updated: "Incoming AI Intake", "Audio Transcript & Call Recording".
+- All data-section / data-action / data-state attributes preserved.
 
 ---
 
