@@ -2179,3 +2179,39 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: 3494/3494 passed
    - Frontend build: ✓ 9/9 pages, no TypeScript errors
    - Production PHI remains NO-GO
+
+149. Module 135 — Tenant Provisioning Backend Foundation
+   - Date: 2026-07-06
+   - Sprint 19 / Backend service + route + tests + docs. No frontend changes. No migration.
+   - backend/app/services/tenant_provisioning.py (new):
+     - provision_clinic_shell_from_onboarding_request(pool, request_id, actor_user_id)
+     - Only provisions when request status is pilot_approved
+     - Uses existing clinics table (status='pilot_setup') — no new table needed
+     - production_phi_enabled is NOT a clinics table column; PHI never enabled here
+     - Language preserved: preferred_language→locale (de→de-AT), fallback_language, supported_languages
+     - Slug: slugified clinic_name + 8-char UUID suffix
+     - Idempotent: queries audit_log for existing create_clinic_shell event; returns existing if found
+     - Audit event written to audit_log on every new provisioning
+     - No Vapi credentials. No patients. No passwords. No public auto-provisioning.
+     - Exceptions: ProvisioningNotFoundError, ProvisioningBlockedError
+   - backend/app/api/routes/clinic_onboarding.py (updated):
+     - Added POST /clinic-onboarding-requests/{request_id}/provision-clinic-shell
+     - Protected: requires get_current_user (session cookie or Bearer)
+     - 404 on missing request, 409 on wrong status, 200 on success/already-provisioned
+     - Response: ok, onboarding_request_id, clinic_id, clinic_name, clinic_slug,
+       preferred_language, fallback_language, supported_languages,
+       production_phi_enabled=false, message, already_provisioned
+   - backend/tests/test_tenant_provisioning_backend_foundation.py (new — 47 tests):
+     - Static: service exists, route has provision endpoint + auth, arch doc exists,
+       no Vapi in service, no patient INSERT, public submit does not provision
+     - Blocking: missing request → NotFound; submitted/reviewed/demo_booked/rejected/archived → Blocked
+     - Success: clinic created, production_phi_enabled=false, language preserved, message,
+       no Vapi in result, audit event recorded, clinic_name, slug, supported_languages JSON string, request_id
+     - Idempotency: already provisioned returns existing, no duplicate INSERT, no second audit
+     - Route: unauth→401, not found→404, blocked→409, success→200+ok, clinic_id, phi=false,
+       message, no secrets, language fields
+     - Arch doc: pilot_approved, no PHI, no Vapi, audit, no automatic, language, idempotency, pilot_setup
+   - docs/architecture/TENANT_PROVISIONING_BACKEND_FOUNDATION.md (new)
+   - Full backend tests: 3541/3541 passed
+   - No frontend changes (build remains clean at 9/9 pages)
+   - Production PHI remains NO-GO

@@ -31,6 +31,11 @@ from backend.app.schemas.clinic_onboarding import (
     ClinicOnboardingRequestResponse,
     ClinicOnboardingRequestStatusUpdate,
 )
+from backend.app.services import tenant_provisioning
+from backend.app.services.tenant_provisioning import (
+    ProvisioningBlockedError,
+    ProvisioningNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -155,3 +160,39 @@ async def update_clinic_onboarding_request_status(
         raise HTTPException(status_code=404, detail="Onboarding request not found")
 
     return ClinicOnboardingRequestResponse(ok=True, request=row)
+
+
+@router.post("/{request_id}/provision-clinic-shell")
+async def provision_clinic_shell(
+    request_id: str,
+    pool: Any = Depends(get_db_pool),
+    auth: AuthContext = Depends(get_current_user),
+) -> dict:
+    """Protected internal endpoint — create a safe clinic shell from a
+    pilot_approved onboarding request.
+
+    Safety:
+      - Requires authenticated session.
+      - Only works when request status is pilot_approved.
+      - Does NOT activate production PHI.
+      - Does NOT store Vapi credentials.
+      - Does NOT create patient records.
+      - Does NOT auto-provision from public onboarding submission.
+      - Records immutable audit event.
+      - Idempotent: returns existing clinic info if already provisioned.
+    """
+    try:
+        result = await tenant_provisioning.provision_clinic_shell_from_onboarding_request(
+            pool=pool,
+            request_id=request_id,
+            actor_user_id=auth.user_id,
+        )
+    except ProvisioningNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ProvisioningBlockedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Unexpected error during clinic shell provisioning")
+        raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
+
+    return {"ok": True, **result}
