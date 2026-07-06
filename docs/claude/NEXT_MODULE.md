@@ -1,77 +1,87 @@
-# Sprint 19 / Module 137 — Live Tenant Provisioning Smoke Evidence
+# Sprint 19 / Module 138 — Tenant Language Settings API Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Module 136 complete:
-- `frontend/app/developer-console/onboarding-requests/page.tsx` — "Clinic Shell Provisioning" panel with button, safety copy, success/error states
-- `frontend/lib/api.ts` — `provisionClinicShell(requestId)` helper
-- `backend/tests/test_admin_provision_clinic_shell_ui_contract.py` — 90 tests, all pass
-- `docs/architecture/ADMIN_PROVISION_CLINIC_SHELL_UI.md`
-- Full backend test suite and frontend build pass
-- Commit: Sprint 19 / Module 136 — Admin provision clinic shell UI
+Module 137 complete:
+- `docs/runtime/LIVE_TENANT_PROVISIONING_SMOKE_EVIDENCE.md` — PASS; clinic shell provisioned from UI; idempotency verified
+- `backend/tests/test_live_tenant_provisioning_smoke_evidence_contract.py` — 39 tests, all pass
+- 3651/3651 backend tests pass
+- No frontend changes
+- Commit: Sprint 19 / Module 137 — Live tenant provisioning smoke evidence
 
-The provisioning button exists and the backend service is ready. What we have
-not yet verified is that the full end-to-end flow works in a staging environment:
-submit → approve → provision → clinic row visible in DB.
+A clinic shell now exists in staging (status=`pilot_setup`). The next step is
+to allow admin/staff to read and update the clinic's language settings —
+German-first by default, English fallback — via a protected API.
 
 Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Capture structured evidence that the full pilot onboarding → provisioning
-flow works end-to-end in a staging (non-production) environment.
+Add a backend API foundation for reading and updating tenant language settings
+for a provisioned clinic shell.
 
-## What Module 137 must implement
+Language settings are stored in the existing `clinics` table (`locale` column).
+The API must expose a clear, simple structure and enforce German-first defaults.
 
-### 1. Smoke test script
+## What Module 138 must implement
 
-`backend/scripts/smoke_provision.py` (new):
-- Submit a clinic onboarding request via POST /clinic-onboarding-requests
-- Fetch the request via GET /clinic-onboarding-requests/{id}
-- Update status to pilot_approved via PATCH /clinic-onboarding-requests/{id}/status
-- Provision the clinic shell via POST /clinic-onboarding-requests/{id}/provision-clinic-shell
-- Print structured result: clinic_id, clinic_slug, clinic_name, preferred_language,
-  production_phi_enabled (must be false), already_provisioned, message
-- Print a PASS / FAIL summary
-- Assert: production_phi_enabled is false
-- Assert: clinic_id is a non-empty string
-- Assert: message contains "Production PHI remains disabled"
-- Idempotency check: call provision again, assert already_provisioned=true
-- Accepts BASE_URL as env var or CLI arg (default http://127.0.0.1:8000)
-- No hardcoded credentials, no secrets committed
-- Requires ADMIN_SESSION_COOKIE env var for authenticated calls
+### 1. Backend — language settings service
 
-### 2. Tests
+`backend/app/services/language_settings.py` (new):
+- `get_language_settings(pool, clinic_id)` → dict with `preferred_language`, `fallback_language`, `supported_languages`, `locale`
+- `update_language_settings(pool, clinic_id, preferred_language, fallback_language, supported_languages)` → updated dict
+- German-first default: `preferred_language=de`, `fallback_language=en`, `supported_languages=["de","en"]`
+- `locale` derived from `preferred_language`: `de` → `de-AT`, `en` → `en-US`
+- Validates `preferred_language` is in `supported_languages`
+- No Vapi credentials accepted or stored
+- No patient data
+- No production PHI
 
-`backend/tests/test_live_provisioning_smoke_contract.py` (new):
-Static tests verifying:
-- Script file exists at backend/scripts/smoke_provision.py
-- Script calls POST /clinic-onboarding-requests
-- Script calls /provision-clinic-shell
-- Script asserts production_phi_enabled is false
-- Script asserts already_provisioned=true on second call
-- Script has PASS/FAIL output
-- No hardcoded DATABASE_URL, no hardcoded passwords, no hardcoded secrets
-- Script reads BASE_URL from env or CLI
-- Script reads ADMIN_SESSION_COOKIE from env
+### 2. Backend — language settings route
 
-### 3. Docs
+`backend/app/api/routes/language_settings.py` (new):
+- `GET /clinics/{clinic_id}/language-settings` — read current language settings
+  - Protected: requires `get_current_user`
+  - Returns: `{ ok, clinic_id, preferred_language, fallback_language, supported_languages, locale }`
+- `PATCH /clinics/{clinic_id}/language-settings` — update language settings
+  - Protected: requires `get_current_user`
+  - Body: `{ preferred_language, fallback_language?, supported_languages? }`
+  - Returns: same shape as GET
+  - 404 if clinic not found
+  - 400 if preferred_language not in supported_languages
 
-- `docs/architecture/LIVE_PROVISIONING_SMOKE_EVIDENCE.md` — document the smoke
-  script, how to run it, and what constitutes a PASS
-- `docs/claude/CURRENT_STATE.md` — Module 137 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 138
+### 3. Backend — schemas
+
+`backend/app/schemas/language_settings.py` (new):
+- `LanguageSettingsResponse`: `ok`, `clinic_id`, `preferred_language`, `fallback_language`, `supported_languages`, `locale`
+- `LanguageSettingsUpdate`: `preferred_language`, `fallback_language` (optional), `supported_languages` (optional)
+
+### 4. Tests
+
+`backend/tests/test_tenant_language_settings_api_foundation.py` (new):
+- Static: service/route/schema files exist, no Vapi, no patient data, no PHI, auth required
+- Service: get returns correct fields, de→de-AT locale mapping, en→en-US, default language
+- Service: update sets locale from preferred_language, validates preferred in supported
+- Route: unauth→401, GET→200+fields, PATCH→200+updated, 404 on missing, 400 on invalid language
+- No sessionStorage, no localStorage in any frontend file (not applicable to backend, skip)
+- Arch doc: exists, mentions German-first, no PHI, no Vapi
+
+### 5. Docs
+
+- `docs/architecture/TENANT_LANGUAGE_SETTINGS_API.md` — new
+- `docs/claude/CURRENT_STATE.md` — Module 138 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 139
 
 ## Constraints
 
 - No production PHI activation
-- No Vapi credentials collected or committed
-- ADMIN_SESSION_COOKIE must be read from env, never hardcoded
-- BASE_URL must be configurable
-- production_phi_enabled must be asserted false in smoke script
+- No Vapi credentials accepted or stored
+- German-first default enforced
+- `preferred_language` must be in `supported_languages`
+- Auth required for all language settings endpoints
 - Full test suite must remain green
-- Frontend build must pass
+- Frontend build must pass (no frontend changes expected)
 - Commit message:
-  Sprint 19 / Module 137 — Live tenant provisioning smoke evidence
+  Sprint 19 / Module 138 — Tenant language settings API foundation

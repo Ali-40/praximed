@@ -2252,6 +2252,36 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
        ClinicShellProvisionResult interface, no sessionStorage/localStorage
      - Arch doc: Module 136, pilot_approved, no production PHI, Vapi mentioned
    - docs/architecture/ADMIN_PROVISION_CLINIC_SHELL_UI.md (new)
-   - Full backend tests: pending (run next)
-   - Frontend build: pending (run next)
+   - Full backend tests: 3612/3612 passed
+   - Frontend build: PASS (9/9 pages)
+   - Production PHI remains NO-GO
+
+151. Module 137 — Live Tenant Provisioning Smoke Evidence
+   - Date: 2026-07-06
+   - Sprint 19 / Docs + static tests only. No backend changes. No frontend changes. No migration.
+   - docs/runtime/LIVE_TENANT_PROVISIONING_SMOKE_EVIDENCE.md (new):
+     - Overall result: PASS
+     - Frontend URL: https://praximed.vercel.app/developer-console/onboarding-requests
+     - Test request: Demo Wahlarzt Praxis Wien / demo.clinic@example.test
+     - Status before provisioning: pilot_approved
+     - Button clicked: Provision Clinic Shell
+     - First call: Clinic shell provisioned; clinic_id, clinic_name, clinic_slug,
+       preferred_language returned; production_phi_enabled=false; message confirmed
+     - Second call: already_provisioned=true; same clinic_id; no duplicate created
+     - Safety: no Vapi credentials, no patient records, no production PHI, clinic status=pilot_setup
+     - Sections: Purpose, Current Result, Preconditions, Live UI Evidence, Status Update Evidence,
+       Provisioning Success Evidence, Idempotency Evidence, Safety Boundaries,
+       What This Proves, What This Does Not Prove, Remaining Blockers (C3–C8)
+   - backend/tests/test_live_tenant_provisioning_smoke_evidence_contract.py (new — 39 tests):
+     - File existence, PASS status, Module 137 / commit 47918c6
+     - Frontend URL, demo request identity (clinic name + email)
+     - pilot_approved, Provision Clinic Shell button, /provision-clinic-shell endpoint
+     - Provisioning success: clinic_id, clinic_name, clinic_slug, preferred_language,
+       production_phi_enabled=false, message
+     - Idempotency: already_provisioned=true, no duplicate, second call safe
+     - Safety: no Vapi credentials, no patient records, no production PHI, NO-GO, no secrets, pilot_setup
+     - What proves: idempotency, phi=false; What does not prove: production readiness
+     - Remaining blockers: C3–C8, DSGVO, backup
+   - Full backend tests: 3651/3651 passed
+   - No frontend changes
    - Production PHI remains NO-GO
