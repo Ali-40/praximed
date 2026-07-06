@@ -467,9 +467,7 @@ export default function DashboardPage() {
           <a href="/onboarding" style={{ fontSize: '0.775rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: 6, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
             Onboarding
           </a>
-          <a href="/developer-console" style={{ fontSize: '0.775rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: 6, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>
-            Dev Console
-          </a>
+          {/* Dev Console is accessible directly at /developer-console — not shown in clinical nav */}
           <button
             onClick={handleLogout}
             style={{

@@ -1884,3 +1884,15 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - **`backend/tests/test_fabel5_premium_clinic_interface_overhaul_contract.py`** (new static contract tests)
    - **`docs/architecture/FABEL5_PREMIUM_CLINIC_INTERFACE_OVERHAUL.md`** (new)
    - All existing behaviour preserved: login/logout, all four data loads, View summary / Hide summary, Confirm handler and API contract, credentials: include, no sessionStorage/localStorage, all data-section/data-action/data-state selectors, no diagnosis, no medical advice
+
+139. Module 126C-FABEL5-FINAL — Doctor-facing interface polish
+   - Date: 2026-07-06
+   - Sprint 18 / Commercial MVP build track
+   - Frontend polish only — no backend changes, no migrations, no secrets, no real patient data
+   - Fix 1: Tenant identity confirmed flowing from tenantDisplay.ts ("Dr. Med. Alexander Huber | Innere Medizin Wien") through getClinicDisplayName; doctor name not hardcoded in dashboard
+   - Fix 2: Transcript panel label "Audio Transcript & Call Recording" and placeholder "Recording/transcript review will appear here when Vapi recording ingestion is enabled." confirmed; no fake transcripts, no diagnosis, no medical advice
+   - Fix 3: Dev Console link removed from clinical dashboard nav; /developer-console route still exists and is directly accessible
+   - frontend/app/dashboard/page.tsx (updated — Dev Console nav link removed from clinical header)
+   - backend/tests/test_doctor_facing_interface_polish_contract.py (new — 31 static contract tests)
+   - Frontend build: PASS (6 routes, clean)
+   - Full backend tests: 3071/3071 passed
