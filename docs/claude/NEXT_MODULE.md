@@ -1,140 +1,181 @@
-# Sprint 19 / Module 144 — Vapi Credential Binding Design and Secret Boundary
+# Sprint 19 / Module 145 — Vapi Binding Metadata Backend Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Module 143 complete:
-- `docs/runtime/LIVE_VAPI_ASSISTANT_CONFIG_PREVIEW_SMOKE_EVIDENCE.md` — PASS
-- `backend/tests/test_live_vapi_assistant_config_preview_smoke_evidence_contract.py` — 67 tests, all pass
-- 4074/4074 backend tests pass
-- No frontend changes
-- Commit: Sprint 19 / Module 143 — Live Vapi assistant config preview smoke evidence
+Module 144 complete:
+- `docs/architecture/VAPI_CREDENTIAL_BINDING_SECRET_BOUNDARY.md` — hard secret boundary defined
+- `backend/tests/test_vapi_credential_binding_secret_boundary_contract.py` — 41 tests, all pass
+- 4115/4115 backend tests pass
+- No frontend changes. No migration. No live Vapi API calls. No secrets stored.
+- Commit: Sprint 19 / Module 144 — Vapi credential binding design and secret boundary
 
-The Vapi assistant configuration pack can be generated and previewed per clinic.
-The German/English prompts, capture tool schema, safety rules, and readiness flags
-all work end-to-end on staging. However, no mechanism exists yet to bind real Vapi
-credentials to a clinic — no VAPI_API_KEY, no Vapi phone number binding, no
-real assistant creation on Vapi's platform.
+The secret boundary is now documented and enforced by contract tests. The
+`clinic_vapi_bindings` table design is finalised (reference names only, no secret
+values). The readiness gate (C3–C8, Article 28/32) remains open.
 
 Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Design the safe backend-only credential binding structure for Vapi. This module
-is architecture + design only: no live Vapi API calls yet, no secrets in docs or
-tests, no browser secret input, no environment variable exposure. The output is a
-clear, safe architecture doc and accompanying contract tests.
+Create the `clinic_vapi_bindings` database migration, repository layer, and
+protected internal backend routes for storing Vapi binding metadata. No live Vapi
+API calls. No actual secrets stored — only reference names (api_key_secret_ref,
+webhook_secret_ref). No PHI. All safety flags hardcoded False.
 
-## What Module 144 must implement
+## What Module 145 must implement
 
-### 1. Architecture doc
+### 1. Migration
 
-`docs/architecture/VAPI_CREDENTIAL_BINDING_DESIGN.md` (new):
+`backend/migrations/versions/XXXX_clinic_vapi_bindings.py` (new):
 
-**Required sections:**
-- Purpose: what Vapi credential binding achieves (linking a clinic to a Vapi assistant)
-- Secret boundary: where secrets live (environment variables only, never in browser/DB/logs)
-- Credential types:
-  - `VAPI_API_KEY` — Vapi account API key (environment variable, never in browser)
-  - Vapi phone number ID — which phone number the assistant answers
-  - Vapi assistant ID — the created/configured assistant's ID on Vapi platform
-- Binding flow (design only — not implemented):
-  1. Admin triggers binding via backend admin endpoint (NOT browser form)
-  2. Backend reads VAPI_API_KEY from environment
-  3. Backend calls Vapi API to create or update assistant with config pack
-  4. Backend stores only the returned vapi_assistant_id and vapi_phone_number_id
-     in the clinics table or a new vapi_binding table (non-secret references)
-  5. No VAPI_API_KEY stored in DB
-  6. Audit log entry created
-- DB design (proposed, no migration yet):
-  - New table `clinic_vapi_bindings` (to be created in a future migration):
-    - clinic_id (FK)
-    - vapi_assistant_id (non-secret, public reference)
-    - vapi_phone_number_id (non-secret, public reference)
-    - bound_at (timestamp)
-    - bound_by (actor user_id)
-    - is_active (bool)
-  - No API key columns — VAPI_API_KEY stays in environment
-- Safety constraints:
-  - VAPI_API_KEY never written to DB
-  - VAPI_API_KEY never returned from any API endpoint
-  - VAPI_API_KEY never logged
-  - VAPI_API_KEY never shown in browser
-  - production_phi_enabled remains False until explicit hardening sign-off
-  - No live Vapi calls until C3–C8 are resolved
-- What remains before binding can be activated:
-  - C3 — Secrets hardening complete
-  - C4 — PHI logging/redaction hardening complete
-  - C5 — Tenant isolation verified
-  - C6 — Audit trail hardened
-  - C7 — Backup/restore runbook complete
-  - C8 — Legal / DSGVO review complete
-  - VAPI_API_KEY set in Railway environment
-  - Vapi phone number provisioned
-  - production_phi_enabled: false remains enforced
+```sql
+CREATE TABLE IF NOT EXISTS clinic_vapi_bindings (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    assistant_id            TEXT,
+    phone_number_id         TEXT,
+    vapi_project_id         TEXT,
+    api_key_secret_ref      TEXT        NOT NULL,
+    webhook_secret_ref      TEXT        NOT NULL,
+    assistant_config_version TEXT,
+    language_mode           TEXT        NOT NULL DEFAULT 'german_first',
+    status                  TEXT        NOT NULL DEFAULT 'draft',
+    created_by_user_id      UUID,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_clinic_vapi_bindings_clinic_id
+    ON clinic_vapi_bindings(clinic_id);
+```
 
-### 2. Schema (design-only, no migration)
+### 2. Repository
+
+`backend/app/db/repositories/vapi_binding_repo.py` (new):
+
+```python
+async def create_vapi_binding(pool, clinic_id, api_key_secret_ref, webhook_secret_ref,
+                               language_mode, created_by_user_id) -> dict
+async def get_vapi_binding(pool, clinic_id) -> dict | None
+async def update_vapi_binding_status(pool, clinic_id, status, actor_user_id) -> dict
+async def set_vapi_assistant_ids(pool, clinic_id, assistant_id, phone_number_id,
+                                  vapi_project_id, assistant_config_version) -> dict
+```
+
+Rules:
+- `api_key_secret_ref` and `webhook_secret_ref` are stored as-is — never resolved
+  or logged
+- No VAPI_API_KEY, no VAPI_WEBHOOK_SECRET actual values stored or returned
+- All functions raise `ClinicNotFoundError` for unknown clinic_id
+
+### 3. Schemas
 
 `backend/app/schemas/vapi_binding.py` (new):
 
 ```python
-class ClinicVapiBindingRead(BaseModel):
+class ClinicVapiBindingCreate(BaseModel):
     clinic_id: str
-    vapi_assistant_id: str        # non-secret public reference
-    vapi_phone_number_id: str     # non-secret public reference
-    bound_at: str
-    bound_by: str | None
-    is_active: bool
-    production_phi_enabled: bool  # always False
+    api_key_secret_ref: str        # reference name only, e.g. VAPI_API_KEY_CLINIC_abc
+    webhook_secret_ref: str        # reference name only
+    language_mode: str = "german_first"
+
+class ClinicVapiBindingRead(BaseModel):
+    id: str
+    clinic_id: str
+    assistant_id: str | None
+    phone_number_id: str | None
+    vapi_project_id: str | None
+    api_key_secret_ref: str        # reference name only — not the secret value
+    webhook_secret_ref: str        # reference name only
+    assistant_config_version: str | None
+    language_mode: str
+    status: str                    # draft / configured / disabled / revoked
+    created_by_user_id: str | None
+    created_at: str
+    updated_at: str
+    production_phi_enabled: bool = False   # always False
 
 class ClinicVapiBindingStatus(BaseModel):
     clinic_id: str
     is_bound: bool
-    vapi_assistant_id: str | None
-    vapi_phone_number_id: str | None
-    production_phi_enabled: bool  # always False
-    binding_blocked_reason: str | None  # e.g. "C3-C8 hardening not complete"
+    status: str | None
+    assistant_id: str | None
+    phone_number_id: str | None
+    api_key_secret_ref: str | None  # masked label only
+    webhook_secret_ref: str | None  # masked label only
+    production_phi_enabled: bool = False
+    binding_blocked_reason: str | None
 ```
 
-Note: No VAPI_API_KEY field in any schema. Schema is design documentation — no
-backend migration runs in this module.
+Note: No VAPI_API_KEY value in any schema. `production_phi_enabled` always False.
 
-### 3. Tests
+### 4. Routes (internal/admin only)
 
-`backend/tests/test_vapi_credential_binding_design.py` (new):
+`backend/app/api/routes/vapi_binding.py` (new):
 
-Static tests verifying:
-- Arch doc exists
-- Arch doc mentions VAPI_API_KEY is environment-variable only
-- Arch doc mentions no VAPI_API_KEY in DB
-- Arch doc mentions no VAPI_API_KEY in browser
-- Arch doc mentions no VAPI_API_KEY in logs
-- Arch doc mentions vapi_assistant_id (non-secret reference)
-- Arch doc mentions vapi_phone_number_id (non-secret reference)
-- Arch doc mentions audit log
-- Arch doc mentions production_phi_enabled remains False
-- Arch doc mentions C3–C8 blockers
-- Arch doc mentions no live Vapi calls until blockers resolved
-- Schema has ClinicVapiBindingRead
-- Schema has ClinicVapiBindingStatus
-- Schema production_phi_enabled: always False
-- Schema no VAPI_API_KEY field
+```python
+router = APIRouter(prefix="/internal/clinics", tags=["vapi-binding"])
+
+# POST /internal/clinics/{clinic_id}/vapi-binding
+# Creates binding metadata record. Requires admin auth. No live Vapi call.
+
+# GET /internal/clinics/{clinic_id}/vapi-binding
+# Returns binding metadata (reference names only). Requires admin auth.
+
+# PATCH /internal/clinics/{clinic_id}/vapi-binding/status
+# Updates binding status (draft/configured/disabled/revoked). Requires admin auth.
+```
+
+All routes:
+- Require `get_current_user` with role="admin"
+- Return 404 for unknown clinic_id
+- Never return or accept actual secret values
+- Create audit log entries for all mutations
+
+### 5. Tests
+
+`backend/tests/test_vapi_binding_repo.py` (new):
+- create_vapi_binding: stores reference names, not secrets
+- get_vapi_binding: returns dict or None
+- update_vapi_binding_status: valid status transitions
+- ClinicNotFoundError for unknown clinic
+- No VAPI_API_KEY value in any stored row
+- production_phi_enabled always False in schema
+
+`backend/tests/test_vapi_binding_routes.py` (new):
+- POST creates binding — 201, returns ClinicVapiBindingRead
+- GET returns binding — 200
+- PATCH updates status — 200
+- 401 for unauthenticated
+- 403 for non-admin
+- 404 for unknown clinic
+- No secret values in any response body
+- production_phi_enabled=False in all responses
+
+`backend/tests/test_vapi_binding_contract.py` (new — static):
+- Schema has ClinicVapiBindingCreate, ClinicVapiBindingRead, ClinicVapiBindingStatus
+- Schema has api_key_secret_ref, webhook_secret_ref
+- Schema has production_phi_enabled always False
+- Schema has no VAPI_API_KEY value field
 - Schema has binding_blocked_reason
+- Routes file has /internal prefix (admin-only)
+- Routes file has no VAPI_API_KEY resolution
+- Routes file has audit log call
 
-### 4. Docs
+### 6. Docs
 
-- `docs/claude/CURRENT_STATE.md` — Module 144 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 145
+- `docs/claude/CURRENT_STATE.md` — Module 145 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 146
 
 ## Constraints
 
 - No live Vapi API calls
-- No VAPI_API_KEY in any doc, test, or source file (except as a label referencing the env var name)
-- No secrets in logs
+- No VAPI_API_KEY resolved, stored, or returned anywhere
+- No secrets in logs, tests, or docs
 - No browser secret input
-- production_phi_enabled remains False in all schemas
+- production_phi_enabled remains False in all schemas and responses
 - Full test suite must remain green
-- No migration runs
+- Migration uses next available version number
 - Commit message:
-  Sprint 19 / Module 144 — Vapi credential binding design and secret boundary
+  Sprint 19 / Module 145 — Vapi binding metadata backend foundation

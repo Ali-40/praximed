@@ -2286,6 +2286,43 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+158. Module 144 — Vapi Credential Binding Design and Secret Boundary
+   - Date: 2026-07-06
+   - Sprint 19 / Docs + schema design + contract tests only. No backend migration. No live Vapi API calls. No secrets stored.
+   - docs/architecture/VAPI_CREDENTIAL_BINDING_SECRET_BOUNDARY.md (new):
+     - Hard secret boundary: VAPI_API_KEY, VAPI_WEBHOOK_SECRET and all other secrets
+       forbidden from browser, database text columns, tenant JSON, docs, tests, logs,
+       audit raw_payload, screenshots, version control
+     - Allowed: reference names only (api_key_secret_ref, webhook_secret_ref) — label
+       pointing to env var, never the secret value
+     - Environment variables only: secrets managed via Railway/Vercel or future secret manager
+     - Proposed clinic_vapi_bindings table (future migration):
+       id, clinic_id FK, assistant_id, phone_number_id, vapi_project_id,
+       api_key_secret_ref (NOT NULL), webhook_secret_ref (NOT NULL),
+       assistant_config_version, language_mode, status, created_by_user_id, timestamps
+       Status values: draft / configured / disabled / revoked
+     - Future service design: create_vapi_binding_metadata, get_vapi_binding_metadata,
+       disable_vapi_binding, resolve_secret_reference (reads env at runtime, never logs value),
+       validate_no_secret_value (rejects inputs that look like real credentials)
+     - Frontend rules: no form fields for Vapi API key, webhook secret, JWT secret, DATABASE_URL;
+       may display assistant_id, phone_number_id, masked reference labels (read-only)
+     - Logging rules: reference names/status/timestamps may be logged; actual secret values NEVER
+     - Readiness gate: C3–C8 all open, Article 28 AVV, Article 32 security measures,
+       Datenschutzbehörde; do not set PRODUCTION_COMPLIANCE_UNLOCKED=true until all cleared
+     - No PHI. No patient data. No transcript. No recording URL. Production PHI remains NO-GO.
+   - backend/tests/test_vapi_credential_binding_secret_boundary_contract.py (new — 41 tests):
+     - Arch doc existence, VAPI_API_KEY label, VAPI_WEBHOOK_SECRET label
+     - Environment variables only, managed secret store
+     - Never database, browser, logs, docs, tests
+     - api_key_secret_ref, webhook_secret_ref, reference names only, no actual secret value
+     - clinic_vapi_bindings, draft/configured/disabled/revoked status
+     - No live Vapi API calls, no PHI, no patient data, no transcript, no recording URL
+     - No frontend secret input, C3–C8, Article 28/32, NO-GO, production phi remains no-go
+     - Frontend feature page audit (language-settings, vapi-config, onboarding-requests, api.ts):
+       no Vapi API key input, no webhook_secret, no DATABASE_URL, no jwt_secret
+     - Fake secret regex check (sk-..., vapi_live_..., Bearer, eyJ...) in arch and audited docs
+   - Full backend tests: 4115/4115 passed
+
 157. Module 143 — Live Vapi Assistant Config Preview Smoke Evidence
    - Date: 2026-07-06
    - Sprint 19 / Docs + static tests only. No backend changes. No frontend changes. No migration.
