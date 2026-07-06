@@ -384,7 +384,32 @@ export default function DeveloperConsolePage() {
           </a>
         </ConsolePanel>
 
-        {/* 7. Safety guardrails */}
+        {/* 7. Vapi assistant config preview */}
+        <ConsolePanel title="Vapi Assistant Config Preview">
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Preview the generated Vapi assistant configuration pack for a provisioned clinic shell.
+            Inspect German/English prompts, required capture fields, tool schema, and safety rules.
+            Read-only preview. No live Vapi binding. No secrets. No PHI. No production activation.
+          </p>
+          <a
+            href="/developer-console/vapi-config"
+            style={{
+              display: 'inline-block',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.25rem',
+              borderRadius: 7,
+              border: `1px solid ${ACCENT}`,
+              background: 'rgba(0,128,128,0.15)',
+              color: ACCENT,
+              textDecoration: 'none',
+            }}
+          >
+            Preview Vapi config →
+          </a>
+        </ConsolePanel>
+
+        {/* 8. Safety guardrails */}
         <ConsolePanel title="Safety Guardrails">
           {[
             'Never paste secrets into browser UI.',

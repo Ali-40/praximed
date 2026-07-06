@@ -2286,6 +2286,59 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+156. Module 142 — Admin Vapi Assistant Config Preview UI
+   - Date: 2026-07-06
+   - Sprint 19 / Frontend + api.ts helper + contract tests + arch doc. No backend changes. No migration.
+   - frontend/app/developer-console/vapi-config/page.tsx (new):
+     - LoadState: idle/loading/loaded/auth_error/not_found/error
+     - Clinic ID input + "Load config pack" button (staging clinic_id shown as example)
+     - GET /clinics/{id}/vapi-assistant-config-pack, credentials:'include'
+     - Display sections:
+       A. Clinic / Language: all 10 fields
+       B. German-First Prompt: first_message_de, system_prompt_de (monospace pre block)
+       C. English Fallback Prompt: first_message_en, system_prompt_en
+       D. Required Capture Fields: patient_name, phone, reason, preferred_time, language_preference, urgency_level
+       E. Tool Schema: JSON code block, POST /vapi/tools/capture-appointment-request,
+          header names X-Vapi-Service-Name/X-Vapi-Clinic-Id/X-Vapi-Scopes (no secret values)
+       F. Safety Rules + escalation rules (with emergency 144 instruction)
+       G. Forbidden Claims
+       H. Readiness Flags: production_phi_enabled/recording_ingestion_enabled/transcript_ingestion_enabled
+          (green=false, red=true), generated_at, safety copy
+     - Error states: 401/403→"Admin session required", 404→"Clinic not found or no access."
+     - Safety copy: "Preview only. No Vapi credentials are stored or transmitted."
+       "No PHI. No secrets. No live Vapi binding. No production activation. Production PHI remains NO-GO."
+     - No sessionStorage, no localStorage, no Vapi API key, no webhook secret, no DATABASE_URL
+   - frontend/app/developer-console/page.tsx (updated):
+     - Added panel 7 "Vapi Assistant Config Preview" with link to /developer-console/vapi-config
+     - "Preview Vapi config →" button; Safety Guardrails renumbered to panel 8
+   - frontend/lib/api.ts (updated):
+     - VapiAssistantConfigPack interface with all 24 fields
+     - fetchVapiAssistantConfigPack(clinicId): GET /clinics/{id}/vapi-assistant-config-pack, credentials:'include'
+   - backend/tests/test_admin_vapi_assistant_config_preview_ui_contract.py (new — 73 tests):
+     - File existence (page, console, api.ts, arch doc)
+     - Page: title, read-only badge, ADMIN/STAGING, clinic ID input, load config pack,
+       staging clinic_id example, /vapi-assistant-config-pack endpoint, credentials:include
+     - Sections: German-first prompt, English fallback, required capture fields,
+       tool schema, safety rules, forbidden claims, readiness flags
+     - Field names: patient_name, phone, reason, preferred_time, language_preference, urgency_level
+     - Header names: X-Vapi-Service-Name, X-Vapi-Clinic-Id, X-Vapi-Scopes
+     - capture_appointment_request endpoint reference
+     - Safety flags: production_phi_enabled, recording_ingestion_enabled, transcript_ingestion_enabled
+     - Safety copy: no Vapi credentials, Production PHI remains NO-GO, preview only, no live Vapi binding
+     - Error states: Admin session required, 401/403/404, not found
+     - Exclusions: no Vapi API key, no webhook secret, no DATABASE_URL, no JWT secret,
+       no sessionStorage, no localStorage
+     - Console: links to /developer-console/vapi-config, has Vapi config panel
+     - api.ts: fetchVapiAssistantConfigPack, vapi-assistant-config-pack path, credentials:include,
+       VapiAssistantConfigPack interface, system_prompt_de/en, production_phi_enabled,
+       required_capture_fields, safety_rules; no sessionStorage/localStorage/Vapi credentials
+     - Arch doc: module 142, vapi config preview, german first, english fallback, no PHI,
+       no Vapi credentials, NO-GO, no live Vapi binding, GET route
+   - docs/architecture/ADMIN_VAPI_ASSISTANT_CONFIG_PREVIEW_UI.md (new)
+   - Full backend tests: 4007/4007 passed
+   - Frontend build: PASS (9/9 pages including /developer-console/vapi-config)
+   - Production PHI remains NO-GO
+
 155. Module 141 — Vapi Assistant Configuration Pack Per Tenant
    - Date: 2026-07-06
    - Sprint 19 / Backend service + route + tests + docs. No frontend changes. No migration. No live Vapi binding.

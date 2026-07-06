@@ -293,6 +293,50 @@ export async function updateClinicLanguageSettings(
 }
 
 // ---------------------------------------------------------------------------
+// Vapi assistant config pack — Sprint 19 / Module 142
+// ---------------------------------------------------------------------------
+
+export interface VapiAssistantConfigPack {
+  clinic_id: string
+  clinic_display_name: string
+  specialty: string
+  city: string
+  primary_language: string
+  fallback_language: string
+  supported_languages: string[]
+  vapi_assistant_language_mode: string
+  assistant_name: string
+  voice_locale_recommendation: string
+  first_message_de: string
+  first_message_en: string
+  system_prompt_de: string
+  system_prompt_en: string
+  tool_schema: Record<string, unknown>
+  required_capture_fields: string[]
+  safety_rules: string[]
+  escalation_rules: string[]
+  forbidden_claims: string[]
+  production_phi_enabled: boolean
+  recording_ingestion_enabled: boolean
+  transcript_ingestion_enabled: boolean
+  generated_at: string | null
+}
+
+// Fetches GET /clinics/{clinicId}/vapi-assistant-config-pack using the session cookie.
+// Protected — requires admin session. No PHI. No Vapi credentials. No secrets.
+export async function fetchVapiAssistantConfigPack(
+  clinicId: string,
+): Promise<VapiAssistantConfigPack> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/vapi-assistant-config-pack`,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load Vapi assistant config pack (HTTP ${resp.status})`)
+  }
+  return (await resp.json()) as VapiAssistantConfigPack
+}
+
+// ---------------------------------------------------------------------------
 // Pre-appointment summary — Sprint 17 / Module 125
 // ---------------------------------------------------------------------------
 
