@@ -1,77 +1,80 @@
-# Sprint 18 / Module 130 — First 10 Vienna Clinic Targets Manual Entry
+# Sprint 18 / Module 126D — Premium Interface Expansion Deployed Smoke Evidence
 
 Status: pending implementation.
 
 ## Context
 
-Module 129 complete:
-- Full research workflow prepared for manually sourcing 50 Vienna private clinic targets
-- 7 public research sources listed (Google Maps, Impressum, Herold, DocFinder, WKO, etc.)
-- 7 specialty targets with German search terms
-- Data quality rules: source URL required, no guessing, no scraping, public-only
-- First batch execution steps: research 10 → contact 5 → 3-business-day follow-up
-- Next action checklist ready
-- Full backend tests: 2893/2893 passed
+Module 126C complete:
+- 3-panel premium app shell (Left: AI Intake Queue + Notifications, Center: Clinic Overview + Intake Resolution Workspace + Consultations, Right: Patient Registry)
+- Deep Midnight Navy header (#0F172A) + Crisp Teal (#0D9488) palette
+- tenantDisplay.ts — getClinicDisplayName / getRoleDisplay helpers
+- Clickable appointment cards → Intake Resolution Workspace (View summary / Confirm / Confirm & Create Profile [disabled] / TranscriptRecordingPanel)
+- Clickable patient list → teal patient profile card in right panel
+- /onboarding scaffold (5-step pilot wizard, non-functional)
+- /developer-console scaffold (disabled panels, safety boundaries, environment checklist)
+- Header nav links to /onboarding and /developer-console
+- All existing data-section/data-action/data-state attributes preserved
+- 56 contract tests pass; Full backend tests: 2949/2949 passed
 
 ## Goal
 
-Manually research and enter the first 10 real, publicly sourced private clinic targets
-in Vienna into the tracker. Then prepare the first 5 outreach sends.
-
-All entries must be sourced from public pages — no fabrication, no scraping automation.
+Document deployed browser evidence that the Module 126C 3-panel premium interface
+is live and working on the Vercel staging deployment.
 
 ## Scope
 
-Docs/business only. No runtime code. No scraping. No fake data. Public information only.
-No real patient data. No secrets. No production PHI.
+Docs/static-tests only. No runtime code changes. No backend changes. No secrets.
+No real patient data. No production PHI.
 
-## What Module 130 must do
+## What Module 126D must do
 
-1. **Research first 10 clinics** using the workflow defined in Module 129:
-   - Open Google Maps, DocFinder, Herold, or clinic websites
-   - Fill rows 1–10 in `docs/business/CLINIC_OUTREACH_LIST_TRACKER.md`
-   - Every row must have a source URL in Notes
-   - Assign fit score A/B/C to each
+1. **Verify Vercel deployment** — confirm latest commit is deployed and Ready
+2. **Document browser evidence** for:
+   - Header: navy background, PraxisMed text, Staging Fake Clinic display name, Staging demo badge
+   - Left panel: AI Intake Queue heading, appointment cards visible, Notifications section visible
+   - Center panel: Clinic Overview heading, 4 MetricCards (values visible), Intake Resolution Workspace empty state visible
+   - Selecting an appointment card → workspace shows patient name, status/urgency badges, action buttons
+   - View summary / Hide summary still works
+   - Confirm button still works
+   - Right panel: Patient Registry heading, patient list visible, clicking patient shows teal profile card
+   - /onboarding scaffold loads with 5 steps and safety note
+   - /developer-console scaffold loads with "Never paste secrets" warning
+   - Staging demo badge and safety footer visible
 
-2. **Identify top 5** by fit score for first outreach
+3. **Create evidence doc** — `docs/runtime/PREMIUM_INTERFACE_EXPANSION_DEPLOYED_SMOKE_EVIDENCE.md`
 
-3. **Draft first 5 personalised outreach messages** — using Module 127 scripts as
-   a base, personalise slightly for each clinic's specialty and name
+4. **Write contract tests** — `backend/tests/test_premium_interface_expansion_deployed_smoke_evidence_contract.py`
 
-4. **Log outreach status** — update tracker: Email sent / Called, Last contacted,
-   Next follow-up (+3 business days)
+5. **Update** `docs/claude/CURRENT_STATE.md` and `docs/claude/NEXT_MODULE.md`
 
 ## Constraints
 
-- No fabricated clinic names, emails, phones, or doctor names
-- No scraping automation
-- No real patient data
+- No fabricated evidence — only document what you can observe
+- No runtime code changes
 - No secrets
-- Source URL required for every entry
+- No real patient data
+- Source evidence from Vercel deployment status and browser observation
 
 ## Allowed changes
 
-- `docs/business/CLINIC_OUTREACH_LIST_TRACKER.md` (updated — rows 1–10 filled)
-- `docs/business/FIRST_10_OUTREACH_DRAFTS.md` (new — 5 personalised outreach messages)
+- `docs/runtime/PREMIUM_INTERFACE_EXPANSION_DEPLOYED_SMOKE_EVIDENCE.md` (new)
+- `backend/tests/test_premium_interface_expansion_deployed_smoke_evidence_contract.py` (new)
 - `docs/claude/CURRENT_STATE.md` (updated)
 - `docs/claude/NEXT_MODULE.md` (updated)
 
-No tests required (data list + outreach drafts, no runtime code).
-
 ## Acceptance
 
-- Rows 1–10 in the tracker filled with real publicly sourced Vienna clinic data
-- Source URL present in Notes for every row
-- Fit scores assigned to all 10
-- Top 5 identified
-- 5 personalised outreach drafts prepared
-- No fabricated data; no scraping; no patient data; no secrets
-- Commit: `Sprint 18 / Module 130 — First 10 Vienna clinic targets manual entry`
+- Evidence doc created with deployment commit, Vercel status, and check list
+- All smoke checks documented (PASS / PENDING as appropriate)
+- Contract tests pass
+- Full backend tests pass
+- Commit: `Sprint 18 / Module 126D — Premium interface expansion deployed smoke evidence`
 
 ---
 
-## Upcoming (commercial MVP build track, post-Module 130)
+## Upcoming (commercial MVP build track, post-Module 126D)
 
+- **Module 130** — First 10 Vienna clinic targets manual entry (outreach track)
 - **Module 131** — First outreach batch sent (log actual send evidence)
 - **Module 132** — Consultation summary draft generator (product feature)
 - **Module 133** — Patient timeline (product feature)

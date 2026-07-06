@@ -1836,3 +1836,19 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - `docs/runtime/STAGING_SMOKE_EXECUTION_PASS_BLOCKED_EVIDENCE.md` (updated — check 15 internal doctor notification PASS added)
    - `backend/tests/test_doctor_notification_deployed_smoke_evidence_contract.py` (new — 24 static contract tests)
    - Full backend tests: 2733/2733 passed
+
+136. Module 126C — Premium Frontend Application Interface Expansion
+   - Date: 2026-07-06
+   - Sprint 18 / Commercial MVP build track
+   - Frontend UI/UX — no backend API changes, no migrations, no secrets, no real patient data
+   - **3-panel premium app shell:** Deep Midnight Navy header (#0F172A), left panel (AI Intake Queue + Notifications), center panel (Clinic Overview + MetricCards + Intake Resolution Workspace + Consultations), right panel (Patient Registry + selected patient profile)
+   - **New globals.css tokens:** --color-navy, --color-navy-800/700/600, --color-teal, --color-teal-dark/bg/light; .pm-shell, .pm-app-grid (CSS Grid 264px/1fr/272px), .pm-panel-left/center/right; responsive breakpoints 1200px (hide right) + 768px (stack)
+   - **`frontend/lib/tenantDisplay.ts`** (new): getClinicDisplayName + getRoleDisplay; staging clinic_id `1a5bbc75-c1b0-4488-94aa-64b3f1c50056` → "Staging Fake Clinic"
+   - **`frontend/app/dashboard/page.tsx`** (rewritten): 3-panel layout using pm-shell/pm-app-grid/pm-panel-*; selectedApptId + selectedPatientId state; appointment cards clickable to open Intake Resolution Workspace; workspace has View summary / Confirm / Confirm & Create Profile [disabled] / TranscriptRecordingPanel; right panel shows patient list + selected patient teal profile card; header links to /onboarding and /developer-console; all data-section/data-action/data-state attributes preserved
+   - **`frontend/app/onboarding/page.tsx`** (new scaffold): 5-step pilot activation wizard (non-functional); "Request pilot setup" CTA disabled; safety note: "Pilot activation requires security, legal, and production-readiness review before real patient data can be processed."
+   - **`frontend/app/developer-console/page.tsx`** (new scaffold): Tenant provisioning panel (disabled), Clinic ID scope injection panel (disabled), Vapi machine credential binding panel (disabled), Environment checklist (C3–C8 all BLOCKED), Safety boundary panel; explicit warnings: "Never paste secrets into browser UI", "Production PHI remains NO-GO until hardening and legal review are complete", "Machine credentials are managed via secure environment variables, not this demo page"
+   - **`backend/tests/test_premium_frontend_interface_expansion_contract.py`** (new — 56 static contract tests): tenantDisplay helper, globals.css tokens, pm-* CSS classes, 3-panel layout, AI Intake Queue, Patient Registry, Intake Resolution Workspace, transcript panel, Confirm & Create Profile, navy header, all regression checks (data-section/data-action/data-state preserved, no sessionStorage, no diagnosis, staging footer), onboarding page, developer console page
+   - **`docs/architecture/PREMIUM_FRONTEND_APPLICATION_INTERFACE_EXPANSION.md`** (new)
+   - All existing behaviour preserved: login, logout, dashboard loads, appointments/patients/notifications/consultations load, View summary / Hide summary, Confirm, credentials: include, no token storage, no diagnosis, no medical advice, staging safety boundary visible
+   - No backend API changes; no fake clinic data; no real patient data; no secrets; production PHI NO-GO
+   - Full backend tests: 2949/2949 passed

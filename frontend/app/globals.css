@@ -61,6 +61,18 @@
   --badge-neutral-text:var(--color-text-muted);
 }
 
+/* Premium clinical palette — Module 126C */
+:root {
+  --color-navy:       #0F172A;   /* Deep Midnight Navy — header, sidebar top */
+  --color-navy-800:   #1E293B;   /* Left panel background */
+  --color-navy-700:   #334155;   /* Hover/divider in navy panels */
+  --color-navy-600:   #475569;   /* Muted text on dark panels */
+  --color-teal:       #0D9488;   /* Crisp Teal — primary CTA, accent */
+  --color-teal-dark:  #0F766E;   /* Teal hover */
+  --color-teal-bg:    #F0FDFA;   /* Teal tint surface */
+  --color-teal-light: #99F6E4;   /* Teal tint border */
+}
+
 html,
 body {
   height: 100%;
@@ -79,4 +91,75 @@ a {
 button {
   cursor: pointer;
   font-family: inherit;
+}
+
+/* Dashboard 3-panel responsive grid — Module 126C */
+.pm-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.pm-app-grid {
+  display: grid;
+  grid-template-columns: 264px 1fr 272px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.pm-panel-left {
+  overflow-y: auto;
+  background: var(--color-navy-800);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.pm-panel-center {
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.pm-panel-right {
+  overflow-y: auto;
+  background: var(--color-card);
+  border-left: 1px solid var(--color-border);
+}
+
+@media (max-width: 1200px) {
+  .pm-app-grid {
+    grid-template-columns: 240px 1fr;
+  }
+  .pm-panel-right {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .pm-app-grid {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .pm-panel-left {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .pm-panel-right {
+    display: block;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+/* sr-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
 }
