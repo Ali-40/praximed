@@ -2147,3 +2147,35 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - docs/architecture/INTERNAL_ONBOARDING_REVIEW_CONSOLE.md (new)
    - Full backend tests: 3450/3450 passed
    - Production PHI remains NO-GO
+
+148. Module 134A — Fix onboarding review console detail crash
+   - Date: 2026-07-06
+   - Sprint 19 / Frontend bugfix. No backend changes. No migration.
+   - Root cause: supported_languages JSONB column returned as raw JSON string by asyncpg;
+     calling .join() on string → TypeError crash. Secondary risks: boolean fields typed
+     non-nullable but could be null; date fields lacked null guards.
+   - frontend/app/developer-console/onboarding-requests/page.tsx (updated):
+     - Added safeText(value, fallback='—'): guards null, undefined, empty string
+     - Added safeDate(value): guards null, invalid dates; wraps toLocaleString
+     - Added safeBoolean(value): null/undefined → null; otherwise Boolean(value)
+     - Added safeLanguages(value): handles array, JSON string, or null/undefined
+     - BoolRow updated: boolean | null signature; renders null as '—', true as 'Yes', false as 'No'
+     - OnboardingRequest interface: supported_languages: string[] | string | null;
+       all boolean fields boolean | null; created_at/updated_at string | null;
+       pilot_interest_level/source string | null
+     - All detail panel Row calls wrapped in safeText/safeDate/safeLanguages/safeBoolean
+     - No direct .join() on supported_languages; no direct toLocaleString on date fields
+   - docs/architecture/INTERNAL_ONBOARDING_REVIEW_CONSOLE.md (updated: Module 134A section)
+   - backend/tests/test_internal_onboarding_review_console_crash_fix_contract.py (new — 44 tests):
+     - Defensive helpers: safeText, safeDate, safeBoolean, safeLanguages all defined
+     - supported_languages: uses safeLanguages, no raw .join(), handles array/string/null
+     - Date fields: safeDate used, no direct toLocaleString on selected.X
+     - Boolean fields: safeBoolean used for all 6 boolean detail fields
+     - Optional text fields: safeText used for clinic_type, specialty, workflow_notes, contact_phone, pilot_interest_level, source
+     - Interface nullability: supported_languages | null, boolean | null, created_at | null, updated_at | null
+     - Key UI strings preserved: heading, update status, safety banners, all statuses
+     - Storage safety: credentials:include, no sessionStorage, no localStorage
+   - All 92/92 review console contract tests pass
+   - Full backend tests: 3494/3494 passed
+   - Frontend build: ✓ 9/9 pages, no TypeScript errors
+   - Production PHI remains NO-GO

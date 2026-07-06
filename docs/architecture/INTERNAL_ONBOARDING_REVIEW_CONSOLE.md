@@ -123,7 +123,47 @@ Both use the shared `apiFetch` helper which automatically applies
 
 ---
 
-## 8. What Module 135 Will Do
+## 8. Module 134A — Crash Fix
+
+**Problem found:** Live smoke test at `https://praximed.vercel.app/developer-console/onboarding-requests`
+confirmed the request list loaded (GET `/clinic-onboarding-requests` worked), but clicking any
+request triggered a client-side exception that crashed the page.
+
+**Root cause:** The detail panel called `.join()` directly on `supported_languages` after a
+`?? []` guard. Because asyncpg returns JSONB columns as raw JSON strings by default (not
+parsed arrays), `supported_languages` arrived as the string `'["de","en"]'`. Strings in
+JavaScript do not have a `.join()` method → `TypeError: value.join is not a function`.
+
+Secondary risks (also fixed): date fields called `toLocaleString()` without null guard;
+boolean fields (`wants_ai_phone_intake`, consent flags, etc.) were typed non-nullable but
+could arrive as `null` or `undefined`; optional text fields (`pilot_interest_level`, `source`)
+were typed as `string` but could be `null`.
+
+**Fix (Module 134A):**
+
+Four defensive rendering helpers were added to the page:
+
+| Helper | Guards against |
+|---|---|
+| `safeText(value, fallback='—')` | null, undefined, empty string |
+| `safeDate(value)` | null, undefined, invalid date strings |
+| `safeBoolean(value)` | null, undefined → `null` (renders as "—") |
+| `safeLanguages(value)` | array, JSON string, null/undefined |
+
+`safeLanguages` specifically: if value is an array, joins it; if it's a JSON string, parses
+then joins; if null/undefined, returns `'de, en'`.
+
+`BoolRow` updated: `boolean | null` signature, renders null as "—", true as "Yes", false as "No".
+
+`OnboardingRequest` interface updated: `supported_languages: string[] | string | null`,
+all boolean fields `boolean | null`, `created_at`/`updated_at` `string | null`,
+`pilot_interest_level`/`source` `string | null`.
+
+No backend changes. No PHI. No secrets. No tenant activation changed.
+
+---
+
+## 9. What Module 135 Will Do
 
 Module 135 — Tenant Provisioning Backend Foundation:
 - Database table, schema, and Alembic migration for `tenants`

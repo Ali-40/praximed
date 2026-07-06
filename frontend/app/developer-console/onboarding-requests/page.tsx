@@ -1,7 +1,8 @@
 'use client'
 
 // PraxisMed — Internal Clinic Onboarding Review Console
-// Sprint 19 / Module 134 — Internal clinic onboarding review console
+// Sprint 19 / Module 134A — Crash fix: defensive rendering for nullable/optional fields
+// Module 134 — Internal clinic onboarding review console
 //
 // Admin/staff internal page: list submitted pilot requests, view details, update status.
 // Dark developer-console theme. Uses protected GET + PATCH /clinic-onboarding-requests.
@@ -32,14 +33,16 @@ const ALLOWED_STATUSES = [
 type AllowedStatus = typeof ALLOWED_STATUSES[number]
 
 const STATUS_COLORS: Record<AllowedStatus, string> = {
-  submitted:     WARN,
-  reviewed:      ACCENT,
-  demo_booked:   ACCENT,
+  submitted:      WARN,
+  reviewed:       ACCENT,
+  demo_booked:    ACCENT,
   pilot_approved: GREEN,
-  rejected:      DANGER,
-  archived:      MUTED,
+  rejected:       DANGER,
+  archived:       MUTED,
 }
 
+// supported_languages may arrive as a parsed array, a JSON string, or null
+// depending on asyncpg JSONB codec configuration.
 interface OnboardingRequest {
   id: string
   clinic_name: string
@@ -53,25 +56,72 @@ interface OnboardingRequest {
   contact_phone: string | null
   preferred_language: string
   fallback_language: string
-  supported_languages: string[]
+  supported_languages: string[] | string | null
   workflow_notes: string | null
   estimated_call_volume: string | null
   current_booking_system: string | null
-  wants_ai_phone_intake: boolean
-  wants_dashboard: boolean
-  wants_notifications: boolean
-  pilot_interest_level: string
+  wants_ai_phone_intake: boolean | null
+  wants_dashboard: boolean | null
+  wants_notifications: boolean | null
+  pilot_interest_level: string | null
   status: string
-  source: string
-  consent_pilot_contact: boolean
-  acknowledges_no_phi: boolean
-  production_phi_enabled: boolean
-  created_at: string
-  updated_at: string
+  source: string | null
+  consent_pilot_contact: boolean | null
+  acknowledges_no_phi: boolean | null
+  production_phi_enabled: boolean | null
+  created_at: string | null
+  updated_at: string | null
 }
 
 type LoadState   = 'idle' | 'loading' | 'loaded' | 'auth_error' | 'error'
 type UpdateState = 'idle' | 'updating' | 'updated' | 'error'
+
+// ---------------------------------------------------------------------------
+// Defensive rendering helpers — guard against null, undefined, and
+// unexpected types returned by the backend for optional/JSONB fields.
+// ---------------------------------------------------------------------------
+
+function safeText(value: unknown, fallback = '—'): string {
+  if (value === null || value === undefined || value === '') return fallback
+  return String(value)
+}
+
+function safeDate(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—'
+  try {
+    const d = new Date(String(value))
+    if (isNaN(d.getTime())) return '—'
+    return d.toLocaleString()
+  } catch {
+    return '—'
+  }
+}
+
+function safeBoolean(value: unknown): boolean | null {
+  if (value === null || value === undefined) return null
+  return Boolean(value)
+}
+
+// Handles supported_languages whether the backend delivers it as a parsed
+// JSON array, a raw JSON string (asyncpg default JSONB behaviour), or null.
+function safeLanguages(value: unknown): string {
+  if (value === null || value === undefined) return 'de, en'
+  if (Array.isArray(value)) return (value as string[]).join(', ')
+  if (typeof value === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(value)
+      if (Array.isArray(parsed)) return (parsed as string[]).join(', ')
+    } catch {
+      // not JSON — return raw string
+    }
+    return value
+  }
+  return '—'
+}
+
+// ---------------------------------------------------------------------------
+// Display components
+// ---------------------------------------------------------------------------
 
 function StatusBadge({ status }: { status: string }) {
   const color = STATUS_COLORS[status as AllowedStatus] ?? MUTED
@@ -91,7 +141,7 @@ function StatusBadge({ status }: { status: string }) {
         fontFamily: 'ui-monospace, monospace',
       }}
     >
-      {status}
+      {safeText(status)}
     </span>
   )
 }
@@ -111,7 +161,7 @@ function LangBadge({ lang }: { lang: string }) {
         letterSpacing: '0.03em',
       }}
     >
-      {lang === 'de' ? 'Deutsch-first' : lang}
+      {lang === 'de' ? 'Deutsch-first' : safeText(lang)}
     </span>
   )
 }
@@ -131,32 +181,44 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <span style={{ flexShrink: 0, width: 180, color: MUTED, fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.02em', paddingTop: 1 }}>
         {label}
       </span>
-      <span style={{ flex: 1, color: TEXT, wordBreak: 'break-all' }}>{value ?? <span style={{ color: MUTED, fontStyle: 'italic' }}>—</span>}</span>
+      <span style={{ flex: 1, color: TEXT, wordBreak: 'break-all' }}>
+        {value !== null && value !== undefined && value !== ''
+          ? value
+          : <span style={{ color: MUTED, fontStyle: 'italic' }}>—</span>}
+      </span>
     </div>
   )
 }
 
-function BoolRow({ label, value }: { label: string; value: boolean }) {
+// Renders boolean fields safely. null/undefined → "—", true → "Yes", false → "No".
+function BoolRow({ label, value }: { label: string; value: boolean | null }) {
+  if (value === null) {
+    return <Row label={label} value={<span style={{ color: MUTED, fontStyle: 'italic' }}>—</span>} />
+  }
   return (
     <Row
       label={label}
       value={
         <span style={{ color: value ? GREEN : DANGER, fontWeight: 700 }}>
-          {value ? 'true' : 'false'}
+          {value ? 'Yes' : 'No'}
         </span>
       }
     />
   )
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function OnboardingRequestsPage() {
-  const [loadState, setLoadState]     = useState<LoadState>('idle')
-  const [requests, setRequests]       = useState<OnboardingRequest[]>([])
-  const [selected, setSelected]       = useState<OnboardingRequest | null>(null)
+  const [loadState, setLoadState]           = useState<LoadState>('idle')
+  const [requests, setRequests]             = useState<OnboardingRequest[]>([])
+  const [selected, setSelected]             = useState<OnboardingRequest | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<string>('')
-  const [updateState, setUpdateState] = useState<UpdateState>('idle')
-  const [updateError, setUpdateError] = useState<string | null>(null)
-  const [fetchError, setFetchError]   = useState<string | null>(null)
+  const [updateState, setUpdateState]       = useState<UpdateState>('idle')
+  const [updateError, setUpdateError]       = useState<string | null>(null)
+  const [fetchError, setFetchError]         = useState<string | null>(null)
 
   useEffect(() => { loadRequests() }, [])
 
@@ -187,7 +249,7 @@ export default function OnboardingRequestsPage() {
 
   function selectRequest(req: OnboardingRequest) {
     setSelected(req)
-    setSelectedStatus(req.status)
+    setSelectedStatus(safeText(req.status, 'submitted'))
     setUpdateState('idle')
     setUpdateError(null)
   }
@@ -354,22 +416,24 @@ export default function OnboardingRequestsPage() {
                         onClick={() => selectRequest(req)}
                         style={{
                           width: '100%', textAlign: 'left', padding: '0.875rem 1.25rem',
-                          borderBottom: `1px solid ${EDGE}`, background: selected?.id === req.id ? 'rgba(0,128,128,0.12)' : 'transparent',
-                          border: 'none', cursor: 'pointer', borderLeft: selected?.id === req.id ? `3px solid ${ACCENT}` : '3px solid transparent',
+                          borderBottom: `1px solid ${EDGE}`,
+                          background: selected?.id === req.id ? 'rgba(0,128,128,0.12)' : 'transparent',
+                          border: 'none', cursor: 'pointer',
+                          borderLeft: selected?.id === req.id ? `3px solid ${ACCENT}` : '3px solid transparent',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.25rem' }}>
                           <span style={{ fontWeight: 700, fontSize: '0.875rem', color: TEXT }}>
-                            {req.clinic_name}
+                            {safeText(req.clinic_name)}
                           </span>
-                          <StatusBadge status={req.status} />
+                          <StatusBadge status={safeText(req.status, 'submitted')} />
                         </div>
                         <div style={{ fontSize: '0.75rem', color: MUTED, marginBottom: '0.125rem' }}>
-                          {req.doctor_name}
+                          {safeText(req.doctor_name)}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.7rem', color: MUTED }}>{req.contact_email}</span>
-                          <LangBadge lang={req.preferred_language} />
+                          <span style={{ fontSize: '0.7rem', color: MUTED }}>{safeText(req.contact_email)}</span>
+                          <LangBadge lang={safeText(req.preferred_language, 'de')} />
                         </div>
                       </button>
                     ))}
@@ -389,54 +453,67 @@ export default function OnboardingRequestsPage() {
                 >
                   <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${EDGE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.875rem', fontWeight: 700, color: TEXT }}>Request Detail</span>
-                    <StatusBadge status={selected.status} />
+                    <StatusBadge status={safeText(selected.status, 'submitted')} />
                   </div>
 
                   <div style={{ padding: '1rem 1.25rem' }}>
 
                     {/* Clinic */}
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.375rem' }}>Clinic</p>
-                    <Row label="clinic_name"    value={selected.clinic_name} />
-                    <Row label="clinic_type"    value={selected.clinic_type} />
-                    <Row label="specialty"      value={selected.specialty} />
-                    <Row label="city"           value={selected.city} />
-                    <Row label="address"        value={selected.address} />
-                    <Row label="website"        value={selected.website} />
+                    <Row label="clinic_name"  value={safeText(selected.clinic_name)} />
+                    <Row label="clinic_type"  value={safeText(selected.clinic_type)} />
+                    <Row label="specialty"    value={safeText(selected.specialty)} />
+                    <Row label="city"         value={safeText(selected.city)} />
+                    <Row label="address"      value={safeText(selected.address)} />
+                    <Row label="website"      value={safeText(selected.website)} />
 
                     {/* Doctor */}
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.375rem', marginTop: '1rem' }}>Doctor / Admin</p>
-                    <Row label="doctor_name"    value={selected.doctor_name} />
-                    <Row label="contact_email"  value={selected.contact_email} />
-                    <Row label="contact_phone"  value={selected.contact_phone} />
+                    <Row label="doctor_name"   value={safeText(selected.doctor_name)} />
+                    <Row label="contact_email" value={safeText(selected.contact_email)} />
+                    <Row label="contact_phone" value={safeText(selected.contact_phone)} />
 
                     {/* Language */}
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.375rem', marginTop: '1rem' }}>Language</p>
-                    <Row label="preferred_language" value={<><code style={{ fontFamily: 'ui-monospace, monospace', color: '#7FD4D4' }}>{selected.preferred_language}</code>{selected.preferred_language === 'de' ? ' — Deutsch-first' : ''}</>} />
-                    <Row label="fallback_language"  value={<code style={{ fontFamily: 'ui-monospace, monospace', color: '#7FD4D4' }}>{selected.fallback_language}</code>} />
-                    <Row label="supported_languages" value={(selected.supported_languages ?? []).join(', ')} />
+                    <Row
+                      label="preferred_language"
+                      value={
+                        <>
+                          <code style={{ fontFamily: 'ui-monospace, monospace', color: '#7FD4D4' }}>
+                            {safeText(selected.preferred_language)}
+                          </code>
+                          {selected.preferred_language === 'de' ? ' — Deutsch-first' : ''}
+                        </>
+                      }
+                    />
+                    <Row
+                      label="fallback_language"
+                      value={<code style={{ fontFamily: 'ui-monospace, monospace', color: '#7FD4D4' }}>{safeText(selected.fallback_language)}</code>}
+                    />
+                    <Row label="supported_languages" value={safeLanguages(selected.supported_languages)} />
 
                     {/* Workflow */}
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.375rem', marginTop: '1rem' }}>Workflow</p>
-                    <Row label="estimated_call_volume"  value={selected.estimated_call_volume} />
-                    <Row label="current_booking_system" value={selected.current_booking_system} />
-                    <Row label="workflow_notes"         value={selected.workflow_notes} />
-                    <BoolRow label="wants_ai_phone_intake" value={selected.wants_ai_phone_intake} />
-                    <BoolRow label="wants_dashboard"       value={selected.wants_dashboard} />
-                    <BoolRow label="wants_notifications"   value={selected.wants_notifications} />
+                    <Row label="estimated_call_volume"  value={safeText(selected.estimated_call_volume)} />
+                    <Row label="current_booking_system" value={safeText(selected.current_booking_system)} />
+                    <Row label="workflow_notes"         value={safeText(selected.workflow_notes)} />
+                    <BoolRow label="wants_ai_phone_intake" value={safeBoolean(selected.wants_ai_phone_intake)} />
+                    <BoolRow label="wants_dashboard"       value={safeBoolean(selected.wants_dashboard)} />
+                    <BoolRow label="wants_notifications"   value={safeBoolean(selected.wants_notifications)} />
 
                     {/* Safety */}
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.375rem', marginTop: '1rem' }}>Safety</p>
-                    <BoolRow label="consent_pilot_contact" value={selected.consent_pilot_contact} />
-                    <BoolRow label="acknowledges_no_phi"   value={selected.acknowledges_no_phi} />
-                    <BoolRow label="production_phi_enabled" value={selected.production_phi_enabled} />
+                    <BoolRow label="consent_pilot_contact"  value={safeBoolean(selected.consent_pilot_contact)} />
+                    <BoolRow label="acknowledges_no_phi"    value={safeBoolean(selected.acknowledges_no_phi)} />
+                    <BoolRow label="production_phi_enabled" value={safeBoolean(selected.production_phi_enabled)} />
 
                     {/* Operational */}
                     <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.375rem', marginTop: '1rem' }}>Operational</p>
-                    <Row label="id"         value={<code style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem', color: '#7FD4D4' }}>{selected.id}</code>} />
-                    <Row label="source"     value={selected.source} />
-                    <Row label="pilot_interest_level" value={selected.pilot_interest_level} />
-                    <Row label="created_at" value={selected.created_at} />
-                    <Row label="updated_at" value={selected.updated_at} />
+                    <Row label="id"     value={<code style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem', color: '#7FD4D4' }}>{safeText(selected.id)}</code>} />
+                    <Row label="source" value={safeText(selected.source)} />
+                    <Row label="pilot_interest_level" value={safeText(selected.pilot_interest_level)} />
+                    <Row label="created_at" value={safeDate(selected.created_at)} />
+                    <Row label="updated_at" value={safeDate(selected.updated_at)} />
 
                     {/* Activation warning */}
                     <div
