@@ -2002,4 +2002,28 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - docs/runtime/VAPI_PSEUDONYMIZED_LOGGING.md (new)
    - docs/runtime/VAPI_GERMAN_ENGLISH_ASSISTANT_SETUP.md (existing — covers all spec requirements)
    - Full backend tests: 3253/3253 passed
+
+144. Module 131 — Real Staging End-to-End Demo Execution Evidence
+   - Date: 2026-07-06
+   - Sprint 19 / Docs + static tests only. No runtime code changes.
+   - docs/runtime/STAGING_END_TO_END_DEMO_EXECUTION_EVIDENCE.md (new):
+     - 15-section evidence doc recording the live Railway + Vercel staging flow after compliance gate
+     - ENVIRONMENT=staging, AUTH_METHOD=COOKIE_HTTPONLY, PRODUCTION_COMPLIANCE_UNLOCKED not set
+     - Backend health liveness + readiness: PASS
+     - Fake Vapi intake curl (Demo Patient): PASS — ok=true, status=new, action_required=true
+     - Audit log: patient_name_hash + caller_phone_hash (HMAC tokens, not raw PII): PASS
+     - Dashboard 3-panel layout, doctor banner (Dr. Med. Alexander Huber | Innere Medizin Wien): PASS
+     - AI Intake Queue, Active Resolution Workspace, View summary, pre-appointment summary placeholder: PASS
+     - Patient Registry: PASS; Internal notification (new_appointment_request): PASS
+     - Logout: PASS; Confirm: NOT RETESTED (no unconfirmed rows — documented honestly)
+     - Compliance gate no-op confirmed in staging; production PHI remains blocked
+     - Remaining production blockers C3–C8: all OPEN
+     - No fabricated evidence. No secrets. No real patient data. Production PHI: NO-GO.
+   - backend/tests/test_staging_e2e_demo_execution_evidence_contract.py (new — 35 tests):
+     - Verifies doc exists and covers: PASS result, backend URL, frontend URL, health, ready,
+       fake Vapi intake, Demo Patient, ok/new status, pseudonymized audit metadata, AI Intake Queue,
+       Active Resolution Workspace, View summary, pre-appointment summary, Patient Registry,
+       internal notification, compliance gate no-op, no real patient data, no secrets,
+       Production PHI NO-GO, C3–C8 blockers open, recording/DSGVO disclaimers
+   - Full backend tests: 3288/3288 passed
    - Production PHI remains NO-GO

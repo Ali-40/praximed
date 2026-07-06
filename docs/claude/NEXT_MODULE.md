@@ -1,54 +1,123 @@
-# Sprint 19 / Module 131 — Real Staging End-to-End Demo Execution Evidence
+# Sprint 19 / Module 132 — Real Clinic Onboarding Backend Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Module 130 complete (all parts):
-- `backend/app/core/compliance.py` — production PHI circuit breaker:
-  - `enforce_phi_safeguard()` wired to all PHI-processing routes
-  - `assert_production_compliance_ready()` for startup pre-flight
-  - Language env helpers: `get_default_clinic_language()`, `get_supported_clinic_languages()`
-- `backend/app/core/pseudonymization.py` — HMAC-SHA256 PII pseudonymizer:
-  - `sanitize_vapi_webhook_payload()`, `sanitize_for_log()`, `redact_transcript()`
-  - Vapi audit log metadata uses pseudonymized patient_name and phone hashes
-- PHI routes gated: appointment_requests, patients, consultations, clinical_workflows, Vapi capture
-- Staging clinic config: staging_display + language_config sections
-- docs: COMPLIANCE_READINESS_GATE.md, VAPI_PSEUDONYMIZED_LOGGING.md, VAPI_GERMAN_ENGLISH_ASSISTANT_SETUP.md
-- 3253/3253 tests pass
+Module 131 complete:
+- `docs/runtime/STAGING_END_TO_END_DEMO_EXECUTION_EVIDENCE.md` — 15-section evidence doc
+  for the fake-data end-to-end staging flow after the compliance gate.
+- `backend/tests/test_staging_e2e_demo_execution_evidence_contract.py` — 35 tests, all pass.
+- 3288/3288 backend tests pass.
+- Commit: Sprint 19 / Module 131 — Real staging end-to-end demo execution evidence
+
+Sprint 19 Operational track complete:
+- Module 130 (operational): Vapi assistant setup, demo runbook, data flow map
+- Module 130 (compliance): enforce_phi_safeguard, pseudonymization, language foundation, route wiring
+- Module 131: Staging end-to-end evidence (docs only)
+
+Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Execute the end-to-end demo runbook against the live Railway + Vercel staging environment
-and document the real evidence that every step passes.
+Build the backend data model and API foundation for real clinic onboarding requests —
+the first step toward a real pilot clinic workflow. This is still fake-data / staging only.
+No real PHI. No automatic production activation.
 
-## What Module 131 must verify (against live staging)
+## What Module 132 must implement
 
-1. Backend health liveness: GET /health → {"status":"ok"}
-2. Backend health readiness: GET /health/ready → {"status":"ready"}
-3. Vercel frontend loads at https://praximed.vercel.app
-4. Login → redirected to /dashboard
-5. Dashboard shows "Dr. Med. Alexander Huber | Innere Medizin Wien" banner
-6. Staging safety boundary visible (STAGING DEMO / no real patient data / Production PHI: NO-GO)
-7. Fake Vapi intake curl → {"ok":true}
-8. "Demo Patient" appointment appears in Incoming AI Intake Queue
-9. View summary opens Active Resolution Workspace with patient details
-10. Confirm changes status to confirmed
-11. Patient Registry shows Demo Patient record
-12. Notification appears for the intake event
-13. Logout redirects to login
-14. No real patient data observed
-15. No secrets recorded
+### 1. Database schema — `clinic_onboarding_requests` table
 
-## Deliverables
+New table in `backend/app/db/schema.sql`:
 
-- `docs/runtime/STAGING_E2E_DEMO_EXECUTION_EVIDENCE.md` (new)
-- `backend/tests/test_staging_e2e_demo_execution_evidence_contract.py` (new)
-- `docs/claude/CURRENT_STATE.md` and `docs/claude/NEXT_MODULE.md` updates
+```sql
+CREATE TABLE IF NOT EXISTS clinic_onboarding_requests (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_name     TEXT NOT NULL,
+    doctor_name     TEXT NOT NULL,
+    specialty       TEXT NOT NULL,
+    city            TEXT NOT NULL,
+    country         TEXT NOT NULL DEFAULT 'AT',
+    contact_email   TEXT NOT NULL,
+    contact_phone   TEXT,
+    primary_language TEXT NOT NULL DEFAULT 'de',
+    preferred_languages TEXT[] NOT NULL DEFAULT ARRAY['de', 'en'],
+    workflow_notes  TEXT,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    submitted_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_at     TIMESTAMPTZ,
+    reviewer_notes  TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+Status values: `pending`, `under_review`, `approved`, `rejected`.
+
+### 2. Repository — `clinic_onboarding_request_repo.py`
+
+`backend/app/db/repositories/clinic_onboarding_request_repo.py`:
+- `create_onboarding_request(pool, data: dict) -> dict`
+- `get_onboarding_request(pool, request_id: UUID) -> dict | None`
+- `list_onboarding_requests(pool, status: str | None = None, limit: int = 50) -> list[dict]`
+- `update_onboarding_request_status(pool, request_id: UUID, status: str, reviewer_notes: str | None) -> dict | None`
+
+### 3. Pydantic schemas — `clinic_onboarding.py`
+
+`backend/app/schemas/clinic_onboarding.py`:
+- `ClinicOnboardingRequestCreate`: clinic_name, doctor_name, specialty, city, country (default AT), contact_email, contact_phone (optional), primary_language (default de), preferred_languages (default [de, en]), workflow_notes (optional)
+- `ClinicOnboardingRequestRead`: all fields + id, status, submitted_at, created_at, updated_at
+- `ClinicOnboardingStatusUpdate`: status, reviewer_notes (optional)
+- `ClinicOnboardingListResponse`: items: list[ClinicOnboardingRequestRead], total: int
+
+Validation:
+- `contact_email`: valid email format
+- `primary_language`: must be in preferred_languages
+- `status`: must be one of `pending`, `under_review`, `approved`, `rejected`
+- `country`: uppercase 2-letter ISO code
+
+### 4. API routes — `clinic_onboarding.py`
+
+`backend/app/api/routes/clinic_onboarding.py`:
+- `POST /clinic-onboarding/requests` — submit a new onboarding request
+  - No auth required (public intake form)
+  - Returns 201 + ClinicOnboardingRequestRead
+- `GET /clinic-onboarding/requests` — list onboarding requests (admin use)
+  - Requires authenticated session (existing auth dependency)
+  - Optional ?status= filter
+  - Returns ClinicOnboardingListResponse
+- `GET /clinic-onboarding/requests/{request_id}` — get single request (admin use)
+  - Requires authenticated session
+  - Returns ClinicOnboardingRequestRead
+- `PATCH /clinic-onboarding/requests/{request_id}/status` — update status (admin use)
+  - Requires authenticated session
+  - Body: ClinicOnboardingStatusUpdate
+  - Returns ClinicOnboardingRequestRead
+
+No `enforce_phi_safeguard` on onboarding routes — onboarding submissions do not process
+existing patient PHI. Contact details (email, phone) are clinic admin info, not patient PHI.
+
+Wire router into `backend/app/api/router.py`.
+
+### 5. Tests
+
+- `backend/tests/test_schema_contract.py` — extended with `clinic_onboarding_requests` table assertions
+- `backend/tests/test_clinic_onboarding_request_repo.py` — repository contract tests (pure Python, no DB)
+- `backend/tests/test_clinic_onboarding_schemas.py` — Pydantic schema validation tests
+- `backend/tests/test_clinic_onboarding_routes.py` — FastAPI route tests (TestClient)
+
+### 6. Docs
+
+- `docs/claude/CURRENT_STATE.md` — Module 132 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 133
 
 ## Constraints
 
-- Docs/static tests only. No runtime code changes.
-- No fabricated evidence — only document what is actually observed.
-- No secrets. No real patient data. No production PHI.
+- No real clinic PHI in tests — use synthetic clinic names and fake contact info.
+- No automatic pilot activation — status `approved` is an internal admin marker only.
+- No email sending, no SMS, no external notifications in this module.
 - No production readiness claim.
+- No secrets committed.
+- No frontend changes in this module — backend foundation only.
+- `enforce_phi_safeguard` is NOT applied to onboarding routes (no patient PHI involved).
+- Full test suite must remain green after implementation.
