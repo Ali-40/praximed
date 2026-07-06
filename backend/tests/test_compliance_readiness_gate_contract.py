@@ -516,9 +516,17 @@ class TestOnboardingLanguageScaffold:
         assert "'de'" in content or '"de"' in content
         assert "'en'" in content or '"en"' in content
 
-    def test_not_interactive_note(self):
+    def test_language_selector_is_functional_or_has_staging_note(self):
+        # Module 133 made the language selector interactive.
+        # Either an interactive handler or a staging note is acceptable.
         content = self._read_onboarding().lower()
-        assert "not yet interactive" in content or "scaffold" in content
+        assert (
+            "onclick" in content
+            or "setfield" in content
+            or "setform" in content
+            or "not yet interactive" in content
+            or "staging" in content
+        )
 
     def test_no_hardcoded_secrets(self):
         import re

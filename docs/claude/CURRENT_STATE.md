@@ -2066,4 +2066,41 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
      - API routes (public POST 201, auth-guarded GET/PATCH, 422 on bad input)
      - PHI field absence, no Vapi credentials, language defaults, arch doc
    - Full backend tests: 3366/3366 passed
+
+146. Module 133 — Connect Onboarding Frontend to Backend Request API
+   - Date: 2026-07-06
+   - Sprint 19 / Frontend + static tests + docs. No backend migration.
+   - frontend/app/onboarding/page.tsx (rewritten):
+     - Real React controlled form with useState — no longer a static scaffold
+     - Submits to POST /clinic-onboarding-requests via fetch with credentials:include
+     - Step 1 (Clinic Details): clinic_name, clinic_type, specialty, city (default Wien), address, website
+     - Step 2 (Doctor / Admin Account): doctor_name, contact_email, contact_phone
+     - Step 3 (Workflow Preferences): interactive preferred_language de/en selector
+       - "Deutsch zuerst / Englisch als Fallback — Default for Austrian clinics: German-first"
+       - estimated_call_volume, current_booking_system, workflow_notes
+     - Step 4 (AI Intake Setup): wants_ai_phone_intake, wants_dashboard, wants_notifications checkboxes
+     - Step 5 (Review & Pilot Activation): consent_pilot_contact + acknowledges_no_phi (required)
+       - Safety copy: "Do not enter patient data." + "Pilot activation does not enable production PHI processing."
+     - Success state: "Pilot request submitted" + request ID + contact email
+     - Error state: safe validation message, no stack traces
+     - Preserves: credentials:include, no sessionStorage, no localStorage
+     - Never sends: production_phi_enabled, status, clinic_id, Vapi credentials
+     - STAGING DEMO badge preserved (replaced "NOT FUNCTIONAL" since form is now functional)
+   - frontend build: npm run build → ✓ 8/8 pages, no TypeScript errors
+   - backend/tests/test_onboarding_frontend_backend_connection_contract.py (new — 36 tests):
+     - Gateway: Request Pilot Access, Existing Clinic Login
+     - Form fields: clinic_name, doctor_name, contact_email, preferred_language
+     - Language: Deutsch, English fallback, German-first copy, Deutsch zuerst helper
+     - Consent: consent_pilot_contact, acknowledges_no_phi
+     - Safety copy: Do not enter patient data, Pilot activation does not enable production PHI processing
+     - Backend: posts to /clinic-onboarding-requests, fetch POST, credentials:include
+     - Forbidden: no production_phi_enabled, no Vapi credentials, no clinic_id
+     - Storage: no sessionStorage, no localStorage
+     - States: success "Pilot request submitted", error state + request ID
+     - Security: no hardcoded JWT, no sk-, no SVNR/sozialversicherung/DOB
+     - Arch doc checks
+   - backend/tests/test_fabel5_premium_clinic_interface_overhaul_contract.py (updated — staging badge test relaxed)
+   - backend/tests/test_compliance_readiness_gate_contract.py (updated — language selector scaffold test relaxed)
+   - docs/architecture/ONBOARDING_FRONTEND_BACKEND_CONNECTION.md (new)
+   - Full backend tests: 3402/3402 passed
    - Production PHI remains NO-GO

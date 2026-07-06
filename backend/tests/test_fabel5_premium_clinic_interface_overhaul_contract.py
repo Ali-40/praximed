@@ -301,10 +301,11 @@ def test_onboarding_entity_bug_fixed() -> None:
     assert "&amp; pilot activation" not in content.lower()
 
 
-def test_onboarding_has_staging_scaffold_badge() -> None:
+def test_onboarding_has_staging_indicator() -> None:
+    # Module 133 made the form functional — the badge now reads "STAGING DEMO".
+    # "NOT FUNCTIONAL" was accurate for the scaffold; it's no longer appropriate.
     text = _onboarding().upper()
-    assert "STAGING SCAFFOLD" in text
-    assert "NOT FUNCTIONAL" in text
+    assert "STAGING" in text
 
 
 def test_onboarding_has_pilot_activation_safety_copy() -> None:
