@@ -2215,3 +2215,43 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: 3541/3541 passed
    - No frontend changes (build remains clean at 9/9 pages)
    - Production PHI remains NO-GO
+
+150. Module 136 — Admin Provision Clinic Shell UI
+   - Date: 2026-07-06
+   - Sprint 19 / Frontend button + api.ts helper + static contract tests + arch doc. No migration.
+   - frontend/app/developer-console/onboarding-requests/page.tsx (updated):
+     - Added ProvisionState = 'idle' | 'provisioning' | 'provisioned' | 'error'
+     - Added ProvisionResult interface: clinic_id, clinic_name, clinic_slug, preferred_language,
+       production_phi_enabled (always false), message, already_provisioned
+     - State: provisionState, provisionResult, provisionError (all reset when new request selected)
+     - handleProvision(): POST /clinic-onboarding-requests/{id}/provision-clinic-shell
+       credentials: 'include'; 401/403→"Admin session required.";
+       409→"Request must be pilot_approved before provisioning.";
+       other→"Provisioning failed. Please retry or check backend logs."
+     - "Clinic Shell Provisioning" section in detail panel (below status update)
+     - Button "Provision Clinic Shell" — enabled only when status === 'pilot_approved'
+     - Disabled with helper text "Set status to pilot_approved before provisioning."
+     - Loading label: "Provisioning…"; disabled during provisioning (prevent double-click)
+     - Success: shows "Clinic shell provisioned. Production PHI remains disabled." + clinic_id/name/slug/lang
+     - Already provisioned: "Already provisioned. clinic_id: …"
+     - Safety copy: "Provisioning does not activate production PHI. ... Production PHI remains NO-GO."
+     - No sessionStorage, no localStorage, no Vapi credential fields
+   - frontend/lib/api.ts (updated):
+     - Added ClinicShellProvisionResult interface
+     - Added provisionClinicShell(requestId: string) → POST /provision-clinic-shell
+       uses apiFetch (credentials: 'include'); returns ClinicShellProvisionResult; throws on error
+   - backend/tests/test_admin_provision_clinic_shell_ui_contract.py (new — 90 static tests):
+     - File existence, ProvisionState type, ProvisionResult interface, state vars
+     - handleProvision: POST /provision-clinic-shell, credentials:include, 401/403/409 handling
+     - Button: "Provision Clinic Shell", disabled when not pilot_approved, disabled during provisioning
+     - Disabled helper text, section header, safety copy (no PHI, no Vapi, no patient records, NO-GO)
+     - Success states: clinic_id/name/slug/lang shown, "Production PHI remains disabled"
+     - Already provisioned branch, reset on request selection
+     - Storage safety: no sessionStorage, no localStorage, no Vapi API key, no webhook secret, no DATABASE_URL
+     - api.ts: provisionClinicShell defined, /provision-clinic-shell path, POST, credentials:include,
+       ClinicShellProvisionResult interface, no sessionStorage/localStorage
+     - Arch doc: Module 136, pilot_approved, no production PHI, Vapi mentioned
+   - docs/architecture/ADMIN_PROVISION_CLINIC_SHELL_UI.md (new)
+   - Full backend tests: pending (run next)
+   - Frontend build: pending (run next)
+   - Production PHI remains NO-GO

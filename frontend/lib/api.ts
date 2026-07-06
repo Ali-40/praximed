@@ -208,6 +208,33 @@ export async function updateClinicOnboardingRequestStatus(
   }
 }
 
+export interface ClinicShellProvisionResult {
+  ok: boolean
+  clinic_id: string
+  clinic_name: string
+  clinic_slug: string
+  preferred_language: string
+  production_phi_enabled: boolean
+  message: string
+  already_provisioned: boolean
+}
+
+// Provisions a safe clinic shell via POST /clinic-onboarding-requests/{requestId}/provision-clinic-shell.
+// Protected — requires admin session. Only succeeds when request status is pilot_approved.
+// production_phi_enabled is always false. No Vapi credentials collected or stored.
+export async function provisionClinicShell(
+  requestId: string,
+): Promise<ClinicShellProvisionResult> {
+  const resp = await apiFetch(
+    `/clinic-onboarding-requests/${encodeURIComponent(requestId)}/provision-clinic-shell`,
+    { method: 'POST' },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to provision clinic shell (HTTP ${resp.status})`)
+  }
+  return (await resp.json()) as ClinicShellProvisionResult
+}
+
 // ---------------------------------------------------------------------------
 // Pre-appointment summary — Sprint 17 / Module 125
 // ---------------------------------------------------------------------------

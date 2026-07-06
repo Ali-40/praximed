@@ -73,8 +73,20 @@ interface OnboardingRequest {
   updated_at: string | null
 }
 
-type LoadState   = 'idle' | 'loading' | 'loaded' | 'auth_error' | 'error'
-type UpdateState = 'idle' | 'updating' | 'updated' | 'error'
+type LoadState     = 'idle' | 'loading' | 'loaded' | 'auth_error' | 'error'
+type UpdateState   = 'idle' | 'updating' | 'updated' | 'error'
+type ProvisionState = 'idle' | 'provisioning' | 'provisioned' | 'error'
+
+interface ProvisionResult {
+  ok: boolean
+  clinic_id: string
+  clinic_name: string
+  clinic_slug: string
+  preferred_language: string
+  production_phi_enabled: boolean
+  message: string
+  already_provisioned: boolean
+}
 
 // ---------------------------------------------------------------------------
 // Defensive rendering helpers — guard against null, undefined, and
@@ -219,6 +231,9 @@ export default function OnboardingRequestsPage() {
   const [updateState, setUpdateState]       = useState<UpdateState>('idle')
   const [updateError, setUpdateError]       = useState<string | null>(null)
   const [fetchError, setFetchError]         = useState<string | null>(null)
+  const [provisionState, setProvisionState]   = useState<ProvisionState>('idle')
+  const [provisionResult, setProvisionResult] = useState<ProvisionResult | null>(null)
+  const [provisionError, setProvisionError]   = useState<string | null>(null)
 
   useEffect(() => { loadRequests() }, [])
 
@@ -252,6 +267,9 @@ export default function OnboardingRequestsPage() {
     setSelectedStatus(safeText(req.status, 'submitted'))
     setUpdateState('idle')
     setUpdateError(null)
+    setProvisionState('idle')
+    setProvisionResult(null)
+    setProvisionError(null)
   }
 
   async function handleStatusUpdate() {
@@ -287,6 +305,39 @@ export default function OnboardingRequestsPage() {
     } catch {
       setUpdateError('A network error occurred during status update.')
       setUpdateState('error')
+    }
+  }
+
+  async function handleProvision() {
+    if (!selected) return
+    setProvisionState('provisioning')
+    setProvisionError(null)
+    try {
+      const resp = await fetch(
+        `${API_BASE_URL}/clinic-onboarding-requests/${selected.id}/provision-clinic-shell`,
+        { method: 'POST', credentials: 'include' },
+      )
+      if (resp.status === 401 || resp.status === 403) {
+        setProvisionError('Admin session required.')
+        setProvisionState('error')
+        return
+      }
+      if (resp.status === 409) {
+        setProvisionError('Request must be pilot_approved before provisioning.')
+        setProvisionState('error')
+        return
+      }
+      if (!resp.ok) {
+        setProvisionError('Provisioning failed. Please retry or check backend logs.')
+        setProvisionState('error')
+        return
+      }
+      const data = await resp.json() as ProvisionResult
+      setProvisionResult(data)
+      setProvisionState('provisioned')
+    } catch {
+      setProvisionError('Provisioning failed. Please retry or check backend logs.')
+      setProvisionState('error')
     }
   }
 
@@ -584,6 +635,107 @@ export default function OnboardingRequestsPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Clinic Shell Provisioning */}
+                    <div style={{ marginTop: '1.25rem' }}>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 700, color: MUTED, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                        Clinic Shell Provisioning
+                      </p>
+
+                      <div
+                        style={{
+                          padding: '0.625rem 0.875rem',
+                          borderRadius: 8,
+                          background: 'rgba(230,57,70,0.06)',
+                          border: `1px solid rgba(230,57,70,0.25)`,
+                          fontSize: '0.775rem',
+                          color: '#F7A6AC',
+                          lineHeight: 1.55,
+                          marginBottom: '0.75rem',
+                        }}
+                      >
+                        Provisioning does not activate production PHI. It creates a pilot clinic
+                        shell only — no Vapi credentials are bound, no patient records are created,
+                        and no production PHI is enabled.{' '}
+                        <strong style={{ color: '#FFCDD1' }}>Production PHI remains NO-GO.</strong>
+                      </div>
+
+                      <button
+                        onClick={handleProvision}
+                        disabled={selected.status !== 'pilot_approved' || provisionState === 'provisioning'}
+                        style={{
+                          padding: '0.5rem 1.25rem',
+                          borderRadius: 7,
+                          border: `1px solid ${selected.status === 'pilot_approved' ? GREEN : EDGE}`,
+                          background: selected.status === 'pilot_approved' ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.04)',
+                          color: selected.status === 'pilot_approved' ? GREEN : MUTED,
+                          fontSize: '0.8125rem',
+                          fontWeight: 700,
+                          cursor: (selected.status !== 'pilot_approved' || provisionState === 'provisioning') ? 'not-allowed' : 'pointer',
+                          opacity: (selected.status !== 'pilot_approved' || provisionState === 'provisioning') ? 0.5 : 1,
+                        }}
+                      >
+                        {provisionState === 'provisioning' ? 'Provisioning…' : 'Provision Clinic Shell'}
+                      </button>
+
+                      {selected.status !== 'pilot_approved' && (
+                        <p style={{ marginTop: '0.375rem', fontSize: '0.775rem', color: MUTED, fontStyle: 'italic' }}>
+                          Set status to pilot_approved before provisioning.
+                        </p>
+                      )}
+
+                      {provisionState === 'provisioned' && provisionResult && (
+                        <div
+                          style={{
+                            marginTop: '0.75rem',
+                            padding: '0.75rem 0.875rem',
+                            borderRadius: 8,
+                            background: 'rgba(74,222,128,0.08)',
+                            border: `1px solid rgba(74,222,128,0.35)`,
+                          }}
+                        >
+                          {provisionResult.already_provisioned ? (
+                            <p style={{ fontSize: '0.8125rem', color: GREEN, margin: 0 }}>
+                              Already provisioned. clinic_id:{' '}
+                              <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem' }}>
+                                {provisionResult.clinic_id}
+                              </code>
+                            </p>
+                          ) : (
+                            <div style={{ fontSize: '0.8125rem', color: GREEN }}>
+                              <p style={{ margin: '0 0 0.5rem', fontWeight: 700 }}>
+                                Clinic shell provisioned. Production PHI remains disabled.
+                              </p>
+                              <Row
+                                label="clinic_id"
+                                value={
+                                  <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem', color: '#7FD4D4' }}>
+                                    {provisionResult.clinic_id}
+                                  </code>
+                                }
+                              />
+                              <Row label="clinic_name" value={safeText(provisionResult.clinic_name)} />
+                              <Row
+                                label="clinic_slug"
+                                value={
+                                  <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem', color: '#7FD4D4' }}>
+                                    {provisionResult.clinic_slug}
+                                  </code>
+                                }
+                              />
+                              <Row label="preferred_language" value={safeText(provisionResult.preferred_language)} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {provisionState === 'error' && provisionError && (
+                        <p style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: DANGER }}>
+                          {provisionError}
+                        </p>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               </div>
