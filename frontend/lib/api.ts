@@ -164,6 +164,51 @@ export async function fetchNotifications(
 }
 
 // ---------------------------------------------------------------------------
+// Clinic onboarding requests — Sprint 19 / Module 134
+// ---------------------------------------------------------------------------
+
+export interface ClinicOnboardingRequest {
+  id: string
+  clinic_name: string
+  doctor_name: string
+  contact_email: string
+  preferred_language: string
+  fallback_language: string
+  status: string
+  created_at: string
+  [key: string]: unknown
+}
+
+// Fetches GET /clinic-onboarding-requests using the session cookie.
+// Protected — requires admin session. Returns the requests array.
+export async function fetchClinicOnboardingRequests(): Promise<ClinicOnboardingRequest[]> {
+  const resp = await apiFetch('/clinic-onboarding-requests')
+  if (!resp.ok) {
+    throw new Error(`Failed to load clinic onboarding requests (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; requests: ClinicOnboardingRequest[] }
+  return data.requests ?? []
+}
+
+// Updates status via PATCH /clinic-onboarding-requests/{requestId}/status.
+// Protected — requires admin session. Throws on non-2xx response.
+export async function updateClinicOnboardingRequestStatus(
+  requestId: string,
+  status: string,
+): Promise<void> {
+  const resp = await apiFetch(
+    `/clinic-onboarding-requests/${encodeURIComponent(requestId)}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to update onboarding request status (HTTP ${resp.status})`)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Pre-appointment summary — Sprint 17 / Module 125
 // ---------------------------------------------------------------------------
 

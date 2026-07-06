@@ -334,7 +334,32 @@ export default function DeveloperConsolePage() {
           </div>
         </ConsolePanel>
 
-        {/* 5. Safety guardrails */}
+        {/* 5. Pilot request review */}
+        <ConsolePanel title="Pilot Request Review">
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Review submitted clinic pilot requests, update their review status, and track
+            the onboarding workflow. No tenant is activated by any status change.
+            Production PHI remains NO-GO.
+          </p>
+          <a
+            href="/developer-console/onboarding-requests"
+            style={{
+              display: 'inline-block',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.25rem',
+              borderRadius: 7,
+              border: `1px solid ${ACCENT}`,
+              background: 'rgba(0,128,128,0.15)',
+              color: ACCENT,
+              textDecoration: 'none',
+            }}
+          >
+            Review onboarding requests →
+          </a>
+        </ConsolePanel>
+
+        {/* 6. Safety guardrails */}
         <ConsolePanel title="Safety Guardrails">
           {[
             'Never paste secrets into browser UI.',

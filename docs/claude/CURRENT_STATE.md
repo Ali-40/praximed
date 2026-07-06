@@ -2104,3 +2104,46 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - docs/architecture/ONBOARDING_FRONTEND_BACKEND_CONNECTION.md (new)
    - Full backend tests: 3402/3402 passed
    - Production PHI remains NO-GO
+
+147. Module 134 — Internal Clinic Onboarding Review Console
+   - Date: 2026-07-06
+   - Sprint 19 / Frontend + api.ts + static tests + docs. No backend migration.
+   - frontend/app/developer-console/onboarding-requests/page.tsx (new):
+     - Dark developer-console theme (INK/PANEL/EDGE/ACCENT/DANGER/WARN/TEXT/MUTED/GREEN)
+     - Auth-protected: 401/403 → "Admin session required. Please log in first."
+     - GET /clinic-onboarding-requests with credentials:'include' → request list
+     - Two-panel layout: request list (left) + detail panel (right)
+     - Status badges: submitted(WARN), reviewed(ACCENT), demo_booked(ACCENT), pilot_approved(GREEN), rejected(DANGER), archived(MUTED)
+     - LangBadge: "Deutsch-first" for preferred_language=de
+     - Detail panel: clinic, doctor/admin, language, workflow, safety, operational sections
+     - Fields: clinic_name, doctor_name, contact_email, preferred_language, fallback_language,
+       supported_languages, workflow_notes, production_phi_enabled, consent_pilot_contact, etc.
+     - PATCH /clinic-onboarding-requests/{id}/status → "Update status" button
+     - Safety banner: "No tenant activation. No PHI. Production PHI remains NO-GO."
+     - Activation warning: "Approving a request does not create a tenant or unlock production PHI."
+     - Status updated / error states
+     - No sessionStorage, no localStorage
+     - Empty state: "No onboarding requests submitted yet."
+     - Nav: ← Developer Console · ← Dashboard
+   - frontend/app/developer-console/page.tsx (updated):
+     - New "Pilot Request Review" ConsolePanel (panel 5)
+     - Link: "Review onboarding requests →" → /developer-console/onboarding-requests
+     - All existing panels preserved (safety guardrails renumbered to panel 6)
+   - frontend/lib/api.ts (updated):
+     - fetchClinicOnboardingRequests(): GET /clinic-onboarding-requests
+     - updateClinicOnboardingRequestStatus(requestId, status): PATCH /clinic-onboarding-requests/{id}/status
+     - ClinicOnboardingRequest interface added
+   - frontend build: npm run build → ✓ 9/9 pages, no TypeScript errors
+   - backend/tests/test_internal_onboarding_review_console_contract.py (new — 48 tests):
+     - Review page: exists, heading, "Internal review console", nav link, badge
+     - Safety: no tenant activation, no PHI, Production PHI NO-GO, approving does not create tenant
+     - API: fetches /clinic-onboarding-requests, credentials:include, PATCH status, auth error handling
+     - Fields: clinic_name, doctor_name, contact_email, preferred_language, fallback_language, workflow_notes, production_phi_enabled
+     - Status values: submitted, reviewed, demo_booked, pilot_approved, rejected, archived
+     - Storage: no sessionStorage, no localStorage, no hardcoded JWT, no PHI fields
+     - Developer console: links to /developer-console/onboarding-requests, pilot review panel
+     - api.ts: fetchClinicOnboardingRequests, updateClinicOnboardingRequestStatus, PATCH, no secrets
+     - Arch doc: exists, mentions Module 134, onboarding-requests route, no automatic tenant, NO-GO
+   - docs/architecture/INTERNAL_ONBOARDING_REVIEW_CONSOLE.md (new)
+   - Full backend tests: 3450/3450 passed
+   - Production PHI remains NO-GO
