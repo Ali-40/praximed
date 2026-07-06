@@ -2026,4 +2026,44 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
        internal notification, compliance gate no-op, no real patient data, no secrets,
        Production PHI NO-GO, C3–C8 blockers open, recording/DSGVO disclaimers
    - Full backend tests: 3288/3288 passed
+
+145. Module 132 — Real Clinic Onboarding Backend Foundation
+   - Date: 2026-07-06
+   - Sprint 19 / Backend only — no frontend changes
+   - backend/app/db/schema.sql (updated): clinic_onboarding_requests table added with:
+     - UUID PK, clinic_name, doctor_name, contact_email (required)
+     - preferred_language (default de), fallback_language (default en), supported_languages (JSONB, default ["de","en"])
+     - consent_pilot_contact + acknowledges_no_phi (required for submission)
+     - production_phi_enabled (default false, DB CHECK constraint enforces always false)
+     - status CHECK: submitted, reviewed, demo_booked, pilot_approved, rejected, archived
+     - preferred_language CHECK: de, en only
+     - Indexes: contact_email, status, created_at, preferred_language
+   - backend/migrations/versions/0004_clinic_onboarding_requests.py (new):
+     - Revision: 0004, down_revision: 0003_patient_id_appt_requests
+     - Idempotent CREATE TABLE IF NOT EXISTS; includes downgrade()
+   - backend/app/schemas/clinic_onboarding.py (new):
+     - ClinicOnboardingRequestCreate: validates required fields, email format, language codes, consent booleans
+     - ClinicOnboardingRequestRead, ClinicOnboardingRequestStatusUpdate
+     - ClinicOnboardingRequestResponse + ClinicOnboardingRequestListResponse
+     - production_phi_enabled never accepted from public input; server-controlled always false
+   - backend/app/db/repositories/clinic_onboarding_repo.py (new):
+     - create_clinic_onboarding_request, get_clinic_onboarding_request_by_id
+     - list_clinic_onboarding_requests, update_clinic_onboarding_status
+     - status=submitted hardcoded on create; production_phi_enabled=false hardcoded
+     - No patient PHI, no Vapi credentials, no tenant creation
+   - backend/app/api/routes/clinic_onboarding.py (new):
+     - POST /clinic-onboarding-requests (public — no auth, no enforce_phi_safeguard)
+     - GET /clinic-onboarding-requests (auth required — staff/admin list)
+     - GET /clinic-onboarding-requests/{id} (auth required)
+     - PATCH /clinic-onboarding-requests/{id}/status (auth required)
+   - backend/app/api/router.py (updated): clinic_onboarding router wired
+   - docs/architecture/CLINIC_ONBOARDING_BACKEND_FOUNDATION.md (new)
+   - backend/tests/test_clinic_onboarding_backend_foundation.py (new — 78 tests):
+     - Schema SQL contract (table, columns, constraints, indexes)
+     - Migration file (revision, down revision, create/drop)
+     - Pydantic schemas (required fields, email, language, consent booleans, invalid status)
+     - Repository (create/get/list/update, invalid inputs raise)
+     - API routes (public POST 201, auth-guarded GET/PATCH, 422 on bad input)
+     - PHI field absence, no Vapi credentials, language defaults, arch doc
+   - Full backend tests: 3366/3366 passed
    - Production PHI remains NO-GO

@@ -444,4 +444,61 @@ CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_approved_at
 CREATE INDEX IF NOT EXISTS idx_consultation_sessions_clinic_source
     ON consultation_sessions (clinic_id, source);
 
+-- ---------------------------------------------------------------------------
+-- N) clinic_onboarding_requests
+--    Pilot/onboarding requests submitted by doctors or clinic staff.
+--    Does NOT create a production tenant automatically.
+--    Does NOT store patient PHI. production_phi_enabled defaults false.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS clinic_onboarding_requests (
+    id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_name              TEXT        NOT NULL,
+    clinic_type              TEXT,
+    specialty                TEXT,
+    city                     TEXT,
+    address                  TEXT,
+    website                  TEXT,
+    doctor_name              TEXT        NOT NULL,
+    contact_email            TEXT        NOT NULL,
+    contact_phone            TEXT,
+    preferred_language       TEXT        NOT NULL DEFAULT 'de',
+    fallback_language        TEXT        NOT NULL DEFAULT 'en',
+    supported_languages      JSONB       NOT NULL DEFAULT '["de","en"]',
+    workflow_notes           TEXT,
+    estimated_call_volume    TEXT,
+    current_booking_system   TEXT,
+    wants_ai_phone_intake    BOOLEAN     NOT NULL DEFAULT true,
+    wants_dashboard          BOOLEAN     NOT NULL DEFAULT true,
+    wants_notifications      BOOLEAN     NOT NULL DEFAULT false,
+    pilot_interest_level     TEXT        NOT NULL DEFAULT 'new',
+    status                   TEXT        NOT NULL DEFAULT 'submitted',
+    source                   TEXT        NOT NULL DEFAULT 'onboarding_page',
+    consent_pilot_contact    BOOLEAN     NOT NULL DEFAULT false,
+    acknowledges_no_phi      BOOLEAN     NOT NULL DEFAULT false,
+    production_phi_enabled   BOOLEAN     NOT NULL DEFAULT false,
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT clinic_onboarding_requests_status_check CHECK (
+        status IN ('submitted', 'reviewed', 'demo_booked', 'pilot_approved', 'rejected', 'archived')
+    ),
+    CONSTRAINT clinic_onboarding_requests_preferred_language_check CHECK (
+        preferred_language IN ('de', 'en')
+    ),
+    CONSTRAINT clinic_onboarding_requests_production_phi_false CHECK (
+        production_phi_enabled = false
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_onboarding_requests_email
+    ON clinic_onboarding_requests (contact_email);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_onboarding_requests_status
+    ON clinic_onboarding_requests (status);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_onboarding_requests_created_at
+    ON clinic_onboarding_requests (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_onboarding_requests_preferred_language
+    ON clinic_onboarding_requests (preferred_language);
+
 COMMIT;
