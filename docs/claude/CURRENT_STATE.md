@@ -2286,6 +2286,53 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+155. Module 141 — Vapi Assistant Configuration Pack Per Tenant
+   - Date: 2026-07-06
+   - Sprint 19 / Backend service + route + tests + docs. No frontend changes. No migration. No live Vapi binding.
+   - backend/app/schemas/vapi_assistant_config.py (new):
+     - VapiAssistantConfigPack: clinic_id, clinic_display_name, specialty, city,
+       primary_language, fallback_language, supported_languages, vapi_assistant_language_mode,
+       assistant_name, voice_locale_recommendation, first_message_de, first_message_en,
+       system_prompt_de, system_prompt_en, tool_schema, required_capture_fields,
+       safety_rules, escalation_rules, forbidden_claims,
+       production_phi_enabled (always False), recording_ingestion_enabled (False),
+       transcript_ingestion_enabled (False), generated_at
+   - backend/app/services/vapi_assistant_config.py (new):
+     - build_vapi_assistant_config_pack(pool, clinic_id, actor_user=None)
+     - Verifies clinic exists, loads language settings (Module 138), loads tenant config file
+     - German system prompt: KI-Rezeption, private Praxis in Wien, keine Diagnose,
+       keine medizinische Beratung, keine Terminbestätigung, Notruf 144
+     - English system prompt: AI receptionist, private clinic in Vienna, no diagnosis,
+       no medical advice, no appointment confirmation promise, call 144
+     - First messages: German and English greeting templates
+     - Tool schema: capture_appointment_request targeting POST /vapi/tools/capture-appointment-request
+       with fields: patient_name, phone, reason, preferred_time, urgency_level, language_preference
+     - Header names (non-secret): X-Vapi-Service-Name, X-Vapi-Clinic-Id, X-Vapi-Scopes
+     - production_phi_enabled: always False; recording/transcript ingestion: False by default
+     - No Vapi API calls. No secrets. No PHI.
+   - backend/app/api/routes/vapi_assistant_config.py (new):
+     - GET /clinics/{clinic_id}/vapi-assistant-config-pack
+     - Protected: get_current_user; 404 on ClinicNotFoundError; 500 on unexpected
+   - backend/app/api/router.py (updated): vapi_assistant_config router registered
+   - backend/tests/test_vapi_assistant_config_pack_per_tenant.py (new — 81 tests):
+     - File existence, schema fields (all 23 fields), no Vapi API key/webhook/DATABASE_URL
+     - Service: build function, German/English prompt builders, KI-Rezeption, private Praxis in Wien,
+       keine Diagnose, keine medizinische Beratung, Terminbestätigung, Notruf 144
+     - English: AI receptionist, private clinic in Vienna, no diagnosis, no medical advice, 144
+     - Tool schema: patient_name, phone, reason, preferred_time, urgency_level, language_preference
+     - No Vapi API call, no secrets in service
+     - Async service: German-first defaults, clinic_id, clinic_display_name, German/English prompts,
+       tool schema required fields, production_phi_enabled=False, recording/transcript False,
+       ClinicNotFoundError raised
+     - Route: requires auth (401), 404 for missing clinic, config pack for valid clinic
+       (clinic_id, primary_language=de, all 3 safety flags False), no PHI fields in response
+     - Arch doc: module 141, language settings, german first, english fallback, no live Vapi binding,
+       no secrets, no PHI, NO-GO, appointment capture, no diagnosis, 144, GET route
+   - docs/architecture/VAPI_ASSISTANT_CONFIGURATION_PACK_PER_TENANT.md (new)
+   - Full backend tests: 3934/3934 passed
+   - No frontend changes
+   - Production PHI remains NO-GO
+
 154. Module 140 — Live Tenant Language Settings Smoke Evidence
    - Date: 2026-07-06
    - Sprint 19 / Docs + static tests only. No backend changes. No frontend changes. No migration.

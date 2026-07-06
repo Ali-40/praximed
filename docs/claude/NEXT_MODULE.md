@@ -1,132 +1,123 @@
-# Sprint 19 / Module 141 — Vapi Assistant Configuration Pack Per Tenant
+# Sprint 19 / Module 142 — Admin Vapi Assistant Config Preview UI
 
 Status: pending implementation.
 
 ## Context
 
-Module 140 complete:
-- `docs/runtime/LIVE_TENANT_LANGUAGE_SETTINGS_SMOKE_EVIDENCE.md` — PASS
-- `backend/tests/test_live_tenant_language_settings_smoke_evidence_contract.py` — 48 tests, all pass
-- 3853/3853 backend tests pass
+Module 141 complete:
+- `backend/app/schemas/vapi_assistant_config.py` — VapiAssistantConfigPack schema
+- `backend/app/services/vapi_assistant_config.py` — build_vapi_assistant_config_pack service
+- `backend/app/api/routes/vapi_assistant_config.py` — GET /clinics/{id}/vapi-assistant-config-pack
+- `backend/app/api/router.py` — vapi_assistant_config router registered
+- `backend/tests/test_vapi_assistant_config_pack_per_tenant.py` — 81 tests, all pass
+- `docs/architecture/VAPI_ASSISTANT_CONFIGURATION_PACK_PER_TENANT.md`
+- 3934/3934 backend tests pass
 - No frontend changes
-- Commit: Sprint 19 / Module 140 — Live tenant language settings smoke evidence
+- Commit: Sprint 19 / Module 141 — Vapi assistant configuration pack per tenant
 
-Language settings are live and verified end-to-end on staging. Admin can now
-load and update German-first language configuration per clinic. The
-`vapi_assistant_language_mode` field stores the intended assistant language
-behaviour — but no Vapi-specific prompt pack or per-tenant assistant config
-has been generated from it yet.
+The Vapi assistant configuration pack can be generated per clinic via a protected
+backend route. There is no frontend UI to preview it — admin must currently use
+curl or an API tool to fetch the config pack.
 
 Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Create a per-tenant Vapi assistant configuration pack — a structured, static
-configuration object that describes how the Vapi assistant should behave for a
-given clinic based on that clinic's language settings. This is a data/doc layer
-only — no live Vapi credential binding, no API calls to Vapi's platform.
+Add an internal admin UI page that fetches and displays the Vapi assistant
+configuration pack for a provisioned clinic. The page allows admin to review
+the German/English prompts, required capture fields, tool schema, and safety
+rules before any live Vapi binding happens.
 
-## What Module 141 must implement
+## What Module 142 must implement
 
-### 1. Vapi assistant config service
+### 1. Frontend — Vapi config preview page
 
-`backend/app/services/vapi_assistant_config.py` (new):
+`frontend/app/developer-console/vapi-config/page.tsx` (new):
 
-- Function: `get_vapi_assistant_config(pool, clinic_id) -> dict`
-  - Reads clinic language settings (via `get_clinic_language_settings`)
-  - Reads clinic config (name, specialty, etc.)
-  - Returns a structured config dict:
-    ```python
-    {
-        "clinic_id": str,
-        "clinic_name": str,
-        "language_mode": str,          # german_first | english_first | bilingual_auto
-        "primary_language": str,       # de | en
-        "fallback_language": str,      # en | de
-        "greeting_language": str,      # de | en (same as primary_language)
-        "assistant_persona": str,      # "Praxisassistentin" (de) | "Practice assistant" (en)
-        "appointment_capture_only": bool,   # always True
-        "no_diagnosis": bool,               # always True
-        "no_medical_advice": bool,          # always True
-        "production_phi_enabled": bool,     # always False
-        "prompt_language_instruction": str, # human-readable instruction for prompt builder
-    }
-    ```
-- `prompt_language_instruction` examples:
-  - german_first: "Führe das Gespräch auf Deutsch. Wechsle zu Englisch wenn der Anrufer auf Englisch spricht."
-  - english_first: "Conduct the conversation in English. Switch to German if the caller speaks German."
-  - bilingual_auto: "Respond in the language the caller uses. Support German and English."
+- Admin internal page under developer console.
+- Clinic ID text input + "Load config" button.
+- GET /clinics/{id}/vapi-assistant-config-pack with `credentials: 'include'`.
+- Display sections:
+  - Language mode: primary_language, fallback_language, vapi_assistant_language_mode
+  - German prompt: system_prompt_de (code block / pre-wrap)
+  - English prompt: system_prompt_en (code block / pre-wrap)
+  - First messages: first_message_de, first_message_en
+  - Required capture fields: list
+  - Tool schema: JSON display (target endpoint, required fields)
+  - Safety rules: list
+  - Forbidden claims: list
+  - Safety flags: production_phi_enabled, recording_ingestion_enabled, transcript_ingestion_enabled
+  - Generated at timestamp
+- Safety copy: "This is a read-only preview. No Vapi binding occurs."
+  "No PHI. No secrets. No Vapi credentials."
+  "Production PHI remains NO-GO."
+- Error states: 401/403 → "Admin session required.", 404 → "Clinic not found or no access."
+- No sessionStorage, no localStorage.
+- credentials: 'include' on all fetches.
+- ADMIN / STAGING badge.
 
-### 2. Schema
+### 2. Developer console nav
 
-`backend/app/schemas/vapi_assistant_config.py` (new):
+`frontend/app/developer-console/page.tsx` (updated):
 
-```python
-class VapiAssistantConfig(BaseModel):
-    clinic_id: str
-    clinic_name: str
-    language_mode: str        # german_first | english_first | bilingual_auto
-    primary_language: str
-    fallback_language: str
-    greeting_language: str
-    assistant_persona: str
-    appointment_capture_only: bool
-    no_diagnosis: bool
-    no_medical_advice: bool
-    production_phi_enabled: bool
-    prompt_language_instruction: str
-```
+- Add new panel "Vapi Assistant Config Preview" (after Tenant Language Settings panel).
+- Link: "Preview Vapi config →" → `/developer-console/vapi-config`.
+- Safety copy: "Read-only preview. No live Vapi binding. No secrets."
 
-### 3. Route
+### 3. api.ts helper
 
-`backend/app/api/routes/vapi_assistant_config.py` (new):
+`frontend/lib/api.ts` (updated):
 
-```
-GET /clinics/{clinic_id}/vapi-assistant-config
-```
-
-- Protected: `get_current_user`
-- Returns `VapiAssistantConfig` JSON
-- 404 on missing clinic
-- No Vapi credentials in response
-- No PHI in response
-- No secrets in response
-
-Register in `backend/app/api/router.py`.
+- `fetchVapiAssistantConfigPack(clinicId: string): Promise<VapiAssistantConfigPack>`
+  - GET /clinics/{clinicId}/vapi-assistant-config-pack
+  - credentials: 'include'
+- `VapiAssistantConfigPack` interface with all fields from the schema.
 
 ### 4. Tests
 
-`backend/tests/test_vapi_assistant_config.py` (new):
+`backend/tests/test_admin_vapi_config_preview_ui_contract.py` (new):
 
-Static + async tests:
-- Schema: all fields present, appointment_capture_only=True, no_diagnosis=True,
-  no_medical_advice=True, production_phi_enabled=False always
-- Service: german_first → prompt in German, english_first → prompt in English,
-  bilingual_auto → bilingual instruction, correct persona per language
-- Route: GET requires auth, 404 on missing clinic, 200 returns correct fields,
-  no PHI/Vapi credentials/secrets in response
+Static contract tests verifying:
+- Page file exists
+- Page has "Vapi" in title / header
+- Page has clinic ID input
+- Page has "Load config" button or equivalent
+- Page calls /vapi-assistant-config-pack endpoint
+- Page shows system_prompt_de
+- Page shows system_prompt_en
+- Page shows required_capture_fields
+- Page shows safety_rules
+- Page shows production_phi_enabled
+- Page uses credentials: 'include'
+- Page has "No Vapi binding" safety copy
+- Page has "No PHI" copy
+- Page has NO-GO copy
+- Page has Admin session required error state
+- Page handles 401/403/404
+- No sessionStorage, no localStorage
+- No Vapi API key field
+- No webhook secret field
+- Developer console links to /developer-console/vapi-config
+- api.ts has fetchVapiAssistantConfigPack
+- api.ts has VapiAssistantConfigPack interface
+- api.ts no sessionStorage, no localStorage
 
 ### 5. Docs
 
-- `docs/architecture/VAPI_ASSISTANT_CONFIG_PACK.md` (new):
-  - Purpose, route, response fields, language mode instructions,
-    safety constraints (appointment_capture_only, no_diagnosis, no_medical_advice,
-    production_phi_enabled=False), what it does not do (no live Vapi binding),
-    remaining work
-- `docs/claude/CURRENT_STATE.md` — Module 141 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 142
+- `docs/architecture/ADMIN_VAPI_CONFIG_PREVIEW_UI.md` (new)
+- `docs/claude/CURRENT_STATE.md` — Module 142 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 143
 
 ## Constraints
 
-- No live Vapi credential binding (no calls to Vapi API)
-- No PHI in response
-- No secrets in response
-- appointment_capture_only always True
-- no_diagnosis always True
-- no_medical_advice always True
-- production_phi_enabled always False
-- credentials: 'include' on all frontend fetches (if any)
-- German-first defaults
+- Read-only UI — no write operations to Vapi
+- No live Vapi API calls
+- No PHI in response or display
+- No secrets shown or collected
+- No sessionStorage, no localStorage
+- credentials: 'include' on all fetches
+- Production PHI remains NO-GO
 - Full test suite must remain green
+- Frontend build must pass
 - Commit message:
-  Sprint 19 / Module 141 — Vapi assistant configuration pack per tenant
+  Sprint 19 / Module 142 — Admin Vapi assistant config preview UI
