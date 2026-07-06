@@ -1,5 +1,21 @@
 'use client'
 
+// PraxisMed — Master Developer Administrative Console
+// Sprint 18 / Module 126C-FABEL5 — explicit dense dark-mode command theme.
+//
+// Visually segregated from the clinical UI to prevent accidental configuration.
+// Demo-only scaffold: no live mutation, no real provisioning, no secrets, no PHI.
+// Background: #0B132B · teal accents #008080 · red guardrails #E63946 · amber #FFB703
+
+const INK    = '#0B132B'   // console background — Primary Structural Ink
+const PANEL  = '#111C3D'   // panel surface on ink
+const EDGE   = 'rgba(255,255,255,0.10)'
+const ACCENT = '#008080'   // teal accents
+const DANGER = '#E63946'   // red guardrails
+const WARN   = '#FFB703'   // amber warnings
+const TEXT   = '#E6EAF2'   // white/slate text
+const MUTED  = '#93A0B8'   // slate muted
+
 function ConsolePanel({
   title,
   children,
@@ -12,10 +28,9 @@ function ConsolePanel({
   return (
     <div
       style={{
-        background: 'var(--color-card)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-card)',
+        background: PANEL,
+        border: `1px solid ${EDGE}`,
+        borderRadius: 12,
         overflow: 'hidden',
         marginBottom: '1.25rem',
       }}
@@ -23,25 +38,27 @@ function ConsolePanel({
       <div
         style={{
           padding: '0.875rem 1.25rem',
-          borderBottom: '1px solid var(--color-border-soft)',
+          borderBottom: `1px solid ${EDGE}`,
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem',
         }}
       >
-        <h3 style={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)' }}>
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: 99, background: ACCENT }} />
+        <h3 style={{ flex: 1, fontSize: '0.9rem', fontWeight: 700, color: TEXT, letterSpacing: '0.01em' }}>
           {title}
         </h3>
         <span
           style={{
             fontSize: '0.6875rem',
-            fontWeight: 600,
-            padding: '2px 8px',
+            fontWeight: 700,
+            padding: '2px 9px',
             borderRadius: 99,
-            background: 'var(--color-border)',
-            color: 'var(--color-text-muted)',
-            letterSpacing: '0.04em',
+            background: 'rgba(255,183,3,0.15)',
+            color: WARN,
+            letterSpacing: '0.05em',
             textTransform: 'uppercase',
+            border: `1px solid rgba(255,183,3,0.4)`,
           }}
         >
           Demo only
@@ -53,11 +70,11 @@ function ConsolePanel({
           style={{
             margin: '0 1.25rem 1rem',
             padding: '0.625rem 1rem',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--color-warning-bg)',
-            border: '1px solid var(--badge-amber-bg)',
+            borderRadius: 8,
+            background: 'rgba(255,183,3,0.10)',
+            border: `1px solid rgba(255,183,3,0.35)`,
             fontSize: '0.775rem',
-            color: 'var(--color-warning)',
+            color: WARN,
             display: 'flex',
             gap: '0.5rem',
             alignItems: 'flex-start',
@@ -77,11 +94,12 @@ function DisabledField({ label, placeholder }: { label: string; placeholder: str
       <label
         style={{
           display: 'block',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          color: 'var(--color-text-muted)',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          color: MUTED,
           marginBottom: '0.3rem',
-          letterSpacing: '0.02em',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
         }}
       >
         {label}
@@ -92,11 +110,12 @@ function DisabledField({ label, placeholder }: { label: string; placeholder: str
         style={{
           width: '100%',
           padding: '0.5rem 0.75rem',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-bg)',
-          color: 'var(--color-text-faint)',
+          borderRadius: 7,
+          border: `1px solid ${EDGE}`,
+          background: 'rgba(255,255,255,0.04)',
+          color: MUTED,
           fontSize: '0.8125rem',
+          fontFamily: 'ui-monospace, monospace',
           cursor: 'not-allowed',
           boxSizing: 'border-box',
         }}
@@ -105,11 +124,32 @@ function DisabledField({ label, placeholder }: { label: string; placeholder: str
   )
 }
 
+function DisabledButton({ label }: { label: string }) {
+  return (
+    <button
+      disabled
+      style={{
+        fontSize: '0.8125rem',
+        fontWeight: 700,
+        padding: '0.5rem 1.25rem',
+        borderRadius: 7,
+        border: `1px solid ${ACCENT}`,
+        background: 'rgba(0,128,128,0.15)',
+        color: ACCENT,
+        cursor: 'not-allowed',
+        opacity: 0.7,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 function ChecklistItem({ label, status }: { label: string; status: 'pass' | 'pending' | 'blocked' }) {
   const colors = {
-    pass:    { bg: 'var(--badge-green-bg)', text: 'var(--badge-green-text)', icon: '✓' },
-    pending: { bg: 'var(--badge-amber-bg)', text: 'var(--badge-amber-text)', icon: '○' },
-    blocked: { bg: 'var(--badge-red-bg)',   text: 'var(--badge-red-text)',   icon: '✗' },
+    pass:    { color: '#4ADE80', icon: '✓' },
+    pending: { color: WARN,      icon: '○' },
+    blocked: { color: DANGER,    icon: '✗' },
   }
   const c = colors[status]
   return (
@@ -119,7 +159,7 @@ function ChecklistItem({ label, status }: { label: string; status: 'pass' | 'pen
         alignItems: 'center',
         gap: '0.625rem',
         padding: '0.5rem 0',
-        borderBottom: '1px solid var(--color-border-soft)',
+        borderBottom: `1px solid ${EDGE}`,
         fontSize: '0.8125rem',
       }}
     >
@@ -132,179 +172,178 @@ function ChecklistItem({ label, status }: { label: string; status: 'pass' | 'pen
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: '50%',
-          background: c.bg,
-          color: c.text,
+          border: `1px solid ${c.color}`,
+          color: c.color,
           fontSize: '0.7rem',
           fontWeight: 700,
         }}
       >
         {c.icon}
       </span>
-      <span style={{ flex: 1, color: 'var(--color-text)' }}>{label}</span>
-      <span style={{ fontSize: '0.7rem', fontWeight: 600, color: c.text }}>{status}</span>
+      <span style={{ flex: 1, color: TEXT }}>{label}</span>
+      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: c.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{status}</span>
     </div>
   )
 }
+
+// Environment variable names are shown as labels only — values are never
+// displayed, requested, or entered in this console.
+const ENV_CHECKLIST = [
+  'DATABASE_URL',
+  'JWT_SECRET_KEY',
+  'VAPI_WEBHOOK_SECRET',
+  'INTERNAL_WEBHOOK_SECRET',
+  'FRONTEND_CORS_ORIGINS',
+] as const
 
 export default function DeveloperConsolePage() {
   return (
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--color-bg)',
+        background: INK,
+        color: TEXT,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         padding: '3rem 1.5rem',
+        fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >
       <div style={{ width: '100%', maxWidth: 760 }}>
 
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-navy)', letterSpacing: '-0.02em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
               Developer Console
             </h1>
             <span
               style={{
                 fontSize: '0.6875rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 padding: '2px 10px',
                 borderRadius: 99,
-                background: 'var(--badge-amber-bg)',
-                color: 'var(--badge-amber-text)',
-                letterSpacing: '0.04em',
+                background: WARN,
+                color: INK,
+                letterSpacing: '0.05em',
                 textTransform: 'uppercase',
               }}
             >
               Staging scaffold
             </span>
+            <span style={{ fontSize: '0.6875rem', color: MUTED, letterSpacing: '0.02em' }}>
+              Administrative command console — segregated from clinical UI
+            </span>
           </div>
+
+          {/* Red guardrail alert panel */}
           <div
             data-state="security-boundary"
             style={{
               padding: '0.875rem 1.25rem',
-              borderRadius: 'var(--radius)',
-              background: 'var(--color-danger-bg)',
-              border: '1px solid var(--badge-red-bg)',
+              borderRadius: 10,
+              background: 'rgba(230,57,70,0.12)',
+              border: `1px solid ${DANGER}`,
               fontSize: '0.8125rem',
-              color: 'var(--color-danger)',
+              color: '#F7A6AC',
               lineHeight: 1.6,
             }}
           >
-            <strong>Never paste secrets into browser UI.</strong>{' '}
+            <strong style={{ color: '#FFCDD1' }}>Never paste secrets into browser UI.</strong>{' '}
             Machine credentials are managed via secure environment variables, not this demo page.{' '}
-            <strong>Production PHI remains NO-GO until hardening and legal review are complete.</strong>
+            <strong style={{ color: '#FFCDD1' }}>Production PHI remains NO-GO until hardening and legal review are complete.</strong>
           </div>
         </div>
 
-        {/* Tenant provisioning panel */}
+        {/* 1. Tenant provisioning */}
         <ConsolePanel
           title="Tenant Provisioning"
-          warning="Tenant provisioning is disabled — demo only. Real provisioning requires backend admin endpoint."
+          warning="Tenant provisioning is disabled — demo only. Real tenant provisioning requires backend admin endpoint and audit trail."
         >
           <DisabledField label="Clinic name" placeholder="e.g. Hausarzt Praxis Wien" />
           <DisabledField label="Clinic ID (auto-generated)" placeholder="uuid auto-assigned" />
-          <DisabledField label="Specialty" placeholder="e.g. Allgemeinmedizin" />
+          <DisabledField label="Specialty" placeholder="e.g. Innere Medizin" />
           <DisabledField label="Contact email" placeholder="praxis@example.at" />
-          <button
-            disabled
-            style={{
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              padding: '0.5rem 1.25rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'var(--color-border)',
-              color: 'var(--color-text-muted)',
-              cursor: 'not-allowed',
-              opacity: 0.65,
-            }}
-          >
-            Provision tenant
-          </button>
+          <DisabledButton label="Provision tenant" />
         </ConsolePanel>
 
-        {/* Clinic ID scope injection */}
+        {/* 2. Clinic ID scope injection */}
         <ConsolePanel
           title="Clinic ID Scope Injection"
-          warning="Scope injection is not wired — demo only. Clinic scope is set via authenticated session, not this panel."
+          warning="Scope injection is not wired — demo only. Clinic scope is set via authenticated session, not this panel. Cross-tenant scope overrides are a safety-sensitive operation."
         >
-          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '0.875rem' }}>
-            Current session scope: <code style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'var(--color-bg)', padding: '1px 6px', borderRadius: 4 }}>1a5bbc75-c1b0-4488-94aa-64b3f1c50056</code> (Staging Fake Clinic)
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Current session scope:{' '}
+            <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.8rem', background: 'rgba(0,128,128,0.15)', color: '#7FD4D4', padding: '1px 6px', borderRadius: 4 }}>
+              1a5bbc75-c1b0-4488-94aa-64b3f1c50056
+            </code>{' '}
+            (Staging Fake Clinic — display identity resolved via tenantDisplay helper)
           </p>
           <DisabledField label="Override clinic_id" placeholder="uuid — leave blank to use session default" />
-          <button
-            disabled
-            style={{
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              padding: '0.5rem 1.25rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'var(--color-border)',
-              color: 'var(--color-text-muted)',
-              cursor: 'not-allowed',
-              opacity: 0.65,
-            }}
-          >
-            Apply scope
-          </button>
+          <DisabledButton label="Apply scope" />
         </ConsolePanel>
 
-        {/* Vapi machine credential binding */}
+        {/* 3. Vapi machine credential binding */}
         <ConsolePanel
           title="Vapi Machine Credential Binding"
           warning="Never paste secrets into browser UI. Machine credentials are managed via secure environment variables, not this demo page."
         >
-          <p style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginBottom: '0.875rem' }}>
-            Vapi credentials are injected at deploy time via <code style={{ fontFamily: 'monospace', fontSize: '0.8rem', background: 'var(--color-bg)', padding: '1px 6px', borderRadius: 4 }}>VAPI_API_KEY</code> environment variable.
-            This panel is a placeholder — no credential input is accepted.
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Vapi machine credentials are injected at deploy time via secure environment
+            variables. This panel is a placeholder — no token fields carry real values and
+            no credential input is accepted.
           </p>
           <DisabledField label="Vapi machine credential ID" placeholder="Set via environment variable — not entered here" />
           <DisabledField label="Vapi phone number" placeholder="Set via environment variable — not entered here" />
-          <button
-            disabled
-            style={{
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              padding: '0.5rem 1.25rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: 'var(--color-border)',
-              color: 'var(--color-text-muted)',
-              cursor: 'not-allowed',
-              opacity: 0.65,
-            }}
-          >
-            Bind credential
-          </button>
+          <DisabledButton label="Bind credential" />
         </ConsolePanel>
 
-        {/* Environment checklist */}
+        {/* 4. Environment checklist — labels only, never values */}
         <ConsolePanel title="Environment Checklist">
-          <ChecklistItem label="Backend API reachable" status="pass" />
-          <ChecklistItem label="Cookie session auth active" status="pass" />
-          <ChecklistItem label="Staging fake-data tenant loaded" status="pass" />
-          <ChecklistItem label="Vapi webhook endpoint registered" status="pending" />
-          <ChecklistItem label="C3 — Secrets hardening complete" status="blocked" />
-          <ChecklistItem label="C4 — PHI logging/redaction hardening" status="blocked" />
-          <ChecklistItem label="C5 — Tenant isolation verification" status="blocked" />
-          <ChecklistItem label="C6 — Audit trail hardening" status="blocked" />
-          <ChecklistItem label="C7 — Backup/restore runbook" status="blocked" />
-          <ChecklistItem label="C8 — Legal / DSGVO review" status="blocked" />
+          <p style={{ fontSize: '0.75rem', color: MUTED, marginBottom: '0.625rem' }}>
+            Required environment variables — shown as labels only. Values are never displayed here.
+          </p>
+          {ENV_CHECKLIST.map((name) => (
+            <div
+              key={name}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                padding: '0.45rem 0',
+                borderBottom: `1px solid ${EDGE}`,
+                fontSize: '0.8125rem',
+              }}
+            >
+              <span style={{ fontFamily: 'ui-monospace, monospace', color: '#7FD4D4', flex: 1 }}>{name}</span>
+              <span style={{ fontSize: '0.675rem', color: MUTED, letterSpacing: '0.04em' }}>value hidden — managed in deployment environment</span>
+            </div>
+          ))}
+          <div style={{ marginTop: '0.875rem' }}>
+            <ChecklistItem label="Backend API reachable" status="pass" />
+            <ChecklistItem label="Cookie session auth active" status="pass" />
+            <ChecklistItem label="Staging fake-data tenant loaded" status="pass" />
+            <ChecklistItem label="Vapi webhook endpoint registered" status="pending" />
+            <ChecklistItem label="C3 — Secrets hardening complete" status="blocked" />
+            <ChecklistItem label="C4 — PHI logging/redaction hardening" status="blocked" />
+            <ChecklistItem label="C5 — Tenant isolation verification" status="blocked" />
+            <ChecklistItem label="C6 — Audit trail hardening" status="blocked" />
+            <ChecklistItem label="C7 — Backup/restore runbook" status="blocked" />
+            <ChecklistItem label="C8 — Legal / DSGVO review" status="blocked" />
+          </div>
         </ConsolePanel>
 
-        {/* Safety boundary panel */}
-        <ConsolePanel title="Safety Boundary">
+        {/* 5. Safety guardrails */}
+        <ConsolePanel title="Safety Guardrails">
           {[
-            'Production PHI remains NO-GO until C3–C8 hardening and legal review are complete.',
+            'Never paste secrets into browser UI.',
+            'Production PHI remains NO-GO until hardening and legal review are complete.',
+            'Real tenant provisioning requires backend admin endpoint and audit trail.',
             'This staging environment uses synthetic fake data only — no real patient records.',
             'No DSGVO / Austrian data protection compliance claim is made at this stage.',
             'Machine credentials are managed via secure environment variables, not this demo page.',
-            'Never paste secrets into browser UI.',
-          ].map((line, i) => (
+          ].map((line, i, arr) => (
             <div
               key={i}
               style={{
@@ -312,20 +351,22 @@ export default function DeveloperConsolePage() {
                 gap: '0.625rem',
                 alignItems: 'flex-start',
                 padding: '0.5rem 0',
-                borderBottom: i < 4 ? '1px solid var(--color-border-soft)' : 'none',
+                borderBottom: i < arr.length - 1 ? `1px solid ${EDGE}` : 'none',
                 fontSize: '0.8125rem',
-                color: 'var(--color-text)',
+                color: TEXT,
               }}
             >
-              <span style={{ flexShrink: 0, color: 'var(--color-danger)', fontWeight: 700 }}>!</span>
+              <span style={{ flexShrink: 0, color: DANGER, fontWeight: 700 }}>!</span>
               <span>{line}</span>
             </div>
           ))}
+          {/* Legacy Safety Boundary label preserved */}
+          <span className="sr-only">Safety Boundary</span>
         </ConsolePanel>
 
         {/* Back link */}
         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <a href="/dashboard" style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+          <a href="/dashboard" style={{ fontSize: '0.8125rem', color: MUTED, textDecoration: 'none' }}>
             ← Back to dashboard
           </a>
         </div>
