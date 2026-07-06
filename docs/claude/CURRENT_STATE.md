@@ -1910,3 +1910,38 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - docs/runtime/FABEL5_PREMIUM_CLINIC_INTERFACE_DEPLOYED_SMOKE_EVIDENCE.md (new)
    - backend/tests/test_fabel5_premium_clinic_interface_deployed_smoke_evidence_contract.py (new — 36 static contract tests)
    - Full backend tests: 3107/3107 passed
+
+141. Module 130 — Operational Staging Readiness: Tenant Language, Vapi Assistant, and End-to-End Demo Flow
+   - Date: 2026-07-06
+   - Sprint 19 / Operational staging readiness track
+   - Docs + safe config only — no backend code changes, no migrations, no secrets, no real patient data
+   - docs/runtime/BACKEND_DATA_FLOW_AND_STORAGE_MAP.md (new)
+     - Full system map: Vercel (Next.js 14) + Railway (FastAPI) + Railway PostgreSQL
+     - Main tables: clinics, users, patients, appointment_requests, clinic_notifications, consultation_sessions, audit_log
+     - Vapi intake data flow: call → tool endpoint → appointment_requests → patients → clinic_notifications → dashboard
+     - Auth/session flow: login → HttpOnly secure cookie → credentials:include on all requests
+     - Frontend → backend API map (11 endpoints)
+     - Safety constraints: fake-data staging only, Production PHI NO-GO
+   - docs/runtime/STAGING_END_TO_END_DEMO_RUNBOOK.md (new)
+     - 9-step end-to-end demo runbook with post-demo checklist
+     - Backend health checks (/health + /health/ready)
+     - Fake Vapi intake curl example (Demo Patient / +436601234567 / Routine appointment request demo / 2026-07-14 09:00 CEST)
+     - View summary → Confirm → Patient Registry → Notification → Logout sequence
+     - Troubleshooting section for common failures
+     - No secrets recorded
+   - docs/runtime/VAPI_GERMAN_ENGLISH_ASSISTANT_SETUP.md (new)
+     - German-first, English-fallback receptionist assistant configuration
+     - Safe boundaries: no diagnosis, no medical advice, no treatment recommendations, staff/doctor confirms everything
+     - Required captured fields: patient_name, phone, reason, preferred_starts_at, urgency_level, language_preference
+     - German prompt (Austrian private clinic receptionist persona, emergency escalation to 112)
+     - English fallback prompt
+     - Tool call JSON shape and endpoint headers
+     - Vapi dashboard configuration notes
+     - Recording/transcript ingestion: pending — not yet enabled
+     - No secrets in doc
+   - backend/tenants/configs/1a5bbc75-c1b0-4488-94aa-64b3f1c50056/clinic_config.json (updated)
+     - Added: clinic_display_name, specialty, city, fallback_language, appointment_intake_enabled, recording_ingestion_enabled, transcript_ingestion_enabled, production_phi_enabled
+     - Preserved: all existing keys (tenant_id, clinic_name, language, country, timezone, ai_persona_name, ai_tone, specialties, features)
+   - backend/tests/test_operational_staging_readiness_contract.py (new — 44 static contract tests)
+   - Full backend tests: 3151/3151 passed
+   - Production PHI remains NO-GO

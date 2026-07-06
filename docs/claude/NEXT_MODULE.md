@@ -1,55 +1,48 @@
-# Sprint 18 / Module 127 — Clinic Outreach Asset & 30-Day Pilot Offer Pack
+# Sprint 19 / Module 131 — Real Staging End-to-End Demo Execution Evidence
 
 Status: pending implementation.
 
 ## Context
 
-Module 126D complete:
-- Fabel 5 premium 3-panel clinical interface deployed smoke evidence documented
-- /dashboard: Incoming AI Intake Queue / Active Resolution Workspace / Patient Registry
-- Dynamic doctor/clinic banner: "Dr. Med. Alexander Huber | Innere Medizin Wien" via tenantDisplay
-- Audio Transcript & Call Recording placeholder with Vapi ingestion message
-- /onboarding: 5-step pilot wizard, Review & Pilot Activation (plain text, no HTML entity leak)
-- /developer-console: dark admin command theme, isolated from clinical UI, directly accessible
-- All safety boundaries enforced: STAGING DEMO / fake data / no real patient data / Production PHI: NO-GO
-- 3107/3107 backend tests pass
-
-## Staging Demo Asset State
-
-The premium Fabel 5 dashboard is live and demo-ready on Vercel staging.
-It demonstrates:
-- Professional 3-panel clinical workspace with deep navy / teal palette
-- AI intake queue workflow with patient card, summary, and confirm flow
-- Dynamic tenant identity banner (doctor name / specialty / clinic)
-- Safety boundaries clearly visible — no real patient data risk during demos
-- No login credentials or real patient data needed to understand the product value
-
-## Production Hardening Track (Parallel — C3–C8)
-
-All production hardening blockers remain open. No production PHI launch until resolved:
-- C3 — Secrets hardening
-- C4 — PHI logging/redaction hardening
-- C5 — Tenant isolation verification
-- C6 — Audit trail hardening
-- C7 — Backup/restore runbook
-- C8 — Legal / DSGVO review
+Module 130 complete:
+- Backend data flow and storage map documented (Railway FastAPI + Railway PostgreSQL + Vercel)
+- Staging end-to-end demo runbook created (9-step runbook with fake Vapi intake curl)
+- Vapi German/English assistant setup documented (German-first, English fallback, safe boundaries)
+- Staging clinic config updated: de/en language, clinic_display_name, specialty, feature flags
+- 3151/3151 backend tests pass
 
 ## Goal
 
-Build a clinic outreach asset pack for Austrian private clinic pilot outreach.
+Execute the Module 130 runbook against the live Railway + Vercel staging environment and
+document the real evidence that every step passes.
 
-## What Module 127 must deliver
+## What Module 131 must verify (against live staging)
 
-1. Outreach one-pager template (Austrian private clinic audience, German/English)
-2. 30-day pilot offer framing (scope, terms, what the clinic gets)
-3. First 50 Vienna clinic targets shortlist (specialty, contact entry points)
-4. Demo script: how to show the staging dashboard in a 5-minute clinic walkthrough
-5. Pitch safety framing: staging only / fake data / production PHI: NO-GO communicated to prospects
+1. Backend health liveness: GET /health returns {"status":"ok"}
+2. Backend health readiness: GET /health/ready returns {"status":"ready"}
+3. Vercel frontend loads at https://praximed.vercel.app
+4. Login with staging doctor credentials — redirected to /dashboard
+5. Dashboard shows "Dr. Med. Alexander Huber | Innere Medizin Wien" banner
+6. Staging safety boundary visible (STAGING DEMO / no real patient data / Production PHI: NO-GO)
+7. Fake Vapi intake curl succeeds: {"ok":true}
+8. New appointment ("Demo Patient") appears in Incoming AI Intake Queue
+9. View summary opens the Active Resolution Workspace with patient details
+10. Confirm action changes status to confirmed
+11. Patient Registry shows Demo Patient record
+12. Notification appears for the intake event
+13. Logout redirects to login
+14. No real patient data observed
+15. No secrets recorded
+
+## Deliverables
+
+- `docs/runtime/STAGING_E2E_DEMO_EXECUTION_EVIDENCE.md` (new)
+- `backend/tests/test_staging_e2e_demo_execution_evidence_contract.py` (new)
+- `docs/claude/CURRENT_STATE.md` and `docs/claude/NEXT_MODULE.md` updates
 
 ## Constraints
 
-- No real patient data
-- No production PHI claim
-- No secrets
-- Outreach materials must be honest about staging/pilot status
-- No production readiness claim before C3–C8 resolved
+- Docs/static-tests only. No runtime code changes. No backend changes.
+- No fabricated evidence — only document what is actually observed.
+- No secrets. No real patient data. No production PHI.
+- No production readiness claim.
