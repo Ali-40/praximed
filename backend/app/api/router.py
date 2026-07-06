@@ -24,6 +24,7 @@ from backend.app.api.routes import clinical_workflows
 from backend.app.api.routes import clinic_onboarding
 from backend.app.api.routes import clinic_language_settings
 from backend.app.api.routes import vapi_assistant_config
+from backend.app.api.routes import clinic_vapi_bindings
 
 api_router = APIRouter()
 
@@ -41,3 +42,4 @@ api_router.include_router(clinical_workflows.router)
 api_router.include_router(clinic_onboarding.router)
 api_router.include_router(clinic_language_settings.router)
 api_router.include_router(vapi_assistant_config.router)
+api_router.include_router(clinic_vapi_bindings.router)

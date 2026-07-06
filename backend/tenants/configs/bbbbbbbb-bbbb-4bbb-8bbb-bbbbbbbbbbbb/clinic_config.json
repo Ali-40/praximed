@@ -1,0 +1,17 @@
+{
+  "tenant_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "clinic_name": "Demo Wahlarzt Praxis Wien",
+  "language_config": {
+    "primary_language": "de",
+    "fallback_language": "en",
+    "supported_languages": [
+      "de",
+      "en"
+    ],
+    "default_patient_language": "de",
+    "vapi_assistant_language_mode": "german_first",
+    "clinic_ui_language": "de"
+  },
+  "language": "de",
+  "fallback_language": "en"
+}

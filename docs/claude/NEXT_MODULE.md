@@ -1,181 +1,139 @@
-# Sprint 19 / Module 145 — Vapi Binding Metadata Backend Foundation
+# Sprint 19 / Module 146 — Admin Vapi Binding Metadata UI
 
 Status: pending implementation.
 
 ## Context
 
-Module 144 complete:
-- `docs/architecture/VAPI_CREDENTIAL_BINDING_SECRET_BOUNDARY.md` — hard secret boundary defined
-- `backend/tests/test_vapi_credential_binding_secret_boundary_contract.py` — 41 tests, all pass
-- 4115/4115 backend tests pass
-- No frontend changes. No migration. No live Vapi API calls. No secrets stored.
-- Commit: Sprint 19 / Module 144 — Vapi credential binding design and secret boundary
+Module 145 complete:
+- `backend/migrations/versions/0005_clinic_vapi_bindings.py` — migration for clinic_vapi_bindings table
+- `backend/app/schemas/clinic_vapi_binding.py` — validates secret reference names; rejects actual secrets
+- `backend/app/db/repositories/clinic_vapi_binding_repo.py` — async CRUD, parameterised SQL
+- `backend/app/services/clinic_vapi_binding.py` — orchestration; no live Vapi calls; production_phi_enabled=False
+- `backend/app/api/routes/clinic_vapi_bindings.py` — protected routes: POST/GET/PATCH
+- `backend/app/api/router.py` — clinic_vapi_bindings wired
+- `backend/tests/test_vapi_binding_metadata_backend_foundation.py` — 55 tests, all pass
+- `docs/architecture/VAPI_BINDING_METADATA_BACKEND_FOUNDATION.md` — arch doc
+- 4170/4170 backend tests pass
+- Commit: Sprint 19 / Module 145 — Vapi binding metadata backend foundation
 
-The secret boundary is now documented and enforced by contract tests. The
-`clinic_vapi_bindings` table design is finalised (reference names only, no secret
-values). The readiness gate (C3–C8, Article 28/32) remains open.
+The clinic_vapi_bindings table and protected backend routes now exist.
+Secret reference names are validated and stored; actual secret values are rejected.
+No live Vapi API calls. production_phi_enabled is always False.
+The C3–C8 readiness gate and Article 28/32 review remain open.
 
 Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
 
 ## Goal
 
-Create the `clinic_vapi_bindings` database migration, repository layer, and
-protected internal backend routes for storing Vapi binding metadata. No live Vapi
-API calls. No actual secrets stored — only reference names (api_key_secret_ref,
-webhook_secret_ref). No PHI. All safety flags hardcoded False.
+Add an admin UI panel in the developer console for creating and viewing Vapi binding
+metadata records. The UI must enforce the same secret boundary as the backend: only
+reference names accepted, no actual secret values entered, no live Vapi calls triggered,
+no PHI.
 
-## What Module 145 must implement
+## What Module 146 must implement
 
-### 1. Migration
+### 1. Frontend page
 
-`backend/migrations/versions/XXXX_clinic_vapi_bindings.py` (new):
+`frontend/app/developer-console/vapi-bindings/page.tsx` (new):
 
-```sql
-CREATE TABLE IF NOT EXISTS clinic_vapi_bindings (
-    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-    assistant_id            TEXT,
-    phone_number_id         TEXT,
-    vapi_project_id         TEXT,
-    api_key_secret_ref      TEXT        NOT NULL,
-    webhook_secret_ref      TEXT        NOT NULL,
-    assistant_config_version TEXT,
-    language_mode           TEXT        NOT NULL DEFAULT 'german_first',
-    status                  TEXT        NOT NULL DEFAULT 'draft',
-    created_by_user_id      UUID,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_clinic_vapi_bindings_clinic_id
-    ON clinic_vapi_bindings(clinic_id);
+```
+- LoadState: idle/loading/loaded/auth_error/not_found/error
+- SubmitState: idle/submitting/submitted/error
+- Clinic ID input + "Load binding" button
+  → GET /clinics/{id}/vapi-bindings, credentials:'include'
+  → Display existing binding if found: status badge, api_key_secret_ref label, webhook_secret_ref label,
+    language_mode, created_at
+  → "No Vapi binding found for this clinic." if 404
+
+- Create binding form (only if no binding loaded, or new binding button):
+  Fields: api_key_secret_ref (text, placeholder "VAPI_API_KEY_REF_CLINIC_XXX"),
+          webhook_secret_ref (text, placeholder "VAPI_WEBHOOK_SECRET_REF_CLINIC_XXX"),
+          language_mode (select: german_first/english_first/bilingual_auto)
+  POST /clinics/{id}/vapi-bindings, credentials:'include'
+  On success: show binding id, status=draft, production_phi_enabled=false
+  On 422: "Secret reference names only — no actual API key values."
+
+- Status update: select new status (draft/configured/disabled/revoked) + "Update status" button
+  PATCH /clinic-vapi-bindings/{binding_id}/status, credentials:'include'
+
+- Safety copy:
+  "Reference names only. Never enter VAPI_API_KEY or webhook secret values here."
+  "No live Vapi binding is made. production_phi_enabled remains false."
+  "Production PHI remains NO-GO."
+
+- Error states: 401/403 → "Admin session required."
+- No sessionStorage, no localStorage
+- No Vapi API key input field that accepts actual key values
+- No webhook secret value field
 ```
 
-### 2. Repository
+### 2. Developer console link
 
-`backend/app/db/repositories/vapi_binding_repo.py` (new):
+`frontend/app/developer-console/page.tsx` (updated):
+- Add "Vapi Binding Metadata" panel with link to /developer-console/vapi-bindings
 
-```python
-async def create_vapi_binding(pool, clinic_id, api_key_secret_ref, webhook_secret_ref,
-                               language_mode, created_by_user_id) -> dict
-async def get_vapi_binding(pool, clinic_id) -> dict | None
-async def update_vapi_binding_status(pool, clinic_id, status, actor_user_id) -> dict
-async def set_vapi_assistant_ids(pool, clinic_id, assistant_id, phone_number_id,
-                                  vapi_project_id, assistant_config_version) -> dict
+### 3. api.ts helpers
+
+`frontend/lib/api.ts` (updated):
+```typescript
+interface ClinicVapiBinding {
+  id: string;
+  clinic_id: string;
+  api_key_secret_ref: string;
+  webhook_secret_ref: string;
+  language_mode: string;
+  status: string;
+  assistant_id: string | null;
+  phone_number_id: string | null;
+  production_phi_enabled: false;
+  created_at: string;
+  updated_at: string;
+}
+
+fetchClinicVapiBinding(clinicId: string): GET /clinics/{id}/vapi-bindings
+createClinicVapiBinding(clinicId, apiKeyRef, webhookRef, languageMode): POST /clinics/{id}/vapi-bindings
+updateClinicVapiBindingStatus(bindingId, status): PATCH /clinic-vapi-bindings/{id}/status
 ```
 
-Rules:
-- `api_key_secret_ref` and `webhook_secret_ref` are stored as-is — never resolved
-  or logged
-- No VAPI_API_KEY, no VAPI_WEBHOOK_SECRET actual values stored or returned
-- All functions raise `ClinicNotFoundError` for unknown clinic_id
+### 4. Tests
 
-### 3. Schemas
+`backend/tests/test_admin_vapi_binding_metadata_ui_contract.py` (new — ≥50 static tests):
+- Page file exists
+- Safety copy: "Reference names only", "No live Vapi binding", "Production PHI remains NO-GO"
+- Clinic ID input, Load binding button
+- GET /vapi-bindings endpoint reference, credentials:include
+- Create form fields: api_key_secret_ref, webhook_secret_ref, language_mode
+- Placeholder guidance: VAPI_API_KEY_REF_CLINIC_XXX, VAPI_WEBHOOK_SECRET_REF_CLINIC_XXX
+- POST /vapi-bindings endpoint reference
+- Status update: draft/configured/disabled/revoked; PATCH endpoint
+- Success states: binding id, status=draft, production_phi_enabled=false
+- Error states: 401/403/422 handled
+- Forbidden: no actual VAPI_API_KEY field, no webhook_secret value field, no sessionStorage
+- api.ts: all three helpers defined, correct endpoints, credentials:include
+- Developer console: links to /developer-console/vapi-bindings
 
-`backend/app/schemas/vapi_binding.py` (new):
+### 5. Arch doc
 
-```python
-class ClinicVapiBindingCreate(BaseModel):
-    clinic_id: str
-    api_key_secret_ref: str        # reference name only, e.g. VAPI_API_KEY_CLINIC_abc
-    webhook_secret_ref: str        # reference name only
-    language_mode: str = "german_first"
-
-class ClinicVapiBindingRead(BaseModel):
-    id: str
-    clinic_id: str
-    assistant_id: str | None
-    phone_number_id: str | None
-    vapi_project_id: str | None
-    api_key_secret_ref: str        # reference name only — not the secret value
-    webhook_secret_ref: str        # reference name only
-    assistant_config_version: str | None
-    language_mode: str
-    status: str                    # draft / configured / disabled / revoked
-    created_by_user_id: str | None
-    created_at: str
-    updated_at: str
-    production_phi_enabled: bool = False   # always False
-
-class ClinicVapiBindingStatus(BaseModel):
-    clinic_id: str
-    is_bound: bool
-    status: str | None
-    assistant_id: str | None
-    phone_number_id: str | None
-    api_key_secret_ref: str | None  # masked label only
-    webhook_secret_ref: str | None  # masked label only
-    production_phi_enabled: bool = False
-    binding_blocked_reason: str | None
-```
-
-Note: No VAPI_API_KEY value in any schema. `production_phi_enabled` always False.
-
-### 4. Routes (internal/admin only)
-
-`backend/app/api/routes/vapi_binding.py` (new):
-
-```python
-router = APIRouter(prefix="/internal/clinics", tags=["vapi-binding"])
-
-# POST /internal/clinics/{clinic_id}/vapi-binding
-# Creates binding metadata record. Requires admin auth. No live Vapi call.
-
-# GET /internal/clinics/{clinic_id}/vapi-binding
-# Returns binding metadata (reference names only). Requires admin auth.
-
-# PATCH /internal/clinics/{clinic_id}/vapi-binding/status
-# Updates binding status (draft/configured/disabled/revoked). Requires admin auth.
-```
-
-All routes:
-- Require `get_current_user` with role="admin"
-- Return 404 for unknown clinic_id
-- Never return or accept actual secret values
-- Create audit log entries for all mutations
-
-### 5. Tests
-
-`backend/tests/test_vapi_binding_repo.py` (new):
-- create_vapi_binding: stores reference names, not secrets
-- get_vapi_binding: returns dict or None
-- update_vapi_binding_status: valid status transitions
-- ClinicNotFoundError for unknown clinic
-- No VAPI_API_KEY value in any stored row
-- production_phi_enabled always False in schema
-
-`backend/tests/test_vapi_binding_routes.py` (new):
-- POST creates binding — 201, returns ClinicVapiBindingRead
-- GET returns binding — 200
-- PATCH updates status — 200
-- 401 for unauthenticated
-- 403 for non-admin
-- 404 for unknown clinic
-- No secret values in any response body
-- production_phi_enabled=False in all responses
-
-`backend/tests/test_vapi_binding_contract.py` (new — static):
-- Schema has ClinicVapiBindingCreate, ClinicVapiBindingRead, ClinicVapiBindingStatus
-- Schema has api_key_secret_ref, webhook_secret_ref
-- Schema has production_phi_enabled always False
-- Schema has no VAPI_API_KEY value field
-- Schema has binding_blocked_reason
-- Routes file has /internal prefix (admin-only)
-- Routes file has no VAPI_API_KEY resolution
-- Routes file has audit log call
+`docs/architecture/ADMIN_VAPI_BINDING_METADATA_UI.md` (new):
+- Purpose: admin panel for creating/viewing binding metadata records
+- Secret boundary: reference names only; no actual secret values in UI
+- No live Vapi API calls; no PHI; production_phi_enabled always false
+- What this enables: operator can register secret reference labels without exposing secrets to browser
 
 ### 6. Docs
 
-- `docs/claude/CURRENT_STATE.md` — Module 145 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 146
+- `docs/claude/CURRENT_STATE.md` — Module 146 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 147
 
 ## Constraints
 
 - No live Vapi API calls
-- No VAPI_API_KEY resolved, stored, or returned anywhere
+- No actual VAPI_API_KEY, VAPI_WEBHOOK_SECRET values in any UI field
 - No secrets in logs, tests, or docs
-- No browser secret input
-- production_phi_enabled remains False in all schemas and responses
+- No PHI. No patient data.
+- production_phi_enabled remains False in all responses and UI
+- No sessionStorage, no localStorage
 - Full test suite must remain green
-- Migration uses next available version number
+- Frontend build: PASS (all pages)
 - Commit message:
-  Sprint 19 / Module 145 — Vapi binding metadata backend foundation
+  Sprint 19 / Module 146 — Admin Vapi binding metadata UI

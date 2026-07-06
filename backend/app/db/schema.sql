@@ -501,4 +501,44 @@ CREATE INDEX IF NOT EXISTS idx_clinic_onboarding_requests_created_at
 CREATE INDEX IF NOT EXISTS idx_clinic_onboarding_requests_preferred_language
     ON clinic_onboarding_requests (preferred_language);
 
+-- ---------------------------------------------------------------------------
+-- clinic_vapi_bindings — Sprint 19 / Module 145
+-- Stores Vapi binding metadata. Secret reference names only — no secret values.
+-- No VAPI_API_KEY value. No VAPI_WEBHOOK_SECRET value. No PHI.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS clinic_vapi_bindings (
+    id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id                UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    assistant_id             TEXT,
+    phone_number_id          TEXT,
+    vapi_project_id          TEXT,
+    api_key_secret_ref       TEXT        NOT NULL,
+    webhook_secret_ref       TEXT        NOT NULL,
+    assistant_config_version TEXT,
+    language_mode            TEXT        NOT NULL DEFAULT 'german_first',
+    status                   TEXT        NOT NULL DEFAULT 'draft',
+    created_by_user_id       UUID,
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT clinic_vapi_bindings_status_check CHECK (
+        status IN ('draft', 'configured', 'disabled', 'revoked')
+    ),
+    CONSTRAINT clinic_vapi_bindings_language_mode_check CHECK (
+        language_mode IN ('german_first', 'english_first', 'bilingual_auto')
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_vapi_bindings_clinic_id
+    ON clinic_vapi_bindings (clinic_id);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_vapi_bindings_status
+    ON clinic_vapi_bindings (status);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_vapi_bindings_language_mode
+    ON clinic_vapi_bindings (language_mode);
+
+CREATE INDEX IF NOT EXISTS idx_clinic_vapi_bindings_created_at
+    ON clinic_vapi_bindings (created_at);
+
 COMMIT;

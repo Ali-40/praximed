@@ -2566,6 +2566,58 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Frontend build: PASS (10/10 pages)
    - Production PHI remains NO-GO
 
+159. Module 145 — Vapi Binding Metadata Backend Foundation
+   - Date: 2026-07-06
+   - Sprint 19 / Backend only + tests + docs. No frontend changes. No live Vapi API calls. No secrets stored or returned.
+   - backend/migrations/versions/0005_clinic_vapi_bindings.py (new):
+     - Revision: 0005_clinic_vapi_bindings, down_revision: 0004_clinic_onboarding_requests
+     - clinic_vapi_bindings table: id (UUID PK), clinic_id (FK→clinics ON DELETE CASCADE),
+       assistant_id, phone_number_id, vapi_project_id, api_key_secret_ref (NOT NULL),
+       webhook_secret_ref (NOT NULL), assistant_config_version, language_mode, status,
+       created_by_user_id, created_at, updated_at
+     - Status CHECK: draft/configured/disabled/revoked
+     - Language mode CHECK: german_first/english_first/bilingual_auto
+     - Indexes: clinic_id, status, language_mode, created_at
+   - backend/app/db/schema.sql (updated): clinic_vapi_bindings table + indexes added
+   - backend/app/schemas/clinic_vapi_binding.py (new):
+     - _validate_secret_ref: rejects sk-... and vapi_live_... prefixes; requires uppercase
+       reference name format ^[A-Z][A-Z0-9_]{2,99}$
+     - ClinicVapiBindingCreate: clinic_id, api_key_secret_ref, webhook_secret_ref, language_mode
+     - ClinicVapiBindingRead, ClinicVapiBindingUpdateStatus (draft/configured/disabled/revoked)
+     - ClinicVapiBindingResponse, ClinicVapiBindingListResponse
+     - production_phi_enabled never accepted from input; always False in response
+   - backend/app/db/repositories/clinic_vapi_binding_repo.py (new):
+     - create_clinic_vapi_binding, get_clinic_vapi_binding_by_id, get_clinic_vapi_binding_by_clinic_id
+     - list_clinic_vapi_bindings, update_clinic_vapi_binding_status, disable_or_revoke_clinic_vapi_binding
+     - All SQL parameterised. Status default: draft. No actual secret values stored or returned.
+     - InvalidClinicVapiBindingError, ClinicVapiBindingNotFoundError
+   - backend/app/services/clinic_vapi_binding.py (new):
+     - create_vapi_binding_metadata: verifies clinic exists, creates repo row, logs binding_id/clinic_id/actor
+     - get_vapi_binding_metadata: verifies clinic exists, returns latest binding or None
+     - update_vapi_binding_status: updates status, logs binding_id/new_status/actor
+     - production_phi_enabled=False injected before every return
+     - No HTTP client imports. No live Vapi API calls. No secret values resolved or logged.
+   - backend/app/api/routes/clinic_vapi_bindings.py (new):
+     - POST /clinics/{clinic_id}/vapi-bindings — creates binding metadata (201); auth required
+     - GET /clinics/{clinic_id}/vapi-bindings — returns latest binding; auth required
+     - PATCH /clinic-vapi-bindings/{binding_id}/status — updates status; auth required
+     - Actual-looking secret values (sk-..., vapi_live_...) rejected with 422
+     - No PHI. No patient data. No call recordings. production_phi_enabled always False.
+   - backend/app/api/router.py (updated): clinic_vapi_bindings router wired
+   - backend/tests/test_vapi_binding_metadata_backend_foundation.py (new — 55 tests):
+     - Migration file contract: table name, all columns, status/language_mode constraints, no secret value columns
+     - schema.sql: clinic_vapi_bindings present
+     - Pydantic schemas: accepts valid refs, rejects sk-..., vapi_live_..., lowercase, unsupported status/mode
+     - Repository: create stores reference names, no secret values in SQL, get by clinic_id, status update
+     - Routes: POST/GET/PATCH require auth (401/403/422); POST returns 201+ok+phi=false;
+       no secret values in response; rejects actual API keys; 404 when clinic/binding missing
+     - Static checks: no live Vapi calls, no PHI fields, production_phi_enabled=False enforced
+     - Arch doc: env var, no live Vapi, NO-GO, clinic_vapi_bindings, api_key_secret_ref, webhook_secret_ref,
+       no credentials, no PHI, all 4 status values
+   - docs/architecture/VAPI_BINDING_METADATA_BACKEND_FOUNDATION.md (new)
+   - Full backend tests: 4170/4170 passed
+   - Production PHI remains NO-GO
+
 152. Module 138 — Tenant Language Settings API Foundation
    - Date: 2026-07-06
    - Sprint 19 / Backend only + tests + docs. No frontend changes. No migration.
