@@ -409,7 +409,32 @@ export default function DeveloperConsolePage() {
           </a>
         </ConsolePanel>
 
-        {/* 8. Safety guardrails */}
+        {/* 8. Vapi binding metadata — Sprint 19 / Module 146 */}
+        <ConsolePanel title="Vapi Binding Metadata">
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Create and view Vapi binding metadata for a clinic using secret reference names only.
+            Internal secret-reference configuration — no Vapi secrets are stored or transmitted,
+            no live Vapi API calls, no PHI, no production activation. Production PHI remains NO-GO.
+          </p>
+          <a
+            href="/developer-console/vapi-bindings"
+            style={{
+              display: 'inline-block',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.25rem',
+              borderRadius: 7,
+              border: `1px solid ${ACCENT}`,
+              background: 'rgba(0,128,128,0.15)',
+              color: ACCENT,
+              textDecoration: 'none',
+            }}
+          >
+            Manage binding metadata →
+          </a>
+        </ConsolePanel>
+
+        {/* 9. Safety guardrails */}
         <ConsolePanel title="Safety Guardrails">
           {[
             'Never paste secrets into browser UI.',

@@ -257,16 +257,33 @@ def _read_file_lower(path: Path) -> str:
     return path.read_text(encoding="utf-8").lower()
 
 
+# Module 146 amendment: the binding-metadata design (Modules 145/146) stores
+# secret REFERENCE NAMES (api_key_secret_ref / webhook_secret_ref). Reference
+# name fields are explicitly allowed by the secret boundary — actual secret
+# VALUE fields remain forbidden. Strip the allowed reference tokens before
+# asserting so the boundary check targets real secret inputs only.
+_ALLOWED_REFERENCE_TOKENS = (
+    "api_key_secret_ref",
+    "webhook_secret_ref",
+)
+
+
+def _strip_reference_tokens(src: str) -> str:
+    for token in _ALLOWED_REFERENCE_TOKENS:
+        src = src.replace(token, "")
+    return src
+
+
 def test_frontend_no_vapi_api_key_input():
     for path in FRONTEND_FILES:
-        src = _read_file_lower(path)
+        src = _strip_reference_tokens(_read_file_lower(path))
         assert "vapi api key" not in src, f"Found 'vapi api key' input in {path}"
         assert "vapi_api_key" not in src, f"Found 'vapi_api_key' in {path}"
 
 
 def test_frontend_no_webhook_secret_input():
     for path in FRONTEND_FILES:
-        src = _read_file_lower(path)
+        src = _strip_reference_tokens(_read_file_lower(path))
         assert "webhook_secret" not in src, f"Found 'webhook_secret' in {path}"
         assert "webhook secret" not in src, f"Found 'webhook secret' in {path}"
 

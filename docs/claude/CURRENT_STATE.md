@@ -2662,3 +2662,24 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: 3738/3738 passed
    - No frontend changes
    - Production PHI remains NO-GO
+
+160. Module 146 — Admin Vapi Binding Metadata UI
+   - Date: 2026-07-07
+   - Sprint 19 / Frontend + tests + docs. No backend changes. No migration. No live Vapi API calls. No secrets. No PHI.
+   - **`frontend/app/developer-console/vapi-bindings/page.tsx`** (new): dark admin command theme (#0B132B / #008080 / #E63946 / #FFB703)
+     - Header: "Vapi Binding Metadata" · "Internal secret-reference configuration" · ADMIN / STAGING badge
+     - Red guardrail: "Reference names only. No Vapi secrets are stored or transmitted. No live Vapi API calls. Production PHI remains NO-GO."
+     - Clinic ID input + "Load bindings" → GET /clinics/{clinic_id}/vapi-bindings; staging clinic_id example shown
+     - Binding display: status badge, api_key_secret_ref / webhook_secret_ref labels, language_mode, assistant_id / phone_number_id / vapi_project_id / assistant_config_version (read-only), production_phi_enabled=false, timestamps
+     - Empty state: "No Vapi binding found for this clinic."
+     - Create form: api_key_secret_ref + webhook_secret_ref (placeholders VAPI_API_KEY_REF_CLINIC_DEMO / VAPI_WEBHOOK_SECRET_REF_CLINIC_DEMO) + language_mode select (german_first/english_first/bilingual_auto) → POST /clinics/{clinic_id}/vapi-bindings; success copy "Vapi binding metadata saved"
+     - Client-side SECRET_REF_PATTERN ^[A-Z][A-Z0-9_]{2,99}$ mirrors backend validator; "Secret values are not allowed" error copy
+     - Status update: draft/configured/disabled/revoked → PATCH /clinic-vapi-bindings/{binding_id}/status; "Binding status updated."
+     - Safe error mapping: 401/403 "Admin session required. Please log in first.", 404 "Clinic not found or no access.", generic "Could not load Vapi binding metadata."
+     - Safety Boundary panel: no live Vapi calls, no Vapi secrets, no webhook secret values, no PHI, no patient data, no production activation
+     - No sessionStorage/localStorage; no password fields; no secret-value inputs
+   - **`frontend/lib/api.ts`** (updated): ClinicVapiBinding + ClinicVapiBindingResult interfaces; fetchClinicVapiBindings / createClinicVapiBinding / updateClinicVapiBindingStatus helpers via apiFetch (NEXT_PUBLIC_API_BASE_URL + credentials: "include"); non-throwing status-mapped results
+   - **`frontend/app/developer-console/page.tsx`** (updated): "Vapi Binding Metadata" panel linking to /developer-console/vapi-bindings with safety copy
+   - **`backend/tests/test_admin_vapi_binding_metadata_ui_contract.py`** (new static contract tests): page identity, dark theme, load/create/status flows, reference-name placeholders, safety copy, forbidden content (DATABASE_URL/JWT/patient_name/transcript/recording_url/sessionStorage/localStorage/password inputs), api.ts helpers + credentials include, console link, docs coverage, no hardcoded secrets
+   - **`docs/architecture/ADMIN_VAPI_BINDING_METADATA_UI.md`** (new)
+   - Production PHI remains NO-GO

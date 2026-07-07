@@ -337,6 +337,103 @@ export async function fetchVapiAssistantConfigPack(
 }
 
 // ---------------------------------------------------------------------------
+// Clinic Vapi binding metadata — Sprint 19 / Module 146
+// Secret reference names only — no actual Vapi secrets are ever sent, stored,
+// or returned. No live Vapi API calls. No PHI. Production PHI remains NO-GO.
+// All requests use apiFetch (NEXT_PUBLIC_API_BASE_URL + credentials: "include").
+// ---------------------------------------------------------------------------
+
+export interface ClinicVapiBinding {
+  id: string
+  clinic_id: string
+  assistant_id: string | null
+  phone_number_id: string | null
+  vapi_project_id: string | null
+  api_key_secret_ref: string        // environment-variable reference name only
+  webhook_secret_ref: string        // environment-variable reference name only
+  assistant_config_version: string | null
+  language_mode: string             // german_first / english_first / bilingual_auto
+  status: string                    // draft / configured / disabled / revoked
+  created_by_user_id: string | null
+  created_at: string
+  updated_at: string
+  production_phi_enabled: boolean   // always false
+}
+
+// Non-throwing result wrapper so admin UI can map 401/403/404/422 states safely.
+export interface ClinicVapiBindingResult {
+  ok: boolean
+  status: number
+  binding: ClinicVapiBinding | null
+  detail: string | null
+}
+
+async function parseVapiBindingResponse(resp: Response): Promise<ClinicVapiBindingResult> {
+  let binding: ClinicVapiBinding | null = null
+  let detail: string | null = null
+  try {
+    const data = (await resp.json()) as {
+      ok?: boolean
+      binding?: ClinicVapiBinding
+      detail?: string | Array<{ msg: string }>
+    }
+    binding = data.binding ?? null
+    if (typeof data.detail === 'string') detail = data.detail
+    else if (Array.isArray(data.detail)) detail = data.detail.map((d) => d.msg).join(' ')
+  } catch {
+    // non-JSON body — keep nulls
+  }
+  return { ok: resp.ok, status: resp.status, binding, detail }
+}
+
+// GET /clinics/{clinicId}/vapi-bindings — latest binding metadata (reference names only).
+export async function fetchClinicVapiBindings(
+  clinicId: string,
+): Promise<ClinicVapiBindingResult> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/vapi-bindings`,
+  )
+  return parseVapiBindingResponse(resp)
+}
+
+export interface ClinicVapiBindingCreatePayload {
+  api_key_secret_ref: string        // env-var reference name label only — never a key value
+  webhook_secret_ref: string        // env-var reference name label only — never a secret value
+  language_mode: string
+}
+
+// POST /clinics/{clinicId}/vapi-bindings — create binding metadata record.
+// Reference names only; the backend rejects actual secret values.
+export async function createClinicVapiBinding(
+  clinicId: string,
+  payload: ClinicVapiBindingCreatePayload,
+): Promise<ClinicVapiBindingResult> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/vapi-bindings`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ clinic_id: clinicId, ...payload }),
+    },
+  )
+  return parseVapiBindingResponse(resp)
+}
+
+// PATCH /clinic-vapi-bindings/{bindingId}/status — update binding status.
+export async function updateClinicVapiBindingStatus(
+  bindingId: string,
+  status: string,
+): Promise<ClinicVapiBindingResult> {
+  const resp = await apiFetch(
+    `/clinic-vapi-bindings/${encodeURIComponent(bindingId)}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    },
+  )
+  return parseVapiBindingResponse(resp)
+}
+
+// ---------------------------------------------------------------------------
 // Pre-appointment summary — Sprint 17 / Module 125
 // ---------------------------------------------------------------------------
 
