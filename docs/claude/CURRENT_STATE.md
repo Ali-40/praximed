@@ -2286,6 +2286,45 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+160. Module 147 — Live Vapi Binding Metadata Smoke Evidence
+   - Date: 2026-07-07
+   - Sprint 19 / Docs + static tests only. No runtime code changes. No backend changes. No migration.
+   - docs/runtime/LIVE_VAPI_BINDING_METADATA_SMOKE_EVIDENCE.md (new):
+     - Overall result: PASS
+     - Commit tested: 47c6940 (Module 146)
+     - Frontend URL: https://praximed.vercel.app/developer-console/vapi-bindings
+     - Staging clinic: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056 (Demo Wahlarzt Praxis Wien)
+     - Page load + dark admin theme + ADMIN/STAGING badge: PASS
+     - Load bindings (GET /clinics/{id}/vapi-bindings 200): PASS
+     - Create binding: api_key_secret_ref=VAPI_API_KEY_REF_STAGING_DEMO,
+       webhook_secret_ref=VAPI_WEBHOOK_SECRET_REF_STAGING_DEMO, german_first → 201: PASS
+     - "Vapi binding metadata saved" visible: PASS
+     - Binding id, clinic_id, status=draft, language_mode=german_first, phi=false: PASS
+     - Reference names stored as labels; no actual secret values in DB or response: PASS
+     - Invalid non-reference input (lowercase, sk-...) → 422: PASS
+     - Status update draft → configured: PASS; "Binding status updated": PASS
+     - Status update configured → disabled: PASS
+     - production_phi_enabled=false in POST/GET/PATCH responses: PASS
+     - No actual VAPI_API_KEY entered; no webhook secret value entered: PASS
+     - No live Vapi API call made; no Vapi assistant created or modified: PASS
+     - No PHI; no patient data; production PHI remains NO-GO
+   - backend/tests/test_live_vapi_binding_metadata_smoke_evidence_contract.py (new — 55 tests):
+     - Doc existence, PASS result, sprint/module/commit identity
+     - Frontend URL, vapi-bindings route, staging clinic_id, fake/staging identity
+     - clinic_vapi_bindings table, migration 0005
+     - GET/POST/PATCH route references, 200/201 status codes
+     - VAPI_API_KEY_REF_STAGING_DEMO, VAPI_WEBHOOK_SECRET_REF_STAGING_DEMO, reference names only
+     - "Vapi binding metadata saved", "Binding status updated", binding_id visible
+     - draft/configured/disabled status values, german_first language mode
+     - Invalid input rejected, 422 validation
+     - production_phi_enabled=false in all responses
+     - No actual secret values, no PHI, no patient data, no transcript, no recording
+     - No live Vapi calls, Production PHI NO-GO
+     - What proves/does not prove sections, C3–C8 blockers, remaining blockers
+     - Forbidden content: no actual sk-... credential values in doc
+   - Full backend tests: 4264/4264 passed
+   - Production PHI remains NO-GO
+
 158. Module 144 — Vapi Credential Binding Design and Secret Boundary
    - Date: 2026-07-06
    - Sprint 19 / Docs + schema design + contract tests only. No backend migration. No live Vapi API calls. No secrets stored.
