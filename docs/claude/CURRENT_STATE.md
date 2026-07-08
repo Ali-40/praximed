@@ -3019,3 +3019,64 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - **`backend/tests/test_admin_vapi_binding_metadata_ui_contract.py`** (new static contract tests): page identity, dark theme, load/create/status flows, reference-name placeholders, safety copy, forbidden content (DATABASE_URL/JWT/patient_name/transcript/recording_url/sessionStorage/localStorage/password inputs), api.ts helpers + credentials include, console link, docs coverage, no hardcoded secrets
    - **`docs/architecture/ADMIN_VAPI_BINDING_METADATA_UI.md`** (new)
    - Production PHI remains NO-GO
+
+168. Module 154 — Doctor Review & Merge UI Foundation
+   - Date: 2026-07-09
+   - Sprint 20 / Module 154. Backend service + schemas + routes + frontend review UI + tests + arch doc.
+   - backend/app/schemas/patient_history_review.py (new):
+     - _FORBIDDEN_MERGE_KEYS: clinical_confidence, diagnosis_score, risk_score, triage_score,
+       medical_advice, treatment_recommendation, diagnosis_generated, auto_approved, auto_confirmed
+     - PatientHistoryMergeRequest: edited_fields, edited_fhir_payload, review_note, confirm_staff_review
+       Validators: confirm_staff_review must be True; no forbidden keys; production_phi_enabled not unlockable
+     - PatientHistoryMergeResult: ok, proposal_id, merged_history_entry_id, history_type, fhir_resource_type,
+       proposal_status="merged", production_phi_enabled=False, message="Proposal merged into patient history after staff review."
+     - PatientHistoryRejectResult: ok, proposal_id, proposal_status="rejected", rejected_reason, production_phi_enabled=False
+     - PatientHistoryReviewQueueResponse: ok, proposals[], total, production_phi_enabled=False,
+       extraction_note="Extraction confidence only — not a medical judgment."
+   - backend/app/services/patient_history_review.py (new):
+     - approve_and_merge_history_proposal — consent gate + eligibility checks + one patient_history_* row write
+       1. Load proposal, assert unverified, assert staff_review_required=True, assert phi=False, assert patient_id present
+       2. assert_no_forbidden_merge_keys(edited_fields) — rejects any forbidden clinical key
+       3. assert_valid_consent_for_history_write(pool, clinic_id, consent_event_id, purpose) — consent gate
+       4. Call _CREATE_FN[history_type] — writes approved row: status=approved, source_type=ai_proposal,
+          source_ref=proposal:{proposal_id}, consent_event_id copied, fhir_payload from edited payload,
+          production_phi_enabled=False
+       5. Update proposal to merged, set merged_history_entry_id
+       6. Return merge result
+     - reject_history_proposal_with_review — sets proposal_status=rejected, rejected_reason, reviewed_by, reviewed_at
+     - list_review_queue — returns unverified proposals for a clinic with filters
+     - get_proposal_review_detail — loads single proposal for review display
+     - _CREATE_FN dict maps history_type → create_*_history function reference (import-time binding)
+       NOTE: Tests must use patch.dict(svc._CREATE_FN, {"type": mock_fn}) not repo-level patches
+     - No external LLM. No auto-approval. No diagnosis. No medical advice. No triage.
+   - backend/app/api/routes/patient_history_review.py (new — 4 routes):
+     - GET /clinics/{clinic_id}/patient-history-review-queue (200, auth)
+     - GET /patient-history-proposals/{proposal_id}/review?clinic_id= (200, auth)
+     - PATCH /patient-history-proposals/{proposal_id}/approve-merge?clinic_id= (201, auth)
+     - PATCH /patient-history-proposals/{proposal_id}/reject-review?clinic_id= (200, auth)
+     - All routes require get_current_user. No DELETE. No public routes. No auto-approval endpoint.
+   - backend/app/api/router.py (modified): added patient_history_review import + include_router
+   - frontend/app/developer-console/history-review/page.tsx (new):
+     - Dark admin theme: INK=#0B132B, PANEL=#111C3D, ACCENT=#008080
+     - Header: "Patient History Review" · "ADMIN / STAGING" · "Doctor-reviewed merge queue"
+     - Safety warning: synthetic staging only, no diagnosis, no medical advice, no PHI, production PHI NO-GO
+     - Filters: clinicId, patientId, historyType (all/allergies/medications/conditions/procedures/immunizations/family-history/social-history)
+     - Queue list: extraction confidence labeled "Extraction confidence only — not a medical judgment."
+     - Detail panel: proposed_fields JSON, consent/intake IDs, editable JSON field block
+     - Mandatory checkbox: "I confirm staff/doctor review before merging." (approve disabled until checked)
+     - Approve & Merge + Reject with reason input
+     - Success: "Proposal merged into patient history after staff review."
+     - Reject: "Proposal rejected."
+     - No browser storage. No auto-approval. No diagnosis display.
+   - frontend/lib/api.ts (modified): appended 4 review API helpers:
+     - fetchPatientHistoryReviewQueue, fetchPatientHistoryProposalReview,
+       approveMergePatientHistoryProposal, rejectReviewPatientHistoryProposal
+     - All use apiFetch (credentials: "include"). No localStorage. No sessionStorage.
+   - frontend/app/developer-console/page.tsx (modified): added "Patient History Review" ConsolePanel card
+   - backend/tests/test_doctor_review_merge_ui_foundation.py (new — 98 tests, all passing)
+   - docs/architecture/DOCTOR_REVIEW_MERGE_UI_FOUNDATION.md (new)
+   - Full backend tests: 4925/4925 passed. Frontend build: clean.
+   - No auto-approval. No auto-merge. No external LLM calls. No diagnosis. No medical advice.
+   - No triage scoring. No treatment recommendations. All proposals remain unverified until explicit staff merge.
+   - production_phi_enabled=False enforced at DB, service, route, and frontend levels.
+   - Production PHI remains NO-GO.

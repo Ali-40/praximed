@@ -460,7 +460,32 @@ export default function DeveloperConsolePage() {
           </a>
         </ConsolePanel>
 
-        {/* 10. Safety guardrails */}
+        {/* 10. Patient History Review — Sprint 20 / Module 154 */}
+        <ConsolePanel title="Patient History Review">
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Review unverified AI-structured history proposals and merge only after staff approval.
+            Doctor-reviewed merge queue. No auto-approval. No diagnosis. No medical advice. No PHI.
+            Production PHI remains NO-GO.
+          </p>
+          <a
+            href="/developer-console/history-review"
+            style={{
+              display: 'inline-block',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.25rem',
+              borderRadius: 7,
+              border: `1px solid ${ACCENT}`,
+              background: 'rgba(0,128,128,0.15)',
+              color: ACCENT,
+              textDecoration: 'none',
+            }}
+          >
+            Review history proposals →
+          </a>
+        </ConsolePanel>
+
+        {/* 11. Safety guardrails */}
         <ConsolePanel title="Safety Guardrails">
           {[
             'Never paste secrets into browser UI.',

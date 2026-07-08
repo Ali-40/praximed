@@ -623,3 +623,68 @@ export async function submitPublicIntake(
   }
   return resp.json()
 }
+
+// ── Patient History Review — Sprint 20 / Module 154 ──────────────────────────
+// Protected admin helpers. credentials: "include". No PHI. No secrets.
+
+export async function fetchPatientHistoryReviewQueue(
+  clinicId: string,
+  filters?: { patientId?: string; historyType?: string; status?: string },
+): Promise<unknown[]> {
+  const params = new URLSearchParams()
+  if (filters?.patientId) params.set('patient_id', filters.patientId)
+  if (filters?.historyType) params.set('history_type', filters.historyType)
+  if (filters?.status) params.set('status', filters.status)
+  const query = params.toString() ? `?${params.toString()}` : ''
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patient-history-review-queue${query}`,
+  )
+  if (!resp.ok) throw new Error(`Failed to load review queue (HTTP ${resp.status})`)
+  const data = (await resp.json()) as { ok: boolean; proposals: unknown[] }
+  return data.proposals ?? []
+}
+
+export async function fetchPatientHistoryProposalReview(
+  proposalId: string,
+  clinicId: string,
+): Promise<unknown> {
+  const resp = await apiFetch(
+    `/patient-history-proposals/${encodeURIComponent(proposalId)}/review?clinic_id=${encodeURIComponent(clinicId)}`,
+  )
+  if (!resp.ok) throw new Error(`Failed to load proposal review (HTTP ${resp.status})`)
+  return resp.json()
+}
+
+export async function approveMergePatientHistoryProposal(
+  proposalId: string,
+  clinicId: string,
+  payload: {
+    edited_fields: Record<string, unknown>
+    edited_fhir_payload?: Record<string, unknown>
+    review_note?: string
+    confirm_staff_review: boolean
+  },
+): Promise<{ ok: boolean; merged_history_entry_id?: string; message?: string }> {
+  const resp = await apiFetch(
+    `/patient-history-proposals/${encodeURIComponent(proposalId)}/approve-merge?clinic_id=${encodeURIComponent(clinicId)}`,
+    { method: 'PATCH', body: JSON.stringify(payload) },
+  )
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({})) as { detail?: string }
+    throw new Error(body.detail ?? `Merge failed (HTTP ${resp.status})`)
+  }
+  return resp.json() as Promise<{ ok: boolean; merged_history_entry_id?: string; message?: string }>
+}
+
+export async function rejectReviewPatientHistoryProposal(
+  proposalId: string,
+  clinicId: string,
+  payload: { rejected_reason?: string; review_note?: string },
+): Promise<{ ok: boolean; message?: string }> {
+  const resp = await apiFetch(
+    `/patient-history-proposals/${encodeURIComponent(proposalId)}/reject-review?clinic_id=${encodeURIComponent(clinicId)}`,
+    { method: 'PATCH', body: JSON.stringify(payload) },
+  )
+  if (!resp.ok) throw new Error(`Reject failed (HTTP ${resp.status})`)
+  return resp.json() as Promise<{ ok: boolean; message?: string }>
+}
