@@ -990,3 +990,44 @@ def test_arch_doc_mentions_all_seven_fhir_types():
     for fhir_type in ["AllergyIntolerance", "MedicationStatement", "Condition",
                        "Procedure", "Immunization", "FamilyMemberHistory", "Observation"]:
         assert fhir_type in src, f"FHIR type {fhir_type!r} missing from arch doc"
+
+
+# ── 149A: JSONB default correctness ─────────────────────────────────────────
+
+
+def test_migration_no_invalid_double_brace_jsonb_default():
+    src = _MIGRATION.read_text()
+    assert "'{{}}'::jsonb" not in src, (
+        "Migration contains invalid JSONB default '{{}}'::jsonb — "
+        "Railway Postgres requires '{}'::jsonb"
+    )
+
+
+def test_migration_fhir_payload_has_valid_jsonb_default():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("m0007", str(_MIGRATION))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    cols = m._common_cols()
+    assert "fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb" in cols
+
+
+def test_migration_metadata_has_valid_jsonb_default():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("m0007", str(_MIGRATION))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    cols = m._common_cols()
+    assert "metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb" in cols
+
+
+def test_schema_sql_no_invalid_double_brace_jsonb_default():
+    src = _SCHEMA_SQL.read_text()
+    assert "'{{}}'::jsonb" not in src, (
+        "schema.sql contains invalid JSONB default '{{}}'::jsonb"
+    )
+
+
+def test_schema_sql_patient_history_fhir_payload_jsonb_default():
+    src = _SCHEMA_SQL.read_text()
+    assert "fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb" in src

@@ -2702,6 +2702,24 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+163. Module 149A — Fix patient history migration JSONB defaults (hotfix)
+   - Date: 2026-07-08
+   - Sprint 20 / Hotfix. Railway migration 0007 failed with:
+     psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type json
+     LINE: fhir_payload JSONB NOT NULL DEFAULT '{{}}'::jsonb
+   - Root cause: _common_cols() was a plain string (not f-string), but was written with
+     Python f-string brace escaping '{{}}', producing literal '{{}}' in SQL.
+   - Fix: added _EMPTY_JSONB = "'{}'::jsonb" constant; converted _common_cols() to f-string;
+     substituted DEFAULT {_EMPTY_JSONB} for both fhir_payload and metadata columns.
+   - Verified: _common_cols() now renders DEFAULT '{}'::jsonb. schema.sql was already correct.
+   - No schema intent changed. No new tables. No PHI. No secrets.
+   - backend/migrations/versions/0007_patient_history_data_model.py (patched)
+   - backend/tests/test_patient_history_data_model_foundation.py (5 JSONB assertions added)
+   - backend/tests/test_patient_history_migration_jsonb_defaults_contract.py (new — 20 tests)
+   - Full backend tests: 4489/4489 passed
+   - 0007 migration is now safe to re-apply on Railway.
+   - Production PHI remains NO-GO.
+
 162. Module 149 — Patient History Data Model Foundation
    - Date: 2026-07-08
    - Sprint 20 / Backend only + tests + docs. No frontend. No AI structuring. No real patient PHI.

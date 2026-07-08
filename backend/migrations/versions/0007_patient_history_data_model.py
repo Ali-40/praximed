@@ -33,10 +33,11 @@ depends_on = None
 
 _STATUS_VALUES = "('unverified','approved','rejected','superseded')"
 _SOURCE_TYPE_VALUES = "('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')"
+_EMPTY_JSONB = "'{}'::jsonb"
 
 
 def _common_cols() -> str:
-    return """
+    return f"""
             id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
             clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
             patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
@@ -57,8 +58,8 @@ def _common_cols() -> str:
             effective_end_date      DATE,
             notes                   TEXT,
             fhir_resource_type      TEXT        NOT NULL,
-            fhir_payload            JSONB       NOT NULL DEFAULT '{{}}'::jsonb,
-            metadata                JSONB       NOT NULL DEFAULT '{{}}'::jsonb,
+            fhir_payload            JSONB       NOT NULL DEFAULT {_EMPTY_JSONB},
+            metadata                JSONB       NOT NULL DEFAULT {_EMPTY_JSONB},
             production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
             created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
             updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()"""
