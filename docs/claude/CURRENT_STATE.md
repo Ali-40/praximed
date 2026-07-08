@@ -2702,6 +2702,57 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+161. Module 148 — Patient History Consent Ledger Foundation
+   - Date: 2026-07-08
+   - Sprint 20 / Backend only + tests + docs. No frontend changes. No real patient PHI.
+   - No diagnosis. No medical advice. No triage scoring. Synthetic/fake staging only.
+   - production_phi_enabled always False — enforced at DB CHECK, service, and route levels.
+   - backend/migrations/versions/0006_consent_events.py (new):
+     - revision=0006_consent_events, down_revision=0005_clinic_vapi_bindings
+     - consent_events table: 24 columns incl. clinic_id, patient_id, appointment_request_id,
+       purpose, scope, channel, language, consent_text_version, consent_text_snapshot, granted,
+       revoked_at, revocation_reason, production_phi_enabled
+     - CHECK constraints: production_phi_enabled=false, channel (6 values), language (de/en/ar), purpose (5 values)
+     - 9 indexes
+   - backend/app/db/schema.sql (updated): consent_events table added
+   - backend/app/schemas/consent_event.py (new):
+     - ConsentEventCreate: validates purpose/channel/language enums; rejects forbidden metadata keys
+       (diagnosis, medical_advice, triage, prescription, sk-, vapi_live, jwt, password, secret)
+     - ConsentEventRead, ConsentEventRevoke, ConsentEventResponse, ConsentEventListResponse
+     - production_phi_enabled=False in all response schemas
+   - backend/app/db/repositories/consent_event_repo.py (new):
+     - create_consent_event, get_consent_event_by_id, list_consent_events_for_clinic,
+       list_consent_events_for_patient, revoke_consent_event, has_valid_consent_for_purpose
+     - All SQL parameterised; all queries clinic_id scoped; no DELETE
+   - backend/app/services/consent_ledger.py (new):
+     - create_consent_event, get_consent_event, list_clinic_consent_events, revoke_consent_event
+     - assert_valid_consent_for_history_write: gate check — event exists, same clinic, granted,
+       not revoked, purpose in {patient_history_collection, phone_history_questions}, phi=False
+     - Errors: ConsentLedgerError, ClinicNotFoundError, PatientNotFoundError,
+       AppointmentRequestNotFoundError, ConsentValidationError
+   - backend/app/api/routes/consent_events.py (new):
+     - POST /clinics/{clinic_id}/consent-events (201, auth required)
+     - GET /clinics/{clinic_id}/consent-events (200, auth required)
+     - GET /consent-events/{consent_event_id} (200, auth required)
+     - PATCH /consent-events/{consent_event_id}/revoke (200, auth required)
+     - No DELETE route (append-only ledger)
+   - backend/app/api/router.py (updated): consent_events router registered
+   - backend/tests/test_patient_history_consent_ledger_foundation.py (new — ≥60 tests):
+     - Migration: file exists, revision/down_revision, all columns, all 4 CHECK constraints, downgrade
+     - Schema SQL: consent_events present
+     - Pydantic: accepts de/en/ar, rejects invalid language/channel/purpose, rejects empty fields,
+       rejects forbidden metadata keys, accepts safe metadata, default granted=True, default language=de
+     - Repo: create calls fetchrow, rejects invalid channel/language, get/list/revoke/has_valid_consent
+     - Service: gate rejects invalid purpose/missing event/wrong clinic/not granted/revoked,
+       gate passes for patient_history_collection and phone_history_questions
+     - Routes: POST/GET/PATCH require auth (401/403); no DELETE (405); happy-path 201/200/200;
+       production_phi_enabled=False in all responses; clinic_id mismatch → 400; missing → 404
+     - Router registration, vocabulary guards (no diagnosis/medical_advice/triage in sources),
+       no DATABASE_URL/JWT_SECRET/actual sk- keys, no DELETE endpoint, gate function present
+   - docs/architecture/PATIENT_HISTORY_CONSENT_LEDGER_FOUNDATION.md (new)
+   - Full backend tests: pending run
+   - Production PHI remains NO-GO
+
 160. Module 146 — Admin Vapi Binding Metadata UI
    - Date: 2026-07-07
    - Sprint 19 / Frontend + tests + docs. No backend changes. No migration. No live Vapi API calls. No secrets. No PHI.

@@ -1,207 +1,200 @@
-# Sprint 20 / Module 148 — Patient History Consent Ledger Foundation
+# Sprint 20 / Module 149 — Patient History Data Model Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Module 147 complete:
-- `docs/runtime/LIVE_VAPI_BINDING_METADATA_SMOKE_EVIDENCE.md` — PASS: create/load/update
-  Vapi binding metadata on staging using reference names only
-- `backend/tests/test_live_vapi_binding_metadata_smoke_evidence_contract.py` — 55 tests, all pass
-- 4264/4264 backend tests pass
-- Commit: Sprint 19 / Module 147 — Live Vapi binding metadata smoke evidence
+Module 148 complete:
+- `backend/migrations/versions/0006_consent_events.py` — consent_events table, 4 CHECK constraints, 9 indexes
+- `backend/app/schemas/consent_event.py` — ConsentEventCreate/Read/Revoke/Response/ListResponse
+- `backend/app/db/repositories/consent_event_repo.py` — CRUD, append-only, no DELETE
+- `backend/app/services/consent_ledger.py` — history write gate: assert_valid_consent_for_history_write
+- `backend/app/api/routes/consent_events.py` — 4 protected routes (POST/GET/GET/PATCH), no DELETE
+- `backend/app/api/router.py` (updated) — consent_events router registered
+- `backend/tests/test_patient_history_consent_ledger_foundation.py` — ≥60 tests
+- `docs/architecture/PATIENT_HISTORY_CONSENT_LEDGER_FOUNDATION.md`
+- production_phi_enabled always False
+- No real patient PHI. No diagnosis. No medical advice. No triage scoring.
+- Production PHI remains NO-GO.
 
-Sprint 19 is complete. The full Vapi binding metadata stack is deployed end to end:
-migration → repo → service → routes → admin UI → smoke evidence.
-Secret reference names only. No actual secrets. No live Vapi calls.
-production_phi_enabled remains False. C3–C8 blockers remain open.
-
-Production PHI remains NO-GO until C3–C8 hardening blockers are resolved.
+Sprint 20 is in progress. The consent ledger foundation is in place. Any future
+patient history write must call `assert_valid_consent_for_history_write` before writing.
 
 ## Goal
 
-Create the consent ledger foundation: a consent_events table and service that records
-who consented to what, when, and for what purpose, scoped per tenant. This is a
-prerequisite for any future patient history write — no appointment history, summary,
-or clinical data may be written for a patient without a consent reference.
+Create the patient_history_entries table and repository layer. This is the data model
+that will store structured patient history collected during intake calls or onboarding
+forms. Consent is required before any write. This module builds the table and CRUD
+repository only — no service orchestration, no routes, no history writes yet.
 
 No real patient data. Synthetic staging only. No PHI processing unlocked.
 Production PHI remains NO-GO.
 
-## What Module 148 must implement
+## What Module 149 must implement
 
 ### 1. Migration
 
-`backend/migrations/versions/0006_consent_events.py` (new):
+`backend/migrations/versions/0007_patient_history_entries.py` (new):
+
+Revision: `0007_patient_history_entries`
+Down revision: `0006_consent_events`
 
 ```sql
-CREATE TABLE IF NOT EXISTS consent_events (
-    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    clinic_id           UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-    patient_id          UUID        REFERENCES patients(id) ON DELETE SET NULL,
-    consent_type        TEXT        NOT NULL,
-    channel             TEXT        NOT NULL DEFAULT 'verbal',
-    language            TEXT        NOT NULL DEFAULT 'de',
-    purpose             TEXT        NOT NULL,
-    revoked_at          TIMESTAMPTZ,
-    consented_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    recorded_by_user_id UUID,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT consent_events_channel_check CHECK (
-        channel IN ('verbal', 'written', 'digital', 'phone')
+CREATE TABLE IF NOT EXISTS patient_history_entries (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    entry_type              TEXT        NOT NULL,
+    entry_source            TEXT        NOT NULL,
+    language                TEXT        NOT NULL DEFAULT 'de',
+    collected_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    recorded_by_user_id     UUID,
+    recorded_by_system      TEXT,
+    history_data            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT phi_entries_production_phi_check CHECK (
+        production_phi_enabled = false
     ),
-    CONSTRAINT consent_events_language_check CHECK (
-        language IN ('de', 'en')
+    CONSTRAINT phi_entries_entry_type_check CHECK (
+        entry_type IN ('chief_complaint', 'medication_list', 'allergy_list',
+                       'past_medical_history', 'family_history', 'social_history',
+                       'symptom_checklist', 'free_text_note', 'demo_seed')
+    ),
+    CONSTRAINT phi_entries_entry_source_check CHECK (
+        entry_source IN ('phone_call', 'onboarding_form', 'staff_console',
+                         'intake_link', 'import_demo')
+    ),
+    CONSTRAINT phi_entries_language_check CHECK (
+        language IN ('de', 'en', 'ar')
     )
 );
-CREATE INDEX IF NOT EXISTS idx_consent_events_clinic_id ON consent_events (clinic_id);
-CREATE INDEX IF NOT EXISTS idx_consent_events_patient_id ON consent_events (patient_id);
-CREATE INDEX IF NOT EXISTS idx_consent_events_consent_type ON consent_events (consent_type);
-CREATE INDEX IF NOT EXISTS idx_consent_events_consented_at ON consent_events (consented_at);
 ```
+
+Indexes: clinic_id, patient_id, consent_event_id, entry_type, entry_source,
+language, collected_at, production_phi_enabled.
 
 ### 2. Schema SQL
 
-`backend/app/db/schema.sql` (updated): consent_events table + indexes added.
+`backend/app/db/schema.sql` (updated): patient_history_entries table + indexes added.
 
 ### 3. Pydantic schemas
 
-`backend/app/schemas/consent_event.py` (new):
+`backend/app/schemas/patient_history_entry.py` (new):
 
 ```python
-class ConsentEventCreate(BaseModel):
+class PatientHistoryEntryCreate(BaseModel):
     clinic_id: str
-    patient_id: Optional[str] = None
-    consent_type: str        # e.g. "data_processing", "ai_intake", "recording"
-    channel: str = "verbal"  # verbal/written/digital/phone
-    language: str = "de"     # de/en
-    purpose: str             # free text, non-empty, max 500 chars
+    patient_id: str
+    consent_event_id: str
+    entry_type: str       # CHECK enum
+    entry_source: str     # CHECK enum
+    language: str = "de"  # de/en/ar
+    history_data: Dict[str, Any] = {}  # structured history data (non-PHI labels)
+    metadata: Dict[str, Any] = {}      # operational metadata
 
-class ConsentEventRead(BaseModel):
+class PatientHistoryEntryRead(BaseModel):
     id: str
     clinic_id: str
-    patient_id: Optional[str]
-    consent_type: str
-    channel: str
+    patient_id: str
+    consent_event_id: str
+    entry_type: str
+    entry_source: str
     language: str
-    purpose: str
-    revoked_at: Any
-    consented_at: Any
-    recorded_by_user_id: Optional[str]
+    collected_at: Any
+    history_data: Dict[str, Any]
+    metadata: Dict[str, Any]
+    production_phi_enabled: bool = False
     created_at: Any
     updated_at: Any
+
+class PatientHistoryEntryResponse(BaseModel):
+    ok: bool
+    entry: Optional[Dict[str, Any]] = None
     production_phi_enabled: bool = False
 
-class ConsentEventRevoke(BaseModel):
-    revoked_at: Optional[str] = None  # ISO datetime; defaults to now() if omitted
-
-class ConsentEventResponse(BaseModel):
+class PatientHistoryEntryListResponse(BaseModel):
     ok: bool
-    event: Optional[Dict[str, Any]] = None
+    entries: List[Dict[str, Any]]
+    total: int
     production_phi_enabled: bool = False
 ```
+
+Validators:
+- entry_type: CHECK enum (9 values)
+- entry_source: CHECK enum (5 values)
+- language: de/en/ar
+- clinic_id, patient_id, consent_event_id: not empty
+- history_data: reject keys containing diagnosis, medical_advice, triage, prescription,
+  sk-, vapi_live, jwt, password, secret
+- metadata: same forbidden key patterns
 
 ### 4. Repository
 
-`backend/app/db/repositories/consent_event_repo.py` (new):
+`backend/app/db/repositories/patient_history_entry_repo.py` (new):
 
 ```python
-async def create_consent_event(pool, clinic_id, patient_id, consent_type,
-                                channel, language, purpose, recorded_by_user_id) -> dict
-async def get_consent_event_by_id(pool, event_id) -> dict | None
-async def list_consent_events_for_patient(pool, clinic_id, patient_id, limit=50) -> list[dict]
-async def list_consent_events_for_clinic(pool, clinic_id, limit=50) -> list[dict]
-async def revoke_consent_event(pool, event_id, revoked_at=None) -> dict | None
-async def is_consent_active(pool, clinic_id, patient_id, consent_type) -> bool
+async def create_patient_history_entry(
+    pool, clinic_id, patient_id, consent_event_id,
+    entry_type, entry_source, language, history_data, metadata,
+    recorded_by_user_id, recorded_by_system
+) -> dict
+
+async def get_patient_history_entry_by_id(pool, entry_id) -> dict | None
+async def list_patient_history_entries_for_patient(pool, clinic_id, patient_id, limit=50) -> list[dict]
+async def list_patient_history_entries_for_clinic(pool, clinic_id, limit=50) -> list[dict]
+async def list_patient_history_entries_by_consent_event(pool, consent_event_id, limit=50) -> list[dict]
 ```
 
 Rules:
-- clinic_id scoped on all queries (tenant isolation)
-- production_phi_enabled never stored or returned from repo
-- No actual patient PHI stored — consent reference only
 - All SQL parameterised
+- clinic_id scoped on all queries (tenant isolation)
+- production_phi_enabled never written as true (DB enforces)
+- No DELETE
+- Errors: InvalidPatientHistoryEntryError, PatientHistoryEntryNotFoundError
 
-### 5. Service
+### 5. Tests
 
-`backend/app/services/consent_event.py` (new):
+`backend/tests/test_patient_history_data_model_foundation.py` (new — ≥60 tests):
 
-```python
-async def record_consent(pool, payload, actor_user) -> dict
-    # 1. Verify clinic exists
-    # 2. If patient_id given, verify patient belongs to clinic (tenant isolation)
-    # 3. Create consent_event row
-    # 4. Log: event_id, clinic_id, consent_type, channel, language, actor
-    # 5. Return row with production_phi_enabled=False
+- Migration: file exists, revision/down_revision, all columns, all CHECK constraints, downgrade
+- Schema SQL: patient_history_entries present
+- Pydantic: accepts all valid entry_types/entry_sources/languages, rejects invalid values,
+  rejects forbidden history_data/metadata keys, accepts safe data
+- Repo: create, get by id, list by patient, list by clinic, list by consent_event,
+  production_phi_enabled never true
+- Static checks: no diagnosis/medical_advice/triage vocabulary, no DATABASE_URL/JWT,
+  no actual PHI content
 
-async def get_consent_event(pool, event_id, actor_user) -> dict | None
-async def revoke_consent(pool, event_id, revoked_at, actor_user) -> dict
-async def check_patient_consent(pool, clinic_id, patient_id, consent_type) -> bool
-```
+### 6. Architecture doc
 
-Rules:
-- No live external calls
-- No PHI stored beyond what is already in patients table
-- production_phi_enabled=False always
-- Consent check used as gate before any patient history write
+`docs/architecture/PATIENT_HISTORY_DATA_MODEL_FOUNDATION.md` (new):
+- Purpose: data model for structured patient history, gated by consent
+- Table design: columns, CHECK constraints, FK to consent_events (RESTRICT = cannot delete consent if history exists)
+- entry_type values and what each captures
+- entry_source values
+- Consent gate requirement: consent_event_id FK is mandatory
+- Tenant isolation
+- No PHI stored — only structured labels and patient-provided answers
+- production_phi_enabled always False
+- What this enables next: Module 150 service + routes for history write
 
-### 6. Routes
+### 7. Docs
 
-`backend/app/api/routes/consent_events.py` (new):
-
-```python
-POST /clinics/{clinic_id}/consent-events        — record consent; auth required
-GET  /clinics/{clinic_id}/consent-events         — list events; auth required
-GET  /consent-events/{event_id}                  — get event; auth required
-POST /consent-events/{event_id}/revoke           — revoke; auth required
-GET  /clinics/{clinic_id}/patients/{patient_id}/consent-check?consent_type=... — active check
-```
-
-All routes: authenticated session required. No public access.
-No PHI returned beyond consent metadata. production_phi_enabled=False always.
-
-### 7. Router
-
-`backend/app/api/router.py` (updated): consent_events router wired.
-
-### 8. Tests
-
-`backend/tests/test_consent_ledger_foundation.py` (new — ≥60 tests):
-- Migration: table, columns, constraints, indexes
-- Schema SQL: consent_events present
-- Pydantic: valid create, invalid channel/language, empty purpose, missing clinic_id
-- Repo: create, get by id, list by patient, list by clinic, revoke, is_consent_active
-- Service: record, get, revoke, check
-- Routes: POST 201 auth required, GET auth required, revoke auth required, consent-check
-- PHI checks: no patient name/phone/transcript/recording in any response
-- production_phi_enabled=False in all responses
-- Arch doc: exists, mentions consent_type/channel/language/purpose/revoked_at/tenant isolation/NO-GO
-
-### 9. Architecture doc
-
-`docs/architecture/PATIENT_HISTORY_CONSENT_LEDGER_FOUNDATION.md` (new):
-- Purpose: prerequisite for any patient history write
-- Table design and column notes
-- Consent types planned: data_processing, ai_intake, recording, clinical_summary
-- Channel: verbal/written/digital/phone
-- Revocation: soft delete via revoked_at timestamp
-- Tenant isolation: all queries clinic_id scoped
-- No PHI. No patient data beyond consent reference. production_phi_enabled always False.
-- What this enables next: audit-complete patient history in Modules 149+
-
-### 10. Docs
-
-- `docs/claude/CURRENT_STATE.md` — Module 148 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 149
+- `docs/claude/CURRENT_STATE.md` — Module 149 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 150
 
 ## Constraints
 
 - No live external calls
-- No actual patient PHI stored in consent_events (name/phone/reason/transcript)
-- No PHI. No recording. No transcript.
+- No real patient PHI stored (no raw names, phone numbers, addresses, health record IDs)
 - production_phi_enabled remains False in all schemas and responses
 - All SQL parameterised
 - Tenant isolation enforced: clinic_id scoped on all queries
+- consent_event_id FK uses ON DELETE RESTRICT — a consent event cannot be deleted if history entries reference it
 - Full test suite must remain green
 - Commit message:
-  Sprint 20 / Module 148 — Patient history consent ledger foundation
+  Sprint 20 / Module 149 — Patient history data model foundation

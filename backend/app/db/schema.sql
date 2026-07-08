@@ -541,4 +541,78 @@ CREATE INDEX IF NOT EXISTS idx_clinic_vapi_bindings_language_mode
 CREATE INDEX IF NOT EXISTS idx_clinic_vapi_bindings_created_at
     ON clinic_vapi_bindings (created_at);
 
+-- ---------------------------------------------------------------------------
+-- consent_events — Sprint 20 / Module 148
+-- Consent ledger: records who consented, when, for what purpose/channel/language.
+-- Append-only; revocation uses revoked_at marker, never deletion.
+-- No real patient PHI stored here. production_phi_enabled always false.
+-- Synthetic/fake staging only. Production PHI remains NO-GO.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS consent_events (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        REFERENCES patients(id) ON DELETE SET NULL,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_subject_type    TEXT        NOT NULL DEFAULT 'patient',
+    consent_subject_ref     TEXT,
+    purpose                 TEXT        NOT NULL,
+    scope                   TEXT        NOT NULL,
+    channel                 TEXT        NOT NULL,
+    language                TEXT        NOT NULL DEFAULT 'de',
+    consent_text_version    TEXT        NOT NULL,
+    consent_text_snapshot   TEXT        NOT NULL,
+    granted                 BOOLEAN     NOT NULL DEFAULT true,
+    revoked_at              TIMESTAMPTZ,
+    revoked_by_user_id      UUID,
+    revocation_reason       TEXT,
+    captured_by_user_id     UUID,
+    captured_by_system      TEXT,
+    source_ip_hash          TEXT,
+    user_agent_hash         TEXT,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT consent_events_production_phi_check CHECK (
+        production_phi_enabled = false
+    ),
+    CONSTRAINT consent_events_channel_check CHECK (
+        channel IN ('onboarding_form','intake_link','phone_call','staff_console','developer_console','import_demo')
+    ),
+    CONSTRAINT consent_events_language_check CHECK (
+        language IN ('de','en','ar')
+    ),
+    CONSTRAINT consent_events_purpose_check CHECK (
+        purpose IN ('appointment_intake','patient_history_collection','phone_history_questions','demo_seed','data_processing_acknowledgement')
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_clinic_id
+    ON consent_events (clinic_id);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_patient_id
+    ON consent_events (patient_id);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_appointment_request_id
+    ON consent_events (appointment_request_id);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_purpose
+    ON consent_events (purpose);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_channel
+    ON consent_events (channel);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_language
+    ON consent_events (language);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_granted
+    ON consent_events (granted);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_created_at
+    ON consent_events (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_consent_events_revoked_at
+    ON consent_events (revoked_at);
+
 COMMIT;

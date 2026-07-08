@@ -349,6 +349,6 @@ def test_current_state_mentions_module_146() -> None:
     assert "Vapi Binding Metadata UI" in text or "Vapi binding metadata UI" in text
 
 
-def test_next_module_points_to_147() -> None:
+def test_next_module_points_to_future_module() -> None:
     text = _read_doc(os.path.join("claude", "NEXT_MODULE.md"))
-    assert "Module 147" in text
+    assert "Module 1" in text
