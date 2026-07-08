@@ -26,6 +26,7 @@ from backend.app.api.routes import clinic_language_settings
 from backend.app.api.routes import vapi_assistant_config
 from backend.app.api.routes import clinic_vapi_bindings
 from backend.app.api.routes import consent_events
+from backend.app.api.routes import patient_history
 
 api_router = APIRouter()
 
@@ -45,3 +46,4 @@ api_router.include_router(clinic_language_settings.router)
 api_router.include_router(vapi_assistant_config.router)
 api_router.include_router(clinic_vapi_bindings.router)
 api_router.include_router(consent_events.router)
+api_router.include_router(patient_history.router)

@@ -615,4 +615,325 @@ CREATE INDEX IF NOT EXISTS idx_consent_events_created_at
 CREATE INDEX IF NOT EXISTS idx_consent_events_revoked_at
     ON consent_events (revoked_at);
 
+-- ── FHIR-aligned patient history tables (Module 149) ─────────────────────────
+-- All tables: tenant-scoped, patient-scoped, consent-linked, append-only/versioned.
+-- production_phi_enabled always false (DB CHECK).
+-- No DELETE. Staff/doctor review required (status=unverified default).
+-- Synthetic/fake staging only. No real patient PHI.
+-- No diagnosis generated. No medical advice. No triage scoring.
+-- Production PHI remains NO-GO.
+
+CREATE TABLE IF NOT EXISTS patient_history_allergies (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    substance_text          TEXT        NOT NULL,
+    reaction_text           TEXT,
+    severity                TEXT,
+    clinical_status         TEXT,
+    verification_status     TEXT,
+    category                TEXT,
+    criticality             TEXT,
+    onset_text              TEXT,
+    CONSTRAINT patient_history_allergies_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_allergies_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_allergies_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_allergies_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_allergies_clinic_id ON patient_history_allergies (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_allergies_patient_id ON patient_history_allergies (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_allergies_consent_event_id ON patient_history_allergies (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_allergies_status ON patient_history_allergies (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_allergies_created_at ON patient_history_allergies (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_history_medications (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    medication_text         TEXT        NOT NULL,
+    dosage_text             TEXT,
+    frequency_text          TEXT,
+    route_text              TEXT,
+    medication_status       TEXT,
+    start_text              TEXT,
+    end_text                TEXT,
+    reason_text             TEXT,
+    CONSTRAINT patient_history_medications_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_medications_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_medications_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_medications_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_medications_clinic_id ON patient_history_medications (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_medications_patient_id ON patient_history_medications (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_medications_consent_event_id ON patient_history_medications (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_medications_status ON patient_history_medications (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_medications_created_at ON patient_history_medications (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_history_conditions (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    condition_text          TEXT        NOT NULL,
+    clinical_status         TEXT,
+    verification_status     TEXT,
+    onset_text              TEXT,
+    abatement_text          TEXT,
+    body_site_text          TEXT,
+    severity_text           TEXT,
+    patient_reported        BOOLEAN     NOT NULL DEFAULT true,
+    CONSTRAINT patient_history_conditions_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_conditions_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_conditions_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_conditions_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_conditions_clinic_id ON patient_history_conditions (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_conditions_patient_id ON patient_history_conditions (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_conditions_consent_event_id ON patient_history_conditions (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_conditions_status ON patient_history_conditions (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_conditions_created_at ON patient_history_conditions (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_history_procedures (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    procedure_text          TEXT        NOT NULL,
+    performed_text          TEXT,
+    body_site_text          TEXT,
+    outcome_text            TEXT,
+    performer_text          TEXT,
+    reason_text             TEXT,
+    CONSTRAINT patient_history_procedures_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_procedures_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_procedures_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_procedures_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_procedures_clinic_id ON patient_history_procedures (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_procedures_patient_id ON patient_history_procedures (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_procedures_consent_event_id ON patient_history_procedures (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_procedures_status ON patient_history_procedures (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_procedures_created_at ON patient_history_procedures (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_history_immunizations (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    vaccine_text            TEXT        NOT NULL,
+    occurrence_text         TEXT,
+    lot_number              TEXT,
+    site_text               TEXT,
+    route_text              TEXT,
+    dose_number             TEXT,
+    series_text             TEXT,
+    immunization_status     TEXT,
+    CONSTRAINT patient_history_immunizations_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_immunizations_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_immunizations_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_immunizations_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_immunizations_clinic_id ON patient_history_immunizations (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_immunizations_patient_id ON patient_history_immunizations (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_immunizations_consent_event_id ON patient_history_immunizations (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_immunizations_status ON patient_history_immunizations (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_immunizations_created_at ON patient_history_immunizations (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_history_family_history (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    relationship_text       TEXT        NOT NULL,
+    condition_text          TEXT,
+    age_text                TEXT,
+    deceased                BOOLEAN,
+    note_text               TEXT,
+    CONSTRAINT patient_history_family_history_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_family_history_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_family_history_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_family_history_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_family_history_clinic_id ON patient_history_family_history (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_family_history_patient_id ON patient_history_family_history (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_family_history_consent_event_id ON patient_history_family_history (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_family_history_status ON patient_history_family_history (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_family_history_created_at ON patient_history_family_history (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_history_social_history (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    version_group_id        UUID        NOT NULL,
+    version_number          INTEGER     NOT NULL DEFAULT 1,
+    supersedes_entry_id     UUID,
+    correction_reason       TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'unverified',
+    source_type             TEXT        NOT NULL DEFAULT 'staff_console',
+    source_ref              TEXT,
+    entered_by_user_id      UUID,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    effective_start_date    DATE,
+    effective_end_date      DATE,
+    notes                   TEXT,
+    fhir_resource_type      TEXT        NOT NULL,
+    fhir_payload            JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    observation_category    TEXT        NOT NULL,
+    observation_text        TEXT        NOT NULL,
+    value_text              TEXT,
+    period_text             TEXT,
+    CONSTRAINT patient_history_social_history_phi_check CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_history_social_history_status_check CHECK (status IN ('unverified','approved','rejected','superseded')),
+    CONSTRAINT patient_history_social_history_source_type_check CHECK (source_type IN ('staff_console','intake_link','phone_call','ai_proposal','demo_seed','import_demo')),
+    CONSTRAINT patient_history_social_history_version_check CHECK (version_number >= 1),
+    UNIQUE (version_group_id, version_number)
+);
+CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_clinic_id ON patient_history_social_history (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_patient_id ON patient_history_social_history (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_consent_event_id ON patient_history_social_history (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_status ON patient_history_social_history (status);
+CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_created_at ON patient_history_social_history (created_at);
+
 COMMIT;

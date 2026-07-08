@@ -2702,6 +2702,72 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No frontend changes
    - Production PHI remains NO-GO
 
+162. Module 149 — Patient History Data Model Foundation
+   - Date: 2026-07-08
+   - Sprint 20 / Backend only + tests + docs. No frontend. No AI structuring. No real patient PHI.
+   - FHIR R4-aligned patient history data model. Seven tables. consent_event_id required on every row.
+   - Append-only/versioned. Staff/doctor review required. No deletion. No diagnosis generated.
+   - No medical advice. No triage scoring. Synthetic staging only. Production PHI remains NO-GO.
+   - backend/migrations/versions/0007_patient_history_data_model.py (new):
+     - revision=0007_patient_history_data_model, down_revision=0006_consent_events
+     - 7 FHIR tables: patient_history_allergies, _medications, _conditions, _procedures,
+       _immunizations, _family_history, _social_history
+     - Common columns on all: clinic_id, patient_id, consent_event_id (NOT NULL), appointment_request_id,
+       version_group_id, version_number, supersedes_entry_id, status, source_type, reviewed_by_user_id,
+       reviewed_at, fhir_resource_type, fhir_payload, metadata, production_phi_enabled=false
+     - CHECK constraints per table: phi_check, status_check, source_type_check, version_check
+     - UNIQUE(version_group_id, version_number), 9 indexes per table
+     - FHIR-specific columns per table (substance_text, medication_text, condition_text+patient_reported,
+       procedure_text, vaccine_text, relationship_text, observation_category+observation_text)
+   - backend/app/db/schema.sql (updated): all 7 history tables added
+   - backend/app/schemas/patient_history.py (new):
+     - HISTORY_TYPE_TO_TABLE, HISTORY_TYPE_TO_FHIR dicts
+     - HistoryEntryCommonCreate base: validates status/source_type enums, version_number≥1,
+       rejects forbidden metadata keys
+     - AllergyHistoryCreate/Read, MedicationHistoryCreate/Read, ConditionHistoryCreate/Read,
+       ProcedureHistoryCreate/Read, ImmunizationHistoryCreate/Read, FamilyHistoryCreate/Read,
+       SocialHistoryCreate/Read, HistoryStatusUpdate
+     - HistoryEntryResponse, HistoryEntryListResponse, PatientHistoryTimelineResponse
+   - backend/app/db/repositories/patient_history_repo.py (new):
+     - HISTORY_TYPE_TABLE, HISTORY_TYPE_FHIR dicts; UnsupportedHistoryTypeError, InvalidPatientHistoryEntryError
+     - create_{allergy,medication,condition,procedure,immunization,family,social}_history
+     - list_patient_history_by_type, list_patient_history_timeline (fetches all 7 tables)
+     - get_history_entry_by_id, update_history_entry_status, mark_history_entry_superseded
+     - No DELETE functions
+   - backend/app/services/patient_history.py (new):
+     - create_patient_history_entry: verifies clinic/patient/appt-req; calls
+       assert_valid_consent_for_history_write; sets production_phi_enabled=False
+     - list_patient_history, get_patient_history_entry, update_patient_history_status,
+       list_patient_history_timeline
+     - Errors: PatientNotFoundError, AppointmentRequestNotFoundError, HistoryEntryNotFoundError
+   - backend/app/api/routes/patient_history.py (new):
+     - POST /clinics/{clinic_id}/patients/{patient_id}/history/{history_type} (201, auth)
+     - GET /clinics/{clinic_id}/patients/{patient_id}/history (200, auth) — timeline
+     - GET /clinics/{clinic_id}/patients/{patient_id}/history/{history_type} (200, auth)
+     - GET /patient-history/{history_type}/{entry_id} (200, auth)
+     - PATCH /patient-history/{history_type}/{entry_id}/status (200, auth)
+     - No DELETE route; invalid history_type → 400
+   - backend/app/api/router.py (updated): patient_history router registered
+   - backend/tests/test_patient_history_data_model_foundation.py (new — 113 tests):
+     - Migration: file, revision/down_revision, all 7 tables, all common columns, all FHIR types,
+       all CHECK constraints, downgrade
+     - FHIR alignment: all 7 resource types, all table-specific key fields
+     - Schema SQL: all 7 tables present
+     - Pydantic: all 7 create schemas accept valid entries, reject empty required fields,
+       reject forbidden metadata, reject invalid status/source_type, reject version_number<1
+     - HistoryStatusUpdate: accepts approved/rejected/superseded, rejects unverified/unknown
+     - Repo: create calls fetchrow, rejects invalid input, list, get, update_status, timeline
+     - Service: consent gate blocks write when consent missing, clinic verify
+     - Routes: all 5 endpoints require auth (401/403), no DELETE (405), invalid type → 400,
+       production_phi_enabled=False in responses
+     - Router registration, HISTORY_TYPE_TABLE mapping (7 entries)
+     - Vocabulary guards: no sk- keys, no DATABASE_URL, no JWT_SECRET, no diagnosis/medical
+       advice/treatment recommendation/triage in service, no DELETE in routes
+     - Arch doc: exists, mentions consent_event_id/FHIR/synthetic/NO-GO/append-only/review/no-deletion/all 7 FHIR types
+   - docs/architecture/PATIENT_HISTORY_DATA_MODEL_FOUNDATION.md (new)
+   - Full backend tests: 4469/4469 passed
+   - Production PHI remains NO-GO
+
 161. Module 148 — Patient History Consent Ledger Foundation
    - Date: 2026-07-08
    - Sprint 20 / Backend only + tests + docs. No frontend changes. No real patient PHI.

@@ -1,200 +1,203 @@
-# Sprint 20 / Module 149 — Patient History Data Model Foundation
+# Sprint 20 / Module 150 — Anamnesis Template Engine
 
 Status: pending implementation.
 
 ## Context
 
-Module 148 complete:
-- `backend/migrations/versions/0006_consent_events.py` — consent_events table, 4 CHECK constraints, 9 indexes
-- `backend/app/schemas/consent_event.py` — ConsentEventCreate/Read/Revoke/Response/ListResponse
-- `backend/app/db/repositories/consent_event_repo.py` — CRUD, append-only, no DELETE
-- `backend/app/services/consent_ledger.py` — history write gate: assert_valid_consent_for_history_write
-- `backend/app/api/routes/consent_events.py` — 4 protected routes (POST/GET/GET/PATCH), no DELETE
-- `backend/app/api/router.py` (updated) — consent_events router registered
-- `backend/tests/test_patient_history_consent_ledger_foundation.py` — ≥60 tests
-- `docs/architecture/PATIENT_HISTORY_CONSENT_LEDGER_FOUNDATION.md`
-- production_phi_enabled always False
-- No real patient PHI. No diagnosis. No medical advice. No triage scoring.
+Module 149 complete:
+- `backend/migrations/versions/0007_patient_history_data_model.py` — 7 FHIR-aligned history tables
+- `backend/app/schemas/patient_history.py` — all 7 create/read schemas + status update
+- `backend/app/db/repositories/patient_history_repo.py` — CRUD, no DELETE
+- `backend/app/services/patient_history.py` — consent gate on every write
+- `backend/app/api/routes/patient_history.py` — 5 protected routes, no DELETE
+- `backend/app/api/router.py` (updated) — patient_history router registered
+- `backend/tests/test_patient_history_data_model_foundation.py` — 113 tests
+- `docs/architecture/PATIENT_HISTORY_DATA_MODEL_FOUNDATION.md`
+- consent_event_id required on every history row
+- Append-only/versioned. Staff/doctor review required.
+- production_phi_enabled always False.
+- No real patient PHI. No diagnosis. No medical advice. No triage.
 - Production PHI remains NO-GO.
 
-Sprint 20 is in progress. The consent ledger foundation is in place. Any future
-patient history write must call `assert_valid_consent_for_history_write` before writing.
+Sprint 20 is in progress. The data model foundation is in place. The next step is
+the anamnesis template engine: clinic-configurable questionnaire templates that drive
+the structured intake flow.
 
 ## Goal
 
-Create the patient_history_entries table and repository layer. This is the data model
-that will store structured patient history collected during intake calls or onboarding
-forms. Consent is required before any write. This module builds the table and CRUD
-repository only — no service orchestration, no routes, no history writes yet.
+Create a clinic-configurable anamnesis questionnaire template engine. Templates define
+which questions are shown during patient intake, in what order, and in what language.
+Templates are stored per clinic and per specialty. Rendering is structure-only —
+no AI involvement, no diagnosis, no medical scoring. de/en/ar-ready labels.
 
-No real patient data. Synthetic staging only. No PHI processing unlocked.
-Production PHI remains NO-GO.
+Synthetic staging only. No real patient data. No PHI unlock. Production PHI remains NO-GO.
 
-## What Module 149 must implement
+## What Module 150 must implement
 
-### 1. Migration
+### 1. Database Migration
 
-`backend/migrations/versions/0007_patient_history_entries.py` (new):
+`backend/migrations/versions/0008_anamnesis_templates.py` (new):
+Revision: `0008_anamnesis_templates`
+Down revision: `0007_patient_history_data_model`
 
-Revision: `0007_patient_history_entries`
-Down revision: `0006_consent_events`
+Table: `anamnesis_templates`
+- id UUID primary key
+- clinic_id UUID NOT NULL references clinics(id)
+- template_name TEXT NOT NULL
+- specialty TEXT NOT NULL DEFAULT 'general'
+- language_code TEXT NOT NULL DEFAULT 'de' (de/en/ar)
+- version INTEGER NOT NULL DEFAULT 1
+- sections JSONB NOT NULL DEFAULT '[]'::jsonb
+- red_flag_keywords JSONB NOT NULL DEFAULT '[]'::jsonb
+- status TEXT NOT NULL DEFAULT 'draft' (draft/active/archived)
+- created_by_user_id UUID
+- production_phi_enabled BOOLEAN NOT NULL DEFAULT false
+- created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+- CONSTRAINT anamnesis_templates_phi_check CHECK (production_phi_enabled = false)
+- CONSTRAINT anamnesis_templates_status_check CHECK (status IN ('draft','active','archived'))
+- CONSTRAINT anamnesis_templates_language_check CHECK (language_code IN ('de','en','ar'))
+- UNIQUE(clinic_id, template_name, language_code, version)
 
-```sql
-CREATE TABLE IF NOT EXISTS patient_history_entries (
-    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-    patient_id              UUID        NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
-    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
-    entry_type              TEXT        NOT NULL,
-    entry_source            TEXT        NOT NULL,
-    language                TEXT        NOT NULL DEFAULT 'de',
-    collected_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-    recorded_by_user_id     UUID,
-    recorded_by_system      TEXT,
-    history_data            JSONB       NOT NULL DEFAULT '{}'::jsonb,
-    metadata                JSONB       NOT NULL DEFAULT '{}'::jsonb,
-    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
-    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT phi_entries_production_phi_check CHECK (
-        production_phi_enabled = false
-    ),
-    CONSTRAINT phi_entries_entry_type_check CHECK (
-        entry_type IN ('chief_complaint', 'medication_list', 'allergy_list',
-                       'past_medical_history', 'family_history', 'social_history',
-                       'symptom_checklist', 'free_text_note', 'demo_seed')
-    ),
-    CONSTRAINT phi_entries_entry_source_check CHECK (
-        entry_source IN ('phone_call', 'onboarding_form', 'staff_console',
-                         'intake_link', 'import_demo')
-    ),
-    CONSTRAINT phi_entries_language_check CHECK (
-        language IN ('de', 'en', 'ar')
-    )
-);
+Indexes: clinic_id, specialty, language_code, status.
+
+### 2. Sections and Questions Schema
+
+sections is a JSONB array of section objects:
+```json
+[
+  {
+    "section_id": "chief_complaint",
+    "label_de": "Hauptbeschwerde",
+    "label_en": "Chief Complaint",
+    "label_ar": "الشكوى الرئيسية",
+    "order": 1,
+    "questions": [
+      {
+        "question_id": "q1",
+        "label_de": "Was ist Ihr Hauptproblem?",
+        "label_en": "What is your main concern?",
+        "label_ar": "ما هي شكواك الرئيسية؟",
+        "answer_type": "text",
+        "required": true,
+        "maps_to_history_type": "conditions",
+        "maps_to_field": "condition_text"
+      }
+    ]
+  }
+]
 ```
 
-Indexes: clinic_id, patient_id, consent_event_id, entry_type, entry_source,
-language, collected_at, production_phi_enabled.
+answer_type: text / boolean / select / multiselect / date
 
-### 2. Schema SQL
+red_flag_keywords: list of strings to escalate to staff (no triage scoring).
 
-`backend/app/db/schema.sql` (updated): patient_history_entries table + indexes added.
+Specialty templates required:
+- general (GP)
+- dermatology
+- pediatrics
 
-### 3. Pydantic schemas
+Each specialty includes relevant section/question structure for de/en/ar.
 
-`backend/app/schemas/patient_history_entry.py` (new):
+### 3. Schemas
 
-```python
-class PatientHistoryEntryCreate(BaseModel):
-    clinic_id: str
-    patient_id: str
-    consent_event_id: str
-    entry_type: str       # CHECK enum
-    entry_source: str     # CHECK enum
-    language: str = "de"  # de/en/ar
-    history_data: Dict[str, Any] = {}  # structured history data (non-PHI labels)
-    metadata: Dict[str, Any] = {}      # operational metadata
+`backend/app/schemas/anamnesis_template.py` (new):
+- TemplateQuestion
+- TemplateSection
+- AnamnesisTemplateCreate
+- AnamnesisTemplateRead
+- AnamnesisTemplateUpdate
+- AnamnesisTemplateResponse
 
-class PatientHistoryEntryRead(BaseModel):
-    id: str
-    clinic_id: str
-    patient_id: str
-    consent_event_id: str
-    entry_type: str
-    entry_source: str
-    language: str
-    collected_at: Any
-    history_data: Dict[str, Any]
-    metadata: Dict[str, Any]
-    production_phi_enabled: bool = False
-    created_at: Any
-    updated_at: Any
-
-class PatientHistoryEntryResponse(BaseModel):
-    ok: bool
-    entry: Optional[Dict[str, Any]] = None
-    production_phi_enabled: bool = False
-
-class PatientHistoryEntryListResponse(BaseModel):
-    ok: bool
-    entries: List[Dict[str, Any]]
-    total: int
-    production_phi_enabled: bool = False
-```
-
-Validators:
-- entry_type: CHECK enum (9 values)
-- entry_source: CHECK enum (5 values)
-- language: de/en/ar
-- clinic_id, patient_id, consent_event_id: not empty
-- history_data: reject keys containing diagnosis, medical_advice, triage, prescription,
-  sk-, vapi_live, jwt, password, secret
-- metadata: same forbidden key patterns
+Validation:
+- clinic_id required
+- template_name not empty
+- sections must be a valid list
+- red_flag_keywords: strings only, no medical scoring
+- language_code: de/en/ar
+- status: draft/active/archived
+- production_phi_enabled always False
+- reject forbidden metadata
 
 ### 4. Repository
 
-`backend/app/db/repositories/patient_history_entry_repo.py` (new):
+`backend/app/db/repositories/anamnesis_template_repo.py` (new):
+- create_template
+- get_template_by_id
+- list_templates_for_clinic(clinic_id, specialty=None, language_code=None, status=None)
+- get_active_template(clinic_id, specialty, language_code)
+- update_template_status
+- update_template_sections
 
-```python
-async def create_patient_history_entry(
-    pool, clinic_id, patient_id, consent_event_id,
-    entry_type, entry_source, language, history_data, metadata,
-    recorded_by_user_id, recorded_by_system
-) -> dict
+### 5. Service
 
-async def get_patient_history_entry_by_id(pool, entry_id) -> dict | None
-async def list_patient_history_entries_for_patient(pool, clinic_id, patient_id, limit=50) -> list[dict]
-async def list_patient_history_entries_for_clinic(pool, clinic_id, limit=50) -> list[dict]
-async def list_patient_history_entries_by_consent_event(pool, consent_event_id, limit=50) -> list[dict]
-```
+`backend/app/services/anamnesis_template.py` (new):
+- create_anamnesis_template
+- get_anamnesis_template
+- list_clinic_templates
+- activate_template
+- render_template_for_intake(clinic_id, specialty, language_code) — returns ordered sections/questions
 
-Rules:
-- All SQL parameterised
-- clinic_id scoped on all queries (tenant isolation)
-- production_phi_enabled never written as true (DB enforces)
-- No DELETE
-- Errors: InvalidPatientHistoryEntryError, PatientHistoryEntryNotFoundError
+render_template_for_intake must NOT generate diagnosis, triage, or medical advice.
+Red flag keywords are surfaced as a plain list for staff escalation — no scoring.
 
-### 5. Tests
+### 6. Routes
 
-`backend/tests/test_patient_history_data_model_foundation.py` (new — ≥60 tests):
+`backend/app/api/routes/anamnesis_templates.py` (new):
+- POST /clinics/{clinic_id}/anamnesis-templates (201, auth)
+- GET /clinics/{clinic_id}/anamnesis-templates (200, auth)
+- GET /anamnesis-templates/{template_id} (200, auth)
+- PATCH /anamnesis-templates/{template_id}/status (200, auth)
+- GET /clinics/{clinic_id}/anamnesis-templates/render?specialty=general&language=de (200, auth)
 
-- Migration: file exists, revision/down_revision, all columns, all CHECK constraints, downgrade
-- Schema SQL: patient_history_entries present
-- Pydantic: accepts all valid entry_types/entry_sources/languages, rejects invalid values,
-  rejects forbidden history_data/metadata keys, accepts safe data
-- Repo: create, get by id, list by patient, list by clinic, list by consent_event,
-  production_phi_enabled never true
-- Static checks: no diagnosis/medical_advice/triage vocabulary, no DATABASE_URL/JWT,
-  no actual PHI content
+No DELETE. production_phi_enabled=False always.
 
-### 6. Architecture doc
+### 7. Seed Templates
 
-`docs/architecture/PATIENT_HISTORY_DATA_MODEL_FOUNDATION.md` (new):
-- Purpose: data model for structured patient history, gated by consent
-- Table design: columns, CHECK constraints, FK to consent_events (RESTRICT = cannot delete consent if history exists)
-- entry_type values and what each captures
-- entry_source values
-- Consent gate requirement: consent_event_id FK is mandatory
-- Tenant isolation
-- No PHI stored — only structured labels and patient-provided answers
-- production_phi_enabled always False
-- What this enables next: Module 150 service + routes for history write
+`backend/scripts/seed_anamnesis_templates.py` (new):
+Seed 3 specialty templates (general/dermatology/pediatrics) × 3 languages (de/en/ar)
+= 9 templates for staging clinic.
 
-### 7. Docs
+### 8. Tests
 
-- `docs/claude/CURRENT_STATE.md` — Module 149 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 150
+`backend/tests/test_anamnesis_template_engine.py` (new — ≥60 tests):
+- Migration: table, all columns, all CHECK constraints, UNIQUE constraint
+- Schemas: create/read/update, required field validation, language/status enum validation,
+  forbidden metadata rejection, sections structure
+- Repo: create, list, get, activate, render
+- Service: create, list, get active, render for intake (sections ordered, labels correct)
+- Routes: all endpoints require auth, no DELETE, render returns ordered sections
+- Red flag: keywords surface without scoring (no triage, no medical advice)
+- Forbidden: no diagnosis, no triage_score, no medical_advice, no DATABASE_URL, no secrets
+- Seed script: seed function callable, creates templates for staging clinic
+
+### 9. Architecture doc
+
+`docs/architecture/ANAMNESIS_TEMPLATE_ENGINE.md` (new):
+- Purpose: configurable intake questionnaire engine
+- Template structure: sections → questions → labels (de/en/ar) → answer_type → history_type mapping
+- Specialty templates: GP, dermatology, pediatrics
+- Red flag escalation: keyword list surfaced to staff, no automated scoring
+- de/en/ar support
+- Rendering is structure-only, no AI
+- No diagnosis. No triage. No medical advice.
+- Synthetic staging only. Production PHI remains NO-GO.
+
+### 10. Docs
+
+- `docs/claude/CURRENT_STATE.md` — Module 150 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 151 — Intake Link Flow
 
 ## Constraints
 
-- No live external calls
-- No real patient PHI stored (no raw names, phone numbers, addresses, health record IDs)
-- production_phi_enabled remains False in all schemas and responses
+- No AI involvement in this module
+- No diagnosis, no triage scoring, no medical advice
+- Red flag keywords surface to staff only — no automated escalation decisions
+- de/en/ar labels required on all questions
+- production_phi_enabled always False
 - All SQL parameterised
-- Tenant isolation enforced: clinic_id scoped on all queries
-- consent_event_id FK uses ON DELETE RESTRICT — a consent event cannot be deleted if history entries reference it
+- Tenant isolation
+- No DELETE
 - Full test suite must remain green
 - Commit message:
-  Sprint 20 / Module 149 — Patient history data model foundation
+  Sprint 20 / Module 150 — Anamnesis template engine
