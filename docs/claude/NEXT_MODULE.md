@@ -1,152 +1,145 @@
-# Sprint 20 / Module 151 — Patient Intake Link Flow Foundation
+# Sprint 20 / Module 152 — Live Patient Intake Link Smoke Evidence
 
 Status: pending implementation.
 
 ## Context
 
-Module 150 complete:
-- `backend/migrations/versions/0008_anamnesis_templates.py` — anamnesis_templates table
-- `backend/app/schemas/anamnesis_template.py` — Pydantic schemas with forbidden pattern checks
-- `backend/app/db/repositories/anamnesis_template_repo.py` — CRUD, no DELETE
-- `backend/app/services/anamnesis_template_engine.py` — 3 demo templates (GP, Dermatology, Pediatrics)
-- `backend/app/api/routes/anamnesis_templates.py` — 5 protected routes, no DELETE
-- `backend/app/api/router.py` (updated) — anamnesis_templates router registered
-- `backend/app/db/schema.sql` (updated) — anamnesis_templates DDL
-- `backend/tests/test_anamnesis_template_engine_foundation.py` — ≥60 tests
-- `docs/architecture/ANAMNESIS_TEMPLATE_ENGINE_FOUNDATION.md`
-- Templates: global (clinic_id IS NULL) and clinic-specific overrides
-- Status lifecycle: draft → active → archived
-- No patient answers stored. No history writes. No AI. No diagnosis. No triage.
+Module 151 complete:
+- `backend/migrations/versions/0009_patient_intake_links.py` — patient_intake_links + patient_intake_submissions
+- `backend/app/schemas/patient_intake_link.py` — Pydantic schemas, PHI/demo guards
+- `backend/app/services/intake_token.py` — generate_intake_token, hash_intake_token, token_prefix
+- `backend/app/db/repositories/patient_intake_link_repo.py` — CRUD, no raw token stored
+- `backend/app/services/patient_intake_link.py` — create, public load, submit, revoke; consent event on submit
+- `backend/app/api/routes/patient_intake_links.py` — 4 admin + 2 public routes, no DELETE
+- `backend/app/api/router.py` (updated) — patient_intake_links router registered
+- `backend/app/db/schema.sql` (updated) — both tables
+- `frontend/app/intake/[token]/page.tsx` — mobile-first consent-first questionnaire
+- `frontend/app/developer-console/intake-links/page.tsx` — admin link management
+- `frontend/lib/api.ts` (updated) — all intake helpers
+- `backend/tests/test_patient_intake_link_flow_foundation.py` — 113 tests
+- `docs/architecture/PATIENT_INTAKE_LINK_FLOW_FOUNDATION.md`
+- Raw token never stored. token_hash stored. intake_url shown once.
+- Consent step required before questionnaire.
+- Answers stored as synthetic intake submissions only.
+- No patient history writes. No AI structuring. No diagnosis. No triage.
 - production_phi_enabled always False. Production PHI remains NO-GO.
 
-Sprint 20 data layer is in place:
-- Consent ledger (consent_events, Module 148)
-- Patient history data model — 7 FHIR-aligned tables (Module 149)
+Sprint 20 data layer is now complete:
+- Consent ledger (Module 148)
+- Patient history data model (Module 149)
 - Anamnesis template engine (Module 150)
-
-The next step is the intake link flow: generating short-lived, clinic-scoped intake
-URLs that patients can follow to answer their anamnesis template before an appointment.
+- Patient intake link flow (Module 151)
 
 ## Goal
 
-Create the backend foundation for the patient intake link flow. Generate a time-limited,
-clinic-scoped intake session token that links to a specific anamnesis template.
-Track session state (not-started / in-progress / completed / expired).
+Deploy Module 151 to the staging environment and produce live smoke evidence
+that the full intake link flow works end-to-end with synthetic/demo data only.
 
-No patient answers stored in this module. No history writes. No AI.
-Synthetic/fake staging only. No real patient PHI. Production PHI remains NO-GO.
+## What Module 152 must do
 
-## What Module 151 must implement
+### 1. Deploy and migrate
 
-### 1. Database Migration
+- Deploy Module 151 backend to Railway (or staging target).
+- Run migration 0009_patient_intake_links.
+- Confirm both tables exist: patient_intake_links, patient_intake_submissions.
+- Confirm no prior migration state broken.
 
-`backend/migrations/versions/0009_intake_link_sessions.py` (new):
-Revision: `0009_intake_link_sessions`
-Down revision: `0008_anamnesis_templates`
+### 2. Seed demo templates if needed
 
-Table: `intake_link_sessions`
-- id UUID primary key
-- clinic_id UUID NOT NULL references clinics(id)
-- patient_id UUID references patients(id)
-- template_id UUID NOT NULL references anamnesis_templates(id)
-- session_token TEXT NOT NULL UNIQUE
-- status TEXT NOT NULL DEFAULT 'not_started' (not_started/in_progress/completed/expired)
-- expires_at TIMESTAMPTZ NOT NULL
-- started_at TIMESTAMPTZ
-- completed_at TIMESTAMPTZ
-- consent_event_id UUID references consent_events(id)
-- synthetic_demo BOOLEAN NOT NULL DEFAULT true
-- production_phi_enabled BOOLEAN NOT NULL DEFAULT false
-- created_by_user_id UUID
-- created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-- CONSTRAINT intake_link_phi_check CHECK (production_phi_enabled = false)
-- CONSTRAINT intake_link_status_check CHECK (status IN ('not_started','in_progress','completed','expired'))
+- If demo_gp_basic_history is not seeded:
+  - Call POST /anamnesis-templates/seed-demo with admin session.
+  - Confirm 3 templates returned.
+  - Note template ID of demo_gp_basic_history for next step.
 
-Indexes: clinic_id, patient_id, template_id, session_token, status, expires_at.
+### 3. Create demo intake link
 
-### 2. Schemas
+- Call POST /clinics/{staging_clinic_id}/patient-intake-links:
+  - template_id = demo_gp_basic_history UUID
+  - language = de
+  - purpose = patient_history_collection
+  - expires_at = now + 72 hours
+- Confirm HTTP 201.
+- Capture intake_url from response (raw token, shown once).
+- Confirm token_prefix appears in response.
+- Confirm production_phi_enabled = false.
 
-`backend/app/schemas/intake_link.py` (new):
-- IntakeLinkCreate
-- IntakeLinkRead
-- IntakeLinkStatusUpdate (in_progress / completed / expired)
-- IntakeLinkResponse
-- IntakeLinkListResponse
+### 4. Open public intake page
 
-Validation:
-- template_id required and valid UUID
-- expires_at must be in the future
-- production_phi_enabled always False
-- synthetic_demo always True
-- No patient answers in schema
+- Navigate to /intake/{raw_token} in browser.
+- Confirm demo staging notice appears.
+- Confirm consent step renders before questionnaire.
+- Confirm language selector shows de / en / ar.
 
-### 3. Repository
+### 5. Complete consent-first questionnaire
 
-`backend/app/db/repositories/intake_link_repo.py` (new):
-- create_intake_link_session
-- get_intake_link_session_by_id
-- get_intake_link_session_by_token
-- list_intake_link_sessions_for_clinic(clinic_id, status=None)
-- update_intake_link_status
-- expire_stale_sessions (mark sessions past expires_at as expired)
+- Check consent checkbox.
+- Click "Continue to questionnaire".
+- Confirm questionnaire renders with sections from demo_gp_basic_history.
+- Fill in one or two optional fields with synthetic placeholder answers:
+  - known_allergies: "Keine (Demo)"
+  - current_medications: "Keine (Demo)"
+- Skip remaining questions.
+- Click "Submit intake".
+- Confirm success message: "Intake submitted for staff review."
 
-No DELETE. Parameterised SQL. Tenant-scoped.
+### 6. Verify submission stored
 
-### 4. Service
+- Call GET /clinics/{staging_clinic_id}/patient-intake-submissions with admin session.
+- Confirm 1 submission returned.
+- Confirm status = submitted.
+- Confirm consent_event_id is present.
+- Confirm answers JSON contains the synthetic placeholder answers.
+- Confirm production_phi_enabled = false.
+- Confirm synthetic_demo = true.
 
-`backend/app/services/intake_link.py` (new):
-- generate_session_token: secrets.token_urlsafe(32) — no patient data in token
-- create_intake_link(clinic_id, template_id, patient_id=None, ttl_hours=48)
-- get_intake_link(session_id)
-- resolve_intake_link_by_token(token) — returns session + template for rendering
-- advance_session_status(session_id, new_status)
-- expire_stale_sessions(clinic_id)
+### 7. Verify consent event created
 
-No AI. No diagnosis. No medical advice. Token must not encode patient data.
+- Check that consent_events table has a new row with:
+  - channel = intake_link
+  - purpose = patient_history_collection
+  - granted = true
+  - production_phi_enabled = false
 
-### 5. Routes
+### 8. Verify no patient history write
 
-`backend/app/api/routes/intake_links.py` (new):
-- POST /clinics/{clinic_id}/intake-links (201, auth) — create intake link session
-- GET /clinics/{clinic_id}/intake-links (200, auth) — list sessions
-- GET /intake-links/{session_id} (200, auth) — get session by UUID
-- GET /intake-links/resolve/{token} (200, auth) — resolve by token
-- PATCH /intake-links/{session_id}/status (200, auth) — advance status
+- Confirm patient_history_allergies has no new rows for this submission.
+- Confirm no other patient_history_* tables were written.
 
-No DELETE. No public access. No patient answers.
+### 9. Verify no PHI / no real data
 
-### 6. Tests
+- Confirm no real patient identifiers in answers.
+- Confirm synthetic_demo = true on all rows.
+- Confirm production_phi_enabled = false everywhere.
 
-`backend/tests/test_intake_link_flow_foundation.py` (new — ≥60 tests):
-- Migration: table, all columns, all CHECK constraints, UNIQUE on session_token, downgrade
-- Schema SQL: intake_link_sessions table present
-- Pydantic: create/read/status-update, future expires_at required, phi always false
-- Repo: create, get by id, get by token, list, update status, expire stale
-- Service: generate_token is urlsafe, create returns session, resolve by token, expire stale
-- Routes: all require auth, no DELETE, 404 for missing, 400 for expired
-- PHI invariant: production_phi_enabled=False in all responses
-- Forbidden: no patient answers in any schema, no diagnosis, no medical advice
+### 10. Evidence documentation
 
-### 7. Architecture doc
+Create: `docs/smoke/MODULE_152_INTAKE_LINK_SMOKE_EVIDENCE.md`
 
-`docs/architecture/INTAKE_LINK_FLOW_FOUNDATION.md` (new)
+Must include:
+- Date and staging environment
+- Clinic ID used (staging demo UUID)
+- Template ID used
+- token_prefix captured (not raw token)
+- HTTP response codes at each step
+- Submission ID returned
+- Consent event ID returned
+- Screenshots or curl output (redacted of raw token)
+- Confirmation: no history write occurred
+- Confirmation: no PHI / no real data
+- Production PHI remains NO-GO
 
-### 8. Docs
+### 11. Docs
 
-- `docs/claude/CURRENT_STATE.md` — Module 151 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 152
+- `docs/claude/CURRENT_STATE.md` — Module 152 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 153 (AI Structuring Service Foundation or Arabic RTL Foundation)
 
 ## Constraints
 
-- No patient answers stored in this module
-- No AI involvement
-- No diagnosis, no triage scoring, no medical advice
-- session_token must not encode patient data
-- production_phi_enabled always False
-- All SQL parameterised
-- Tenant isolation
-- No DELETE
-- Full test suite must remain green
+- Synthetic/fake staging only
+- No real patient data
+- No PHI
+- No raw token in docs or smoke evidence
+- No diagnosis, no triage, no medical advice
+- No history writes during this smoke run
 - Commit message:
-  Sprint 20 / Module 151 — Patient intake link flow foundation
+  Sprint 20 / Module 152 — Live patient intake link smoke evidence

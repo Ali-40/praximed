@@ -471,3 +471,155 @@ export async function fetchPreAppointmentSummary(
   const data = (await resp.json()) as { ok: boolean; summary: PreAppointmentSummary }
   return data.summary
 }
+
+// ---------------------------------------------------------------------------
+// Patient Intake Links — Sprint 20 / Module 151
+// Protected admin helpers use credentials: "include".
+// Public helpers use a plain fetch (no auth cookie).
+// Demo tokens only. No real patient data. No PHI. Production PHI remains NO-GO.
+// ---------------------------------------------------------------------------
+
+export interface PatientIntakeLink {
+  id: string
+  clinic_id: string
+  patient_id: string | null
+  appointment_request_id: string | null
+  template_id: string
+  token_prefix: string
+  status: string
+  purpose: string
+  language: string
+  expires_at: string
+  max_submissions: number
+  submission_count: number
+  synthetic_demo: boolean
+  production_phi_enabled: false
+  created_by_user_id: string | null
+  created_at: string
+  updated_at: string
+  [key: string]: unknown
+}
+
+export interface PatientIntakeSubmission {
+  id: string
+  intake_link_id: string
+  clinic_id: string
+  patient_id: string | null
+  template_id: string
+  consent_event_id: string
+  language: string
+  answers: Record<string, unknown>
+  skipped_questions: string[]
+  escalation_matches: string[]
+  status: string
+  synthetic_demo: boolean
+  production_phi_enabled: false
+  submitted_at: string
+  created_at: string
+  [key: string]: unknown
+}
+
+export interface PatientIntakeLinkCreateResult {
+  ok: boolean
+  link?: PatientIntakeLink
+  intake_url?: string
+  raw_token_shown_once?: boolean
+  production_phi_enabled?: false
+  message?: string
+}
+
+// POST /clinics/{clinicId}/patient-intake-links — admin protected.
+export async function createPatientIntakeLink(
+  clinicId: string,
+  payload: {
+    template_id: string
+    language?: string
+    purpose?: string
+    expires_at: string
+    patient_id?: string
+    appointment_request_id?: string
+    max_submissions?: number
+  },
+): Promise<PatientIntakeLinkCreateResult> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patient-intake-links`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+  return resp.json() as Promise<PatientIntakeLinkCreateResult>
+}
+
+// GET /clinics/{clinicId}/patient-intake-links — admin protected.
+export async function fetchPatientIntakeLinks(
+  clinicId: string,
+): Promise<PatientIntakeLink[]> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patient-intake-links`,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load intake links (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; links: PatientIntakeLink[] }
+  return data.links ?? []
+}
+
+// GET /clinics/{clinicId}/patient-intake-submissions — admin protected.
+export async function fetchPatientIntakeSubmissions(
+  clinicId: string,
+): Promise<PatientIntakeSubmission[]> {
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patient-intake-submissions`,
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to load intake submissions (HTTP ${resp.status})`)
+  }
+  const data = (await resp.json()) as { ok: boolean; submissions: PatientIntakeSubmission[] }
+  return data.submissions ?? []
+}
+
+// PATCH /patient-intake-links/{linkId}/revoke — admin protected.
+export async function revokePatientIntakeLink(
+  linkId: string,
+): Promise<{ ok: boolean; message?: string }> {
+  const resp = await apiFetch(
+    `/patient-intake-links/${encodeURIComponent(linkId)}/revoke`,
+    { method: 'PATCH', body: JSON.stringify({}) },
+  )
+  return resp.json() as Promise<{ ok: boolean; message?: string }>
+}
+
+// GET /intake/{token} — public demo route, no auth cookie.
+export async function fetchPublicIntakeTemplate(
+  token: string,
+): Promise<{ ok: boolean; template?: unknown; message?: string }> {
+  const resp = await fetch(`${API_BASE_URL}/intake/${encodeURIComponent(token)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  if (!resp.ok) {
+    throw new Error(`Intake link error (HTTP ${resp.status})`)
+  }
+  return resp.json() as Promise<{ ok: boolean; template?: unknown; message?: string }>
+}
+
+// POST /intake/{token}/submit — public demo route, no auth cookie.
+export async function submitPublicIntake(
+  token: string,
+  payload: {
+    language: string
+    answers: Record<string, unknown>
+    skipped_questions: string[]
+    consent_granted: boolean
+    consent_text_version: string
+    consent_text_snapshot: string
+  },
+): Promise<{ ok: boolean; submission_id?: string; consent_event_id?: string; escalation_matches?: string[]; status?: string; message?: string }> {
+  const resp = await fetch(`${API_BASE_URL}/intake/${encodeURIComponent(token)}/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!resp.ok) {
+    throw new Error(`Intake submit error (HTTP ${resp.status})`)
+  }
+  return resp.json()
+}

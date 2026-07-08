@@ -2837,6 +2837,59 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: pending run
    - Production PHI remains NO-GO
 
+165. Module 151 — Patient Intake Link Flow Foundation
+   - Date: 2026-07-08
+   - Sprint 20 / Module 151. Backend + frontend. No real patient data. No history writes. No AI structuring.
+   - backend/migrations/versions/0009_patient_intake_links.py (new):
+     - Revision: 0009_patient_intake_links / down_revision: 0008_anamnesis_templates
+     - Table: patient_intake_links — token_hash (UNIQUE, SHA-256), token_prefix,
+       clinic_id, template_id, status (active/submitted/expired/revoked), language (de/en/ar),
+       expires_at, max_submissions, submission_count, synthetic_demo=true, production_phi_enabled=false
+     - Table: patient_intake_submissions — intake_link_id, consent_event_id (NOT NULL),
+       answers JSONB, skipped_questions JSONB, escalation_matches JSONB, synthetic_demo=true, phi=false
+     - PHI + demo CHECK constraints on both tables; JSONB constants (no double-brace bug)
+   - backend/app/schemas/patient_intake_link.py (new): PatientIntakeLinkCreate,
+     PatientIntakeSubmissionCreate (forbids phi=true, demo=false, no consent, forbidden answer keys),
+     PatientIntakePublicTemplateRead, PatientIntakeLinkRevoke, all response schemas phi=false
+   - backend/app/services/intake_token.py (new): generate_intake_token() (urlsafe random 32B),
+     hash_intake_token() (SHA-256), token_prefix() (first 8 chars)
+   - backend/app/db/repositories/patient_intake_link_repo.py (new): create_patient_intake_link,
+     get by id/token_hash, list, revoke, increment_submission_count, create_intake_submission,
+     list submissions; no raw token column
+   - backend/app/services/patient_intake_link.py (new):
+     - create_demo_intake_link: verify clinic + template, generate token, hash, store hash only,
+       return raw intake_url once
+     - get_public_intake_template: hash token, validate active non-expired link, return template
+     - submit_public_intake: hash token, validate, create consent_event (channel=intake_link),
+       match escalation keywords (staff flag, no scoring), create submission, increment count
+     - No history writes. No AI structuring.
+   - backend/app/api/routes/patient_intake_links.py (new):
+     - POST /clinics/{clinic_id}/patient-intake-links (201, auth)
+     - GET /clinics/{clinic_id}/patient-intake-links (200, auth)
+     - GET /clinics/{clinic_id}/patient-intake-submissions (200, auth)
+     - PATCH /patient-intake-links/{link_id}/revoke (200, auth)
+     - GET /intake/{token} (200, public)
+     - POST /intake/{token}/submit (201, public)
+     - No DELETE route
+   - backend/app/api/router.py (updated): patient_intake_links router registered
+   - backend/app/db/schema.sql (updated): patient_intake_links + patient_intake_submissions DDL
+   - frontend/app/intake/[token]/page.tsx (new): mobile-first public intake page,
+     consent step blocks questionnaire, de/en/ar language selector, ar=dir:rtl,
+     all question types rendered, skip-allowed checkboxes, required field validation,
+     success: "Intake submitted for staff review.", no diagnosis, no appointment confirmation,
+     no localStorage, no sessionStorage
+   - frontend/app/developer-console/intake-links/page.tsx (new): admin dark console,
+     create link form, intake_url shown once, token_prefix in list, revoke, view submissions
+   - frontend/app/developer-console/page.tsx (updated): Patient Intake Links panel
+   - frontend/lib/api.ts (updated): PatientIntakeLink, PatientIntakeSubmission interfaces;
+     createPatientIntakeLink, fetchPatientIntakeLinks, fetchPatientIntakeSubmissions,
+     revokePatientIntakeLink (admin, credentials:include); fetchPublicIntakeTemplate,
+     submitPublicIntake (public, plain fetch)
+   - backend/tests/test_patient_intake_link_flow_foundation.py (new — 113 tests)
+   - docs/architecture/PATIENT_INTAKE_LINK_FLOW_FOUNDATION.md (new)
+   - Full backend tests: 4689/4689 passed. Frontend build: passed.
+   - Production PHI remains NO-GO
+
 164. Module 150 — Anamnesis Template Engine Foundation
    - Date: 2026-07-08
    - Sprint 20 / Module 150. Backend only. No frontend. No patient answers. No history writes. No AI.

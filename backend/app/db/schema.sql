@@ -980,4 +980,78 @@ CREATE UNIQUE INDEX IF NOT EXISTS uidx_anamnesis_templates_clinic_key_version
     ON anamnesis_templates (clinic_id, template_key, version)
     WHERE clinic_id IS NOT NULL;
 
+-- ─── Patient Intake Link Flow (Module 151) ────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS patient_intake_links (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        REFERENCES patients(id) ON DELETE SET NULL,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    template_id             UUID        NOT NULL REFERENCES anamnesis_templates(id) ON DELETE RESTRICT,
+    token_hash              TEXT        NOT NULL UNIQUE,
+    token_prefix            TEXT        NOT NULL,
+    status                  TEXT        NOT NULL DEFAULT 'active',
+    purpose                 TEXT        NOT NULL DEFAULT 'patient_history_collection',
+    language                TEXT        NOT NULL DEFAULT 'de',
+    expires_at              TIMESTAMPTZ NOT NULL,
+    max_submissions         INTEGER     NOT NULL DEFAULT 1,
+    submission_count        INTEGER     NOT NULL DEFAULT 0,
+    synthetic_demo          BOOLEAN     NOT NULL DEFAULT true,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_by_user_id      UUID,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT patient_intake_links_phi_check       CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_intake_links_demo_check      CHECK (synthetic_demo = true),
+    CONSTRAINT patient_intake_links_status_check    CHECK (status IN ('active','submitted','expired','revoked')),
+    CONSTRAINT patient_intake_links_purpose_check   CHECK (purpose IN ('patient_history_collection','phone_history_questions','demo_seed')),
+    CONSTRAINT patient_intake_links_language_check  CHECK (language IN ('de','en','ar')),
+    CONSTRAINT patient_intake_links_max_sub_check   CHECK (max_submissions >= 1),
+    CONSTRAINT patient_intake_links_sub_count_check CHECK (submission_count >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_clinic_id              ON patient_intake_links (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_patient_id             ON patient_intake_links (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_appointment_request_id ON patient_intake_links (appointment_request_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_template_id            ON patient_intake_links (template_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_status                 ON patient_intake_links (status);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_language               ON patient_intake_links (language);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_expires_at             ON patient_intake_links (expires_at);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_links_created_at             ON patient_intake_links (created_at);
+
+CREATE TABLE IF NOT EXISTS patient_intake_submissions (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    intake_link_id          UUID        NOT NULL REFERENCES patient_intake_links(id) ON DELETE CASCADE,
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    patient_id              UUID        REFERENCES patients(id) ON DELETE SET NULL,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    template_id             UUID        NOT NULL REFERENCES anamnesis_templates(id) ON DELETE RESTRICT,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    language                TEXT        NOT NULL DEFAULT 'de',
+    answers                 JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    skipped_questions       JSONB       NOT NULL DEFAULT '[]'::jsonb,
+    escalation_matches      JSONB       NOT NULL DEFAULT '[]'::jsonb,
+    status                  TEXT        NOT NULL DEFAULT 'submitted',
+    synthetic_demo          BOOLEAN     NOT NULL DEFAULT true,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    submitted_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT patient_intake_submissions_phi_check      CHECK (production_phi_enabled = false),
+    CONSTRAINT patient_intake_submissions_demo_check     CHECK (synthetic_demo = true),
+    CONSTRAINT patient_intake_submissions_status_check   CHECK (status IN ('submitted','review_pending','archived_demo')),
+    CONSTRAINT patient_intake_submissions_language_check CHECK (language IN ('de','en','ar'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_intake_link_id          ON patient_intake_submissions (intake_link_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_clinic_id               ON patient_intake_submissions (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_patient_id              ON patient_intake_submissions (patient_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_appointment_request_id  ON patient_intake_submissions (appointment_request_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_template_id             ON patient_intake_submissions (template_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_consent_event_id        ON patient_intake_submissions (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_status                  ON patient_intake_submissions (status);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_language                ON patient_intake_submissions (language);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_submitted_at            ON patient_intake_submissions (submitted_at);
+CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_created_at              ON patient_intake_submissions (created_at);
+
 COMMIT;

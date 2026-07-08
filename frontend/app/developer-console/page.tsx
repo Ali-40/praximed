@@ -434,7 +434,33 @@ export default function DeveloperConsolePage() {
           </a>
         </ConsolePanel>
 
-        {/* 9. Safety guardrails */}
+        {/* 9. Patient Intake Links — Sprint 20 / Module 151 */}
+        <ConsolePanel title="Patient Intake Links">
+          <p style={{ fontSize: '0.8125rem', color: MUTED, marginBottom: '0.875rem' }}>
+            Generate demo-only tokenized intake links for consent-first patient questionnaires.
+            Demo tokens only. No real patient data. No PHI. No patient history writes.
+            No AI structuring. intake_url shown once only after creation.
+            Production PHI remains NO-GO.
+          </p>
+          <a
+            href="/developer-console/intake-links"
+            style={{
+              display: 'inline-block',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              padding: '0.5rem 1.25rem',
+              borderRadius: 7,
+              border: `1px solid ${ACCENT}`,
+              background: 'rgba(0,128,128,0.15)',
+              color: ACCENT,
+              textDecoration: 'none',
+            }}
+          >
+            Manage intake links →
+          </a>
+        </ConsolePanel>
+
+        {/* 10. Safety guardrails */}
         <ConsolePanel title="Safety Guardrails">
           {[
             'Never paste secrets into browser UI.',
