@@ -1,180 +1,85 @@
-# Sprint 20 / Module 153 — AI Structuring Service Foundation
+# Sprint 20 / Module 154 — Doctor Review & Merge UI
 
 Status: pending implementation.
 
 ## Context
 
-Module 152 complete (smoke evidence):
-- Live intake link flow verified end-to-end on staging.
-- patient_intake_submissions stores synthetic answers as-is.
-- consent_event created with channel=intake_link.
-- No patient_history_* writes occurred.
-- No AI structuring triggered yet.
+Module 153 complete (AI Structuring Service Foundation):
+- patient_history_structuring_runs and patient_history_proposals tables created.
+- Local deterministic demo extraction maps intake answers to FHIR-typed proposals.
+- All proposals land as proposal_status=unverified.
+- Staff/doctor review required before any approval. No auto-approval.
+- No patient_history_* writes occurred in Module 153.
 - Production PHI remains NO-GO.
-
-Sprint 20 intake foundation is now complete:
-- Consent ledger (Module 148)
-- Patient history data model (Module 149)
-- Anamnesis template engine (Module 150)
-- Patient intake link flow (Module 151)
-- Live intake smoke evidence (Module 152)
-
-The next step is to transform synthetic intake submission answers into proposed
-unverified patient history entries for doctor review. No approval without staff/doctor review.
-No diagnosis. No medical advice. No treatment recommendations. No triage scoring.
 
 ## Goal
 
-Create the AI structuring service foundation. It reads a `patient_intake_submission`,
-sends free-text answers to an LLM (Claude) with a strictly scoped prompt, and produces
-proposed unverified `patient_history_*` entries for one or more FHIR history types.
-All proposals remain `status = unverified` until a doctor explicitly approves them.
+Allow staff and doctors to review unverified history proposals, approve them
+(merge into patient_history_* entries), or reject/archive them.
+No auto-approval. Staff/doctor must explicitly act on each proposal.
 
-No automatic approval. No diagnosis generation. No medical advice. No triage.
-Confidence is extraction confidence only — never clinical confidence.
-Logs are pseudonymized. Synthetic/fake staging only. Production PHI remains NO-GO.
+## What Module 154 must implement
 
-## What Module 153 must implement
+### 1. Proposal review backend routes
 
-### 1. AI structuring prompt design
+New routes in `backend/app/api/routes/patient_history_structuring.py` (or new file):
 
-`backend/app/services/ai_structuring/prompts.py` (new):
+- PATCH /clinics/{clinic_id}/history-proposals/{proposal_id}/merge
+  - Auth required (doctor/admin session)
+  - Validates proposal is in unverified status
+  - Creates corresponding patient_history_* entry (type determined by history_type)
+  - Updates proposal_status = "merged", sets merged_history_entry_id
+  - Returns: merged entry ID
+  - No diagnosis. No triage. No treatment recommendation.
+  - All merged entries must still be marked synthetic_demo=true, production_phi_enabled=false
 
-- System prompt: defines the task as structured data extraction only.
-- Explicitly forbids: diagnosis, medical advice, treatment recommendations, triage scoring.
-- Output format: JSON array of proposed history entries per FHIR type.
-- Confidence field: extraction_confidence (0.0–1.0) — how well the free text maps to a FHIR field.
-  NOT clinical confidence, NOT diagnosis probability.
-- Language: handles de/en/ar input, returns structured output in English FHIR fields.
-- Pseudonymization instruction: do not echo back patient names or identifiers.
+No DELETE. No bulk operations. One proposal at a time.
 
-Proposal schema per item:
-```json
-{
-  "history_type": "allergies | medications | conditions | ...",
-  "proposed_text": "...",
-  "extraction_confidence": 0.85,
-  "source_question_key": "...",
-  "source_answer_text": "..."
-}
-```
+### 2. patient_history_* write layer
 
-### 2. AI structuring service
+The merge step creates entries in the appropriate patient_history_* tables
+(conditions, medications, allergies, etc.) with:
+- source_type = "ai_proposal"
+- source_proposal_id = proposal_id
+- status = "active" (or equivalent reviewed status)
+- Staff must set their user ID as reviewed_by
 
-`backend/app/services/ai_structuring/structuring_service.py` (new):
+### 3. Frontend review UI
 
-Functions:
-- `structure_intake_submission(pool, submission_id, clinic_id, actor_user=None)`
-  - Load submission by ID and clinic_id
-  - Load linked anamnesis template for question metadata
-  - For each question with history_target != "none" that has an answer:
-    - Collect (question_key, history_target, answer_text, question_label)
-  - Build prompt with collected pairs
-  - Call Claude API with structured extraction prompt
-  - Parse response JSON into proposal list
-  - Validate each proposal:
-    - history_type must be in FHIR history type set
-    - proposed_text must not be empty
-    - extraction_confidence must be 0.0–1.0
-    - reject if proposed_text contains diagnosis/advice/treatment language
-  - For each valid proposal, create a patient_history_* entry with status=unverified
-    and source_type=ai_proposal
-  - Return list of created entry IDs
-  - Log: pseudonymized (no patient name, no raw answer text in logs)
+`frontend/app/developer-console/history-proposals/page.tsx` (new):
+- Dark admin console theme
+- List all unverified proposals for a clinic
+- Per-proposal actions: Approve (merge) / Reject / Archive Demo
+- Show extraction_confidence (labeled as "Extraction confidence only — not a clinical judgment")
+- Show fhir_resource_type and history_type
+- Show proposed_fields
+- No diagnosis display. No risk score. No triage score.
+- Show extraction_note on every card
 
-Guards:
-- No automatic approval
-- No diagnosis field
-- No medical advice field
-- No treatment recommendation field
-- No triage score
-- All created entries must be status=unverified
-- All created entries must have production_phi_enabled=false
-- If Claude API is unavailable, fail gracefully and return empty proposals
+### 4. Tests
 
-### 3. Claude API integration
+`backend/tests/test_doctor_review_merge_foundation.py` (new — ≥60 tests):
+- Merge route requires auth
+- Merge creates patient_history_* entry
+- Merge updates proposal_status to merged
+- Cannot merge an already-rejected proposal
+- Cannot merge with phi=true
+- Reject route remains functional
+- No auto-approval path exists
 
-`backend/app/services/ai_structuring/claude_client.py` (new):
+### 5. Docs
 
-- Use Anthropic Python SDK (`anthropic` package)
-- Model: claude-haiku-4-5-20251001 (fast, cost-effective for extraction)
-- API key from environment variable `ANTHROPIC_API_KEY` (never hardcoded)
-- max_tokens: 1024 for extraction tasks
-- temperature: 0 (deterministic extraction)
-- No streaming
-- Timeout guard: 30 seconds
-- Return raw response text for parsing
-- Never log raw answer content (pseudonymize)
-
-### 4. Protected service trigger route
-
-`backend/app/api/routes/ai_structuring.py` (new):
-
-- POST /clinics/{clinic_id}/intake-submissions/{submission_id}/structure
-  - Auth required (admin/staff session)
-  - Triggers structuring service
-  - Returns: list of created unverified history entry IDs
-  - 404 if submission not found or wrong clinic
-  - 422 if submission already structured
-  - production_phi_enabled always false
-
-No public access. No automatic trigger. Staff/doctor must initiate.
-No DELETE. No approval route in this module (approval is a later module).
-
-Add router include in backend/app/api/router.py.
-
-### 5. Database change (if needed)
-
-Consider adding `structured_at TIMESTAMPTZ` and `structure_status TEXT` columns to
-`patient_intake_submissions` to track whether structuring has been attempted.
-
-If adding columns: new migration `0010_intake_submission_structuring_status.py`.
-
-Alternative: track via patient_history entries (source_type=ai_proposal, linked submission ID).
-
-Choose the simpler approach and document the decision.
-
-### 6. Tests
-
-`backend/tests/test_ai_structuring_service_foundation.py` (new — ≥60 tests):
-
-- Prompt safety: no diagnosis field, no medical_advice field, no triage_score, no treatment
-- Prompt language: extraction_confidence labeled as extraction only, not clinical
-- Prompt coverage: history_type mapped from history_target, all 7 FHIR types covered
-- Claude client: API key from env var only, never hardcoded, timeout guard present
-- Service: structure_intake_submission calls Claude client, creates unverified history entries
-- Service: all created entries have status=unverified and source_type=ai_proposal
-- Service: empty answer → no proposal created for that question
-- Service: history_target=none skips question
-- Service: invalid history_type in response → rejected proposal
-- Service: invalid extraction_confidence (>1.0 or <0.0) → rejected
-- Service: graceful failure if Claude API unavailable
-- Routes: POST trigger requires auth
-- Routes: 404 for wrong clinic or missing submission
-- Routes: production_phi_enabled=false in response
-- Forbidden: no auto-approval, no diagnosis generation, no medical advice, no triage scoring
-- Logs: no raw patient answer text in log statements
-
-### 7. Architecture doc
-
-`docs/architecture/AI_STRUCTURING_SERVICE_FOUNDATION.md` (new)
-
-### 8. Docs
-
-- `docs/claude/CURRENT_STATE.md` — Module 153 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 154
+- `docs/architecture/DOCTOR_REVIEW_MERGE_FOUNDATION.md` (new)
+- `docs/claude/CURRENT_STATE.md` — Module 154 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 155
 
 ## Constraints
 
-- ANTHROPIC_API_KEY from environment variable only — never hardcoded, never logged
-- extraction_confidence ≠ clinical confidence — must be clearly labeled
-- All structuring results = status unverified
-- No automatic approval — staff/doctor review required
+- No auto-approval — staff/doctor must act on each proposal explicitly
 - No diagnosis. No medical advice. No triage. No treatment recommendation.
-- Logs must be pseudonymized — no raw answer text, no patient name
-- Synthetic/fake staging only
 - production_phi_enabled always False
-- Production PHI remains NO-GO
+- synthetic_demo always True
+- All patient_history_* writes must be traceable to a proposal and a reviewer
 - Full test suite must remain green
 - Commit message:
-  Sprint 20 / Module 153 — AI structuring service foundation
+  Sprint 20 / Module 154 — Doctor review and merge UI foundation

@@ -29,6 +29,7 @@ from backend.app.api.routes import consent_events
 from backend.app.api.routes import patient_history
 from backend.app.api.routes import anamnesis_templates
 from backend.app.api.routes import patient_intake_links
+from backend.app.api.routes import patient_history_structuring
 
 api_router = APIRouter()
 
@@ -51,3 +52,4 @@ api_router.include_router(consent_events.router)
 api_router.include_router(patient_history.router)
 api_router.include_router(anamnesis_templates.router)
 api_router.include_router(patient_intake_links.router)
+api_router.include_router(patient_history_structuring.router)

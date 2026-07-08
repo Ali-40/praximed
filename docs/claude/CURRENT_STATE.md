@@ -2837,6 +2837,51 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: pending run
    - Production PHI remains NO-GO
 
+167. Module 153 — AI Structuring Service Foundation
+   - Date: 2026-07-09
+   - Sprint 20 / Module 153. Backend only. No external LLM. No API keys. Local deterministic demo extraction only.
+   - backend/migrations/versions/0010_patient_history_structuring.py (new):
+     - Revision: 0010_patient_history_structuring / down_revision: 0009_patient_intake_links
+     - Table: patient_history_structuring_runs — provider, status, language, extraction_mode, proposals_count,
+       consent_event_id (NOT NULL), pseudonymized_log_ref. No raw_prompt. No raw_model_response.
+       Constraints: phi=false, demo=true, proposals_count>=0, provider/status/language/mode CHECK.
+     - Table: patient_history_proposals — proposal_status (unverified default), history_type, fhir_resource_type,
+       proposed_fields JSONB, proposed_fhir_payload JSONB, extraction_confidence NUMERIC(4,3),
+       staff_review_required=true (CHECK), confidence 0–1 CHECK.
+       Constraints: phi=false, demo=true, staff_review_required=true, status/history_type/fhir_type CHECK.
+   - backend/app/schemas/patient_history_structuring.py (new):
+     - StructuringRequest: validates provider, extraction_mode, phi=false, demo=true
+     - StructuringResult: extraction_note = "Extraction confidence only — not a medical judgment."
+     - ProposalStatusUpdate: only allows "rejected" and "archived_demo" (no "merged" in this module)
+     - _FORBIDDEN_FIELD_KEYS: clinical_confidence, diagnosis_score, risk_score, triage_score, medical_advice, treatment_recommendation
+   - backend/app/db/repositories/patient_history_structuring_repo.py (new — 7 functions):
+     - create_structuring_run, create_history_proposal, list_history_proposals,
+       get_history_proposal_by_id, get_structuring_run_by_id, list_proposals_for_run, update_proposal_status
+     - No patient_history_* table references. No API keys.
+   - backend/app/services/patient_history_structuring.py (new):
+     - structure_intake_submission — local deterministic extraction, maps history_target → FHIR type
+     - list_patient_history_proposals, get_structuring_run, reject_history_proposal, archive_demo_history_proposal
+     - FHIR mapping: allergies→AllergyIntolerance, medications→MedicationStatement, conditions→Condition,
+       procedures→Procedure, immunizations→Immunization, family-history→FamilyMemberHistory, social-history→Observation
+     - No external LLM. No Anthropic/OpenAI/Vapi API calls. No httpx. No api_key.
+     - extraction_confidence labeled as extraction only, never clinical. Logs pseudonymized.
+   - backend/app/api/routes/patient_history_structuring.py (new — 6 routes):
+     - POST /clinics/{clinic_id}/intake-submissions/{submission_id}/structure
+     - GET /clinics/{clinic_id}/history-proposals
+     - GET /clinics/{clinic_id}/structuring-runs/{run_id}
+     - GET /clinics/{clinic_id}/structuring-runs/{run_id}/proposals
+     - PATCH /clinics/{clinic_id}/history-proposals/{proposal_id}/reject
+     - PATCH /clinics/{clinic_id}/history-proposals/{proposal_id}/archive-demo
+     - All routes require get_current_user. No DELETE. No approval route (future module).
+   - backend/app/api/router.py (modified): added patient_history_structuring import + include_router
+   - backend/app/db/schema.sql (modified): added patient_history_structuring_runs + patient_history_proposals DDL
+   - docs/architecture/AI_STRUCTURING_SERVICE_FOUNDATION.md (new)
+   - backend/tests/test_ai_structuring_service_foundation.py (new — 93 tests)
+   - Full backend tests: 4827/4827 passed
+   - No external LLM API calls. No patient_history_* writes. No auto-approval. No diagnosis.
+   - No medical advice. No triage scoring. All proposals remain status=unverified.
+   - production_phi_enabled=false enforced end-to-end. Production PHI remains NO-GO.
+
 166. Module 152 — Live Patient Intake Link Smoke Evidence
    - Date: 2026-07-09
    - Sprint 20 / Module 152. Docs/tests only. No code changes. PASS.

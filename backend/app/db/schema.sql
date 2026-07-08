@@ -1054,4 +1054,99 @@ CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_language              
 CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_submitted_at            ON patient_intake_submissions (submitted_at);
 CREATE INDEX IF NOT EXISTS idx_patient_intake_submissions_created_at              ON patient_intake_submissions (created_at);
 
+-- ── patient_history_structuring_runs ──────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS patient_history_structuring_runs (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    intake_submission_id    UUID        NOT NULL REFERENCES patient_intake_submissions(id) ON DELETE CASCADE,
+    intake_link_id          UUID        REFERENCES patient_intake_links(id) ON DELETE SET NULL,
+    template_id             UUID        REFERENCES anamnesis_templates(id) ON DELETE SET NULL,
+    patient_id              UUID        REFERENCES patients(id) ON DELETE SET NULL,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    provider                TEXT        NOT NULL DEFAULT 'local_demo_extractor',
+    provider_model          TEXT,
+    status                  TEXT        NOT NULL DEFAULT 'completed',
+    language                TEXT        NOT NULL DEFAULT 'de',
+    extraction_mode         TEXT        NOT NULL DEFAULT 'synthetic_demo',
+    proposals_count         INTEGER     NOT NULL DEFAULT 0,
+    error_message           TEXT,
+    pseudonymized_log_ref   TEXT,
+    synthetic_demo          BOOLEAN     NOT NULL DEFAULT true,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_by_user_id      UUID,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT structuring_runs_phi_check           CHECK (production_phi_enabled = false),
+    CONSTRAINT structuring_runs_demo_check          CHECK (synthetic_demo = true),
+    CONSTRAINT structuring_runs_proposals_check     CHECK (proposals_count >= 0),
+    CONSTRAINT structuring_runs_provider_check      CHECK (provider IN ('local_demo_extractor','claude_haiku_planned','disabled_external_llm')),
+    CONSTRAINT structuring_runs_status_check        CHECK (status IN ('completed','failed','skipped')),
+    CONSTRAINT structuring_runs_language_check      CHECK (language IN ('de','en','ar')),
+    CONSTRAINT structuring_runs_mode_check          CHECK (extraction_mode IN ('synthetic_demo','rule_based','external_llm_disabled'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_clinic_id              ON patient_history_structuring_runs (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_intake_submission_id   ON patient_history_structuring_runs (intake_submission_id);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_patient_id             ON patient_history_structuring_runs (patient_id);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_appointment_request_id ON patient_history_structuring_runs (appointment_request_id);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_consent_event_id       ON patient_history_structuring_runs (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_provider               ON patient_history_structuring_runs (provider);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_status                 ON patient_history_structuring_runs (status);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_language               ON patient_history_structuring_runs (language);
+CREATE INDEX IF NOT EXISTS idx_structuring_runs_created_at             ON patient_history_structuring_runs (created_at);
+
+-- ── patient_history_proposals ─────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS patient_history_proposals (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    structuring_run_id      UUID        NOT NULL REFERENCES patient_history_structuring_runs(id) ON DELETE CASCADE,
+    intake_submission_id    UUID        NOT NULL REFERENCES patient_intake_submissions(id) ON DELETE CASCADE,
+    consent_event_id        UUID        NOT NULL REFERENCES consent_events(id) ON DELETE RESTRICT,
+    patient_id              UUID        REFERENCES patients(id) ON DELETE SET NULL,
+    appointment_request_id  UUID        REFERENCES appointment_requests(id) ON DELETE SET NULL,
+    proposal_status         TEXT        NOT NULL DEFAULT 'unverified',
+    history_type            TEXT        NOT NULL,
+    fhir_resource_type      TEXT        NOT NULL,
+    source_question_key     TEXT,
+    source_answer_ref       TEXT,
+    proposed_fields         JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    proposed_fhir_payload   JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    extraction_confidence   NUMERIC(4,3),
+    confidence_explanation  TEXT,
+    staff_review_required   BOOLEAN     NOT NULL DEFAULT true,
+    reviewed_by_user_id     UUID,
+    reviewed_at             TIMESTAMPTZ,
+    review_note             TEXT,
+    merged_history_entry_id UUID,
+    rejected_reason         TEXT,
+    synthetic_demo          BOOLEAN     NOT NULL DEFAULT true,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT proposals_phi_check             CHECK (production_phi_enabled = false),
+    CONSTRAINT proposals_demo_check            CHECK (synthetic_demo = true),
+    CONSTRAINT proposals_review_required_check CHECK (staff_review_required = true),
+    CONSTRAINT proposals_status_check          CHECK (proposal_status IN ('unverified','rejected','merged','archived_demo')),
+    CONSTRAINT proposals_history_type_check    CHECK (history_type IN ('allergies','medications','conditions','procedures','immunizations','family-history','social-history')),
+    CONSTRAINT proposals_fhir_type_check       CHECK (fhir_resource_type IN ('AllergyIntolerance','MedicationStatement','Condition','Procedure','Immunization','FamilyMemberHistory','Observation')),
+    CONSTRAINT proposals_confidence_check      CHECK (
+        extraction_confidence IS NULL
+        OR (extraction_confidence >= 0 AND extraction_confidence <= 1)
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_proposals_clinic_id              ON patient_history_proposals (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_structuring_run_id     ON patient_history_proposals (structuring_run_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_intake_submission_id   ON patient_history_proposals (intake_submission_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_consent_event_id       ON patient_history_proposals (consent_event_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_patient_id             ON patient_history_proposals (patient_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_appointment_request_id ON patient_history_proposals (appointment_request_id);
+CREATE INDEX IF NOT EXISTS idx_proposals_proposal_status        ON patient_history_proposals (proposal_status);
+CREATE INDEX IF NOT EXISTS idx_proposals_history_type           ON patient_history_proposals (history_type);
+CREATE INDEX IF NOT EXISTS idx_proposals_fhir_resource_type     ON patient_history_proposals (fhir_resource_type);
+CREATE INDEX IF NOT EXISTS idx_proposals_created_at             ON patient_history_proposals (created_at);
+
 COMMIT;
