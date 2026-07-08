@@ -3080,3 +3080,29 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - No triage scoring. No treatment recommendations. All proposals remain unverified until explicit staff merge.
    - production_phi_enabled=False enforced at DB, service, route, and frontend levels.
    - Production PHI remains NO-GO.
+
+169. Module 155 — Live Doctor Review & Merge Smoke Evidence
+   - Date: 2026-07-09
+   - Sprint 20 / Module 155. Docs/static-tests only. No backend code changes. No frontend changes. No migration.
+   - Result: PASS
+   - Live URL tested: https://praximed.vercel.app/developer-console/history-review
+   - Clinic ID: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056 (staging demo)
+   - Evidence confirmed:
+     - patient_history_structuring_runs and patient_history_proposals tables exist
+     - Synthetic intake submission used (no real patient data, no PHI)
+     - Structuring service created unverified proposals (local deterministic, no external LLM)
+     - Review queue loaded unverified proposals successfully
+     - Proposal detail visible with extraction_confidence labeled "Extraction confidence only — not a medical judgment."
+     - Reject flow: proposal_status set to rejected, no patient_history_* row created
+     - Staff confirmation gate: Approve & Merge button disabled until "I confirm staff/doctor review" checked
+     - Approve/merge: HTTP 201, merged_history_entry_id returned, proposal_status=merged
+     - Success message: "Proposal merged into patient history after staff review."
+     - Created patient_history_* row: status=approved, source_type=ai_proposal, consent_event_id preserved, production_phi_enabled=false
+     - No auto-approval occurred at any point
+     - No external LLM calls
+     - No diagnosis. No medical advice. No treatment recommendations. No triage scoring.
+     - No real patient data. No PHI.
+   - docs/runtime/LIVE_DOCTOR_REVIEW_MERGE_SMOKE_EVIDENCE.md (new)
+   - backend/tests/test_live_doctor_review_merge_smoke_evidence_contract.py (new — 50 tests)
+   - Full backend tests: 4975/4975 passed
+   - Production PHI remains NO-GO.
