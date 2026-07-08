@@ -1,203 +1,152 @@
-# Sprint 20 / Module 150 — Anamnesis Template Engine
+# Sprint 20 / Module 151 — Patient Intake Link Flow Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Module 149 complete:
-- `backend/migrations/versions/0007_patient_history_data_model.py` — 7 FHIR-aligned history tables
-- `backend/app/schemas/patient_history.py` — all 7 create/read schemas + status update
-- `backend/app/db/repositories/patient_history_repo.py` — CRUD, no DELETE
-- `backend/app/services/patient_history.py` — consent gate on every write
-- `backend/app/api/routes/patient_history.py` — 5 protected routes, no DELETE
-- `backend/app/api/router.py` (updated) — patient_history router registered
-- `backend/tests/test_patient_history_data_model_foundation.py` — 113 tests
-- `docs/architecture/PATIENT_HISTORY_DATA_MODEL_FOUNDATION.md`
-- consent_event_id required on every history row
-- Append-only/versioned. Staff/doctor review required.
-- production_phi_enabled always False.
-- No real patient PHI. No diagnosis. No medical advice. No triage.
-- Production PHI remains NO-GO.
+Module 150 complete:
+- `backend/migrations/versions/0008_anamnesis_templates.py` — anamnesis_templates table
+- `backend/app/schemas/anamnesis_template.py` — Pydantic schemas with forbidden pattern checks
+- `backend/app/db/repositories/anamnesis_template_repo.py` — CRUD, no DELETE
+- `backend/app/services/anamnesis_template_engine.py` — 3 demo templates (GP, Dermatology, Pediatrics)
+- `backend/app/api/routes/anamnesis_templates.py` — 5 protected routes, no DELETE
+- `backend/app/api/router.py` (updated) — anamnesis_templates router registered
+- `backend/app/db/schema.sql` (updated) — anamnesis_templates DDL
+- `backend/tests/test_anamnesis_template_engine_foundation.py` — ≥60 tests
+- `docs/architecture/ANAMNESIS_TEMPLATE_ENGINE_FOUNDATION.md`
+- Templates: global (clinic_id IS NULL) and clinic-specific overrides
+- Status lifecycle: draft → active → archived
+- No patient answers stored. No history writes. No AI. No diagnosis. No triage.
+- production_phi_enabled always False. Production PHI remains NO-GO.
 
-Sprint 20 is in progress. The data model foundation is in place. The next step is
-the anamnesis template engine: clinic-configurable questionnaire templates that drive
-the structured intake flow.
+Sprint 20 data layer is in place:
+- Consent ledger (consent_events, Module 148)
+- Patient history data model — 7 FHIR-aligned tables (Module 149)
+- Anamnesis template engine (Module 150)
+
+The next step is the intake link flow: generating short-lived, clinic-scoped intake
+URLs that patients can follow to answer their anamnesis template before an appointment.
 
 ## Goal
 
-Create a clinic-configurable anamnesis questionnaire template engine. Templates define
-which questions are shown during patient intake, in what order, and in what language.
-Templates are stored per clinic and per specialty. Rendering is structure-only —
-no AI involvement, no diagnosis, no medical scoring. de/en/ar-ready labels.
+Create the backend foundation for the patient intake link flow. Generate a time-limited,
+clinic-scoped intake session token that links to a specific anamnesis template.
+Track session state (not-started / in-progress / completed / expired).
 
-Synthetic staging only. No real patient data. No PHI unlock. Production PHI remains NO-GO.
+No patient answers stored in this module. No history writes. No AI.
+Synthetic/fake staging only. No real patient PHI. Production PHI remains NO-GO.
 
-## What Module 150 must implement
+## What Module 151 must implement
 
 ### 1. Database Migration
 
-`backend/migrations/versions/0008_anamnesis_templates.py` (new):
-Revision: `0008_anamnesis_templates`
-Down revision: `0007_patient_history_data_model`
+`backend/migrations/versions/0009_intake_link_sessions.py` (new):
+Revision: `0009_intake_link_sessions`
+Down revision: `0008_anamnesis_templates`
 
-Table: `anamnesis_templates`
+Table: `intake_link_sessions`
 - id UUID primary key
 - clinic_id UUID NOT NULL references clinics(id)
-- template_name TEXT NOT NULL
-- specialty TEXT NOT NULL DEFAULT 'general'
-- language_code TEXT NOT NULL DEFAULT 'de' (de/en/ar)
-- version INTEGER NOT NULL DEFAULT 1
-- sections JSONB NOT NULL DEFAULT '[]'::jsonb
-- red_flag_keywords JSONB NOT NULL DEFAULT '[]'::jsonb
-- status TEXT NOT NULL DEFAULT 'draft' (draft/active/archived)
-- created_by_user_id UUID
+- patient_id UUID references patients(id)
+- template_id UUID NOT NULL references anamnesis_templates(id)
+- session_token TEXT NOT NULL UNIQUE
+- status TEXT NOT NULL DEFAULT 'not_started' (not_started/in_progress/completed/expired)
+- expires_at TIMESTAMPTZ NOT NULL
+- started_at TIMESTAMPTZ
+- completed_at TIMESTAMPTZ
+- consent_event_id UUID references consent_events(id)
+- synthetic_demo BOOLEAN NOT NULL DEFAULT true
 - production_phi_enabled BOOLEAN NOT NULL DEFAULT false
+- created_by_user_id UUID
 - created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 - updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-- CONSTRAINT anamnesis_templates_phi_check CHECK (production_phi_enabled = false)
-- CONSTRAINT anamnesis_templates_status_check CHECK (status IN ('draft','active','archived'))
-- CONSTRAINT anamnesis_templates_language_check CHECK (language_code IN ('de','en','ar'))
-- UNIQUE(clinic_id, template_name, language_code, version)
+- CONSTRAINT intake_link_phi_check CHECK (production_phi_enabled = false)
+- CONSTRAINT intake_link_status_check CHECK (status IN ('not_started','in_progress','completed','expired'))
 
-Indexes: clinic_id, specialty, language_code, status.
+Indexes: clinic_id, patient_id, template_id, session_token, status, expires_at.
 
-### 2. Sections and Questions Schema
+### 2. Schemas
 
-sections is a JSONB array of section objects:
-```json
-[
-  {
-    "section_id": "chief_complaint",
-    "label_de": "Hauptbeschwerde",
-    "label_en": "Chief Complaint",
-    "label_ar": "الشكوى الرئيسية",
-    "order": 1,
-    "questions": [
-      {
-        "question_id": "q1",
-        "label_de": "Was ist Ihr Hauptproblem?",
-        "label_en": "What is your main concern?",
-        "label_ar": "ما هي شكواك الرئيسية؟",
-        "answer_type": "text",
-        "required": true,
-        "maps_to_history_type": "conditions",
-        "maps_to_field": "condition_text"
-      }
-    ]
-  }
-]
-```
-
-answer_type: text / boolean / select / multiselect / date
-
-red_flag_keywords: list of strings to escalate to staff (no triage scoring).
-
-Specialty templates required:
-- general (GP)
-- dermatology
-- pediatrics
-
-Each specialty includes relevant section/question structure for de/en/ar.
-
-### 3. Schemas
-
-`backend/app/schemas/anamnesis_template.py` (new):
-- TemplateQuestion
-- TemplateSection
-- AnamnesisTemplateCreate
-- AnamnesisTemplateRead
-- AnamnesisTemplateUpdate
-- AnamnesisTemplateResponse
+`backend/app/schemas/intake_link.py` (new):
+- IntakeLinkCreate
+- IntakeLinkRead
+- IntakeLinkStatusUpdate (in_progress / completed / expired)
+- IntakeLinkResponse
+- IntakeLinkListResponse
 
 Validation:
-- clinic_id required
-- template_name not empty
-- sections must be a valid list
-- red_flag_keywords: strings only, no medical scoring
-- language_code: de/en/ar
-- status: draft/active/archived
+- template_id required and valid UUID
+- expires_at must be in the future
 - production_phi_enabled always False
-- reject forbidden metadata
+- synthetic_demo always True
+- No patient answers in schema
 
-### 4. Repository
+### 3. Repository
 
-`backend/app/db/repositories/anamnesis_template_repo.py` (new):
-- create_template
-- get_template_by_id
-- list_templates_for_clinic(clinic_id, specialty=None, language_code=None, status=None)
-- get_active_template(clinic_id, specialty, language_code)
-- update_template_status
-- update_template_sections
+`backend/app/db/repositories/intake_link_repo.py` (new):
+- create_intake_link_session
+- get_intake_link_session_by_id
+- get_intake_link_session_by_token
+- list_intake_link_sessions_for_clinic(clinic_id, status=None)
+- update_intake_link_status
+- expire_stale_sessions (mark sessions past expires_at as expired)
 
-### 5. Service
+No DELETE. Parameterised SQL. Tenant-scoped.
 
-`backend/app/services/anamnesis_template.py` (new):
-- create_anamnesis_template
-- get_anamnesis_template
-- list_clinic_templates
-- activate_template
-- render_template_for_intake(clinic_id, specialty, language_code) — returns ordered sections/questions
+### 4. Service
 
-render_template_for_intake must NOT generate diagnosis, triage, or medical advice.
-Red flag keywords are surfaced as a plain list for staff escalation — no scoring.
+`backend/app/services/intake_link.py` (new):
+- generate_session_token: secrets.token_urlsafe(32) — no patient data in token
+- create_intake_link(clinic_id, template_id, patient_id=None, ttl_hours=48)
+- get_intake_link(session_id)
+- resolve_intake_link_by_token(token) — returns session + template for rendering
+- advance_session_status(session_id, new_status)
+- expire_stale_sessions(clinic_id)
 
-### 6. Routes
+No AI. No diagnosis. No medical advice. Token must not encode patient data.
 
-`backend/app/api/routes/anamnesis_templates.py` (new):
-- POST /clinics/{clinic_id}/anamnesis-templates (201, auth)
-- GET /clinics/{clinic_id}/anamnesis-templates (200, auth)
-- GET /anamnesis-templates/{template_id} (200, auth)
-- PATCH /anamnesis-templates/{template_id}/status (200, auth)
-- GET /clinics/{clinic_id}/anamnesis-templates/render?specialty=general&language=de (200, auth)
+### 5. Routes
 
-No DELETE. production_phi_enabled=False always.
+`backend/app/api/routes/intake_links.py` (new):
+- POST /clinics/{clinic_id}/intake-links (201, auth) — create intake link session
+- GET /clinics/{clinic_id}/intake-links (200, auth) — list sessions
+- GET /intake-links/{session_id} (200, auth) — get session by UUID
+- GET /intake-links/resolve/{token} (200, auth) — resolve by token
+- PATCH /intake-links/{session_id}/status (200, auth) — advance status
 
-### 7. Seed Templates
+No DELETE. No public access. No patient answers.
 
-`backend/scripts/seed_anamnesis_templates.py` (new):
-Seed 3 specialty templates (general/dermatology/pediatrics) × 3 languages (de/en/ar)
-= 9 templates for staging clinic.
+### 6. Tests
 
-### 8. Tests
+`backend/tests/test_intake_link_flow_foundation.py` (new — ≥60 tests):
+- Migration: table, all columns, all CHECK constraints, UNIQUE on session_token, downgrade
+- Schema SQL: intake_link_sessions table present
+- Pydantic: create/read/status-update, future expires_at required, phi always false
+- Repo: create, get by id, get by token, list, update status, expire stale
+- Service: generate_token is urlsafe, create returns session, resolve by token, expire stale
+- Routes: all require auth, no DELETE, 404 for missing, 400 for expired
+- PHI invariant: production_phi_enabled=False in all responses
+- Forbidden: no patient answers in any schema, no diagnosis, no medical advice
 
-`backend/tests/test_anamnesis_template_engine.py` (new — ≥60 tests):
-- Migration: table, all columns, all CHECK constraints, UNIQUE constraint
-- Schemas: create/read/update, required field validation, language/status enum validation,
-  forbidden metadata rejection, sections structure
-- Repo: create, list, get, activate, render
-- Service: create, list, get active, render for intake (sections ordered, labels correct)
-- Routes: all endpoints require auth, no DELETE, render returns ordered sections
-- Red flag: keywords surface without scoring (no triage, no medical advice)
-- Forbidden: no diagnosis, no triage_score, no medical_advice, no DATABASE_URL, no secrets
-- Seed script: seed function callable, creates templates for staging clinic
+### 7. Architecture doc
 
-### 9. Architecture doc
+`docs/architecture/INTAKE_LINK_FLOW_FOUNDATION.md` (new)
 
-`docs/architecture/ANAMNESIS_TEMPLATE_ENGINE.md` (new):
-- Purpose: configurable intake questionnaire engine
-- Template structure: sections → questions → labels (de/en/ar) → answer_type → history_type mapping
-- Specialty templates: GP, dermatology, pediatrics
-- Red flag escalation: keyword list surfaced to staff, no automated scoring
-- de/en/ar support
-- Rendering is structure-only, no AI
-- No diagnosis. No triage. No medical advice.
-- Synthetic staging only. Production PHI remains NO-GO.
+### 8. Docs
 
-### 10. Docs
-
-- `docs/claude/CURRENT_STATE.md` — Module 150 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 151 — Intake Link Flow
+- `docs/claude/CURRENT_STATE.md` — Module 151 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 152
 
 ## Constraints
 
-- No AI involvement in this module
+- No patient answers stored in this module
+- No AI involvement
 - No diagnosis, no triage scoring, no medical advice
-- Red flag keywords surface to staff only — no automated escalation decisions
-- de/en/ar labels required on all questions
+- session_token must not encode patient data
 - production_phi_enabled always False
 - All SQL parameterised
 - Tenant isolation
 - No DELETE
 - Full test suite must remain green
 - Commit message:
-  Sprint 20 / Module 150 — Anamnesis template engine
+  Sprint 20 / Module 151 — Patient intake link flow foundation

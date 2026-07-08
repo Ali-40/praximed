@@ -2837,6 +2837,48 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: pending run
    - Production PHI remains NO-GO
 
+164. Module 150 — Anamnesis Template Engine Foundation
+   - Date: 2026-07-08
+   - Sprint 20 / Module 150. Backend only. No frontend. No patient answers. No history writes. No AI.
+   - backend/migrations/versions/0008_anamnesis_templates.py (new):
+     - Revision: 0008_anamnesis_templates / down_revision: 0007_patient_history_data_model
+     - Table: anamnesis_templates with clinic_id, template_key, display_name, specialty, version,
+       status (draft/active/archived), primary_language (de/en/ar), supported_languages JSONB,
+       template_schema JSONB, escalation_keywords JSONB, consent_purpose, synthetic_demo,
+       production_phi_enabled (always false), created/updated_by_user_id, timestamps
+     - PHI check constraint: production_phi_enabled = false
+     - Partial unique indexes: global (clinic_id IS NULL) and per-clinic
+     - JSONB defaults use _EMPTY_JSONB constant (no double-brace bug)
+   - backend/app/schemas/anamnesis_template.py (new):
+     - AnamnesisTemplateQuestion, AnamnesisTemplateSection, AnamnesisTemplateSchemaPayload
+     - AnamnesisTemplateCreate with forbidden schema pattern detection
+     - AnamnesisTemplateStatusUpdate (active/archived only, not draft)
+     - AnamnesisTemplateResponse, AnamnesisTemplateListResponse (production_phi_enabled=False)
+   - backend/app/db/repositories/anamnesis_template_repo.py (new):
+     - create, get_by_id, get_by_key, list (dynamic filters), update_status, archive, seed_demo
+     - Global (clinic_id IS NULL) vs clinic-specific template resolution
+     - No DELETE function
+   - backend/app/services/anamnesis_template_engine.py (new):
+     - 3 seeded demo templates: demo_gp_basic_history (general_practice, 5 sections),
+       demo_dermatology_basic_history (dermatology, 4 sections),
+       demo_pediatrics_since_birth (pediatrics, 5 sections)
+     - All demo: synthetic_demo=True, production_phi_enabled=False, de/en/ar labels, skip_allowed=True
+     - GP template has escalation_keywords in de+en
+     - Service functions: create_template, list_templates, get_template, activate_template,
+       archive_template, seed_demo_templates, get_demo_templates
+   - backend/app/api/routes/anamnesis_templates.py (new):
+     - POST /clinics/{clinic_id}/anamnesis-templates (201, auth)
+     - GET /clinics/{clinic_id}/anamnesis-templates (200, auth, specialty/status/limit filters)
+     - GET /anamnesis-templates/{template_id} (200, auth)
+     - PATCH /anamnesis-templates/{template_id}/status (200, auth)
+     - POST /anamnesis-templates/seed-demo (201, auth)
+     - No DELETE route
+   - backend/app/api/router.py (updated): anamnesis_templates router registered
+   - backend/app/db/schema.sql (updated): anamnesis_templates DDL with '{}'::jsonb defaults
+   - backend/tests/test_anamnesis_template_engine_foundation.py (new — ≥60 tests)
+   - docs/architecture/ANAMNESIS_TEMPLATE_ENGINE_FOUNDATION.md (new)
+   - Production PHI remains NO-GO
+
 160. Module 146 — Admin Vapi Binding Metadata UI
    - Date: 2026-07-07
    - Sprint 19 / Frontend + tests + docs. No backend changes. No migration. No live Vapi API calls. No secrets. No PHI.

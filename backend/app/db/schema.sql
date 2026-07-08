@@ -936,4 +936,48 @@ CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_consent_event_id O
 CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_status ON patient_history_social_history (status);
 CREATE INDEX IF NOT EXISTS idx_patient_history_social_history_created_at ON patient_history_social_history (created_at);
 
+-- ─── Anamnesis Templates (Module 150) ────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS anamnesis_templates (
+    id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    clinic_id               UUID        REFERENCES clinics(id) ON DELETE CASCADE,
+    template_key            TEXT        NOT NULL,
+    display_name            TEXT        NOT NULL,
+    specialty               TEXT        NOT NULL,
+    version                 INTEGER     NOT NULL DEFAULT 1,
+    status                  TEXT        NOT NULL DEFAULT 'draft',
+    primary_language        TEXT        NOT NULL DEFAULT 'de',
+    supported_languages     JSONB       NOT NULL DEFAULT '["de","en"]'::jsonb,
+    template_schema         JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    escalation_keywords     JSONB       NOT NULL DEFAULT '[]'::jsonb,
+    consent_purpose         TEXT        NOT NULL DEFAULT 'patient_history_collection',
+    synthetic_demo          BOOLEAN     NOT NULL DEFAULT true,
+    production_phi_enabled  BOOLEAN     NOT NULL DEFAULT false,
+    created_by_user_id      UUID,
+    updated_by_user_id      UUID,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT anamnesis_templates_phi_check     CHECK (production_phi_enabled = false),
+    CONSTRAINT anamnesis_templates_status_check  CHECK (status IN ('draft','active','archived')),
+    CONSTRAINT anamnesis_templates_language_check CHECK (primary_language IN ('de','en','ar')),
+    CONSTRAINT anamnesis_templates_purpose_check CHECK (consent_purpose IN ('patient_history_collection','phone_history_questions','demo_seed')),
+    CONSTRAINT anamnesis_templates_version_check CHECK (version >= 1)
+);
+
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_clinic_id       ON anamnesis_templates (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_template_key    ON anamnesis_templates (template_key);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_specialty       ON anamnesis_templates (specialty);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_status          ON anamnesis_templates (status);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_primary_language ON anamnesis_templates (primary_language);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_synthetic_demo  ON anamnesis_templates (synthetic_demo);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_templates_created_at      ON anamnesis_templates (created_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_anamnesis_templates_global_key_version
+    ON anamnesis_templates (template_key, version)
+    WHERE clinic_id IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_anamnesis_templates_clinic_key_version
+    ON anamnesis_templates (clinic_id, template_key, version)
+    WHERE clinic_id IS NOT NULL;
+
 COMMIT;
