@@ -1,145 +1,180 @@
-# Sprint 20 / Module 152 — Live Patient Intake Link Smoke Evidence
+# Sprint 20 / Module 153 — AI Structuring Service Foundation
 
 Status: pending implementation.
 
 ## Context
 
-Module 151 complete:
-- `backend/migrations/versions/0009_patient_intake_links.py` — patient_intake_links + patient_intake_submissions
-- `backend/app/schemas/patient_intake_link.py` — Pydantic schemas, PHI/demo guards
-- `backend/app/services/intake_token.py` — generate_intake_token, hash_intake_token, token_prefix
-- `backend/app/db/repositories/patient_intake_link_repo.py` — CRUD, no raw token stored
-- `backend/app/services/patient_intake_link.py` — create, public load, submit, revoke; consent event on submit
-- `backend/app/api/routes/patient_intake_links.py` — 4 admin + 2 public routes, no DELETE
-- `backend/app/api/router.py` (updated) — patient_intake_links router registered
-- `backend/app/db/schema.sql` (updated) — both tables
-- `frontend/app/intake/[token]/page.tsx` — mobile-first consent-first questionnaire
-- `frontend/app/developer-console/intake-links/page.tsx` — admin link management
-- `frontend/lib/api.ts` (updated) — all intake helpers
-- `backend/tests/test_patient_intake_link_flow_foundation.py` — 113 tests
-- `docs/architecture/PATIENT_INTAKE_LINK_FLOW_FOUNDATION.md`
-- Raw token never stored. token_hash stored. intake_url shown once.
-- Consent step required before questionnaire.
-- Answers stored as synthetic intake submissions only.
-- No patient history writes. No AI structuring. No diagnosis. No triage.
-- production_phi_enabled always False. Production PHI remains NO-GO.
+Module 152 complete (smoke evidence):
+- Live intake link flow verified end-to-end on staging.
+- patient_intake_submissions stores synthetic answers as-is.
+- consent_event created with channel=intake_link.
+- No patient_history_* writes occurred.
+- No AI structuring triggered yet.
+- Production PHI remains NO-GO.
 
-Sprint 20 data layer is now complete:
+Sprint 20 intake foundation is now complete:
 - Consent ledger (Module 148)
 - Patient history data model (Module 149)
 - Anamnesis template engine (Module 150)
 - Patient intake link flow (Module 151)
+- Live intake smoke evidence (Module 152)
+
+The next step is to transform synthetic intake submission answers into proposed
+unverified patient history entries for doctor review. No approval without staff/doctor review.
+No diagnosis. No medical advice. No treatment recommendations. No triage scoring.
 
 ## Goal
 
-Deploy Module 151 to the staging environment and produce live smoke evidence
-that the full intake link flow works end-to-end with synthetic/demo data only.
+Create the AI structuring service foundation. It reads a `patient_intake_submission`,
+sends free-text answers to an LLM (Claude) with a strictly scoped prompt, and produces
+proposed unverified `patient_history_*` entries for one or more FHIR history types.
+All proposals remain `status = unverified` until a doctor explicitly approves them.
 
-## What Module 152 must do
+No automatic approval. No diagnosis generation. No medical advice. No triage.
+Confidence is extraction confidence only — never clinical confidence.
+Logs are pseudonymized. Synthetic/fake staging only. Production PHI remains NO-GO.
 
-### 1. Deploy and migrate
+## What Module 153 must implement
 
-- Deploy Module 151 backend to Railway (or staging target).
-- Run migration 0009_patient_intake_links.
-- Confirm both tables exist: patient_intake_links, patient_intake_submissions.
-- Confirm no prior migration state broken.
+### 1. AI structuring prompt design
 
-### 2. Seed demo templates if needed
+`backend/app/services/ai_structuring/prompts.py` (new):
 
-- If demo_gp_basic_history is not seeded:
-  - Call POST /anamnesis-templates/seed-demo with admin session.
-  - Confirm 3 templates returned.
-  - Note template ID of demo_gp_basic_history for next step.
+- System prompt: defines the task as structured data extraction only.
+- Explicitly forbids: diagnosis, medical advice, treatment recommendations, triage scoring.
+- Output format: JSON array of proposed history entries per FHIR type.
+- Confidence field: extraction_confidence (0.0–1.0) — how well the free text maps to a FHIR field.
+  NOT clinical confidence, NOT diagnosis probability.
+- Language: handles de/en/ar input, returns structured output in English FHIR fields.
+- Pseudonymization instruction: do not echo back patient names or identifiers.
 
-### 3. Create demo intake link
+Proposal schema per item:
+```json
+{
+  "history_type": "allergies | medications | conditions | ...",
+  "proposed_text": "...",
+  "extraction_confidence": 0.85,
+  "source_question_key": "...",
+  "source_answer_text": "..."
+}
+```
 
-- Call POST /clinics/{staging_clinic_id}/patient-intake-links:
-  - template_id = demo_gp_basic_history UUID
-  - language = de
-  - purpose = patient_history_collection
-  - expires_at = now + 72 hours
-- Confirm HTTP 201.
-- Capture intake_url from response (raw token, shown once).
-- Confirm token_prefix appears in response.
-- Confirm production_phi_enabled = false.
+### 2. AI structuring service
 
-### 4. Open public intake page
+`backend/app/services/ai_structuring/structuring_service.py` (new):
 
-- Navigate to /intake/{raw_token} in browser.
-- Confirm demo staging notice appears.
-- Confirm consent step renders before questionnaire.
-- Confirm language selector shows de / en / ar.
+Functions:
+- `structure_intake_submission(pool, submission_id, clinic_id, actor_user=None)`
+  - Load submission by ID and clinic_id
+  - Load linked anamnesis template for question metadata
+  - For each question with history_target != "none" that has an answer:
+    - Collect (question_key, history_target, answer_text, question_label)
+  - Build prompt with collected pairs
+  - Call Claude API with structured extraction prompt
+  - Parse response JSON into proposal list
+  - Validate each proposal:
+    - history_type must be in FHIR history type set
+    - proposed_text must not be empty
+    - extraction_confidence must be 0.0–1.0
+    - reject if proposed_text contains diagnosis/advice/treatment language
+  - For each valid proposal, create a patient_history_* entry with status=unverified
+    and source_type=ai_proposal
+  - Return list of created entry IDs
+  - Log: pseudonymized (no patient name, no raw answer text in logs)
 
-### 5. Complete consent-first questionnaire
+Guards:
+- No automatic approval
+- No diagnosis field
+- No medical advice field
+- No treatment recommendation field
+- No triage score
+- All created entries must be status=unverified
+- All created entries must have production_phi_enabled=false
+- If Claude API is unavailable, fail gracefully and return empty proposals
 
-- Check consent checkbox.
-- Click "Continue to questionnaire".
-- Confirm questionnaire renders with sections from demo_gp_basic_history.
-- Fill in one or two optional fields with synthetic placeholder answers:
-  - known_allergies: "Keine (Demo)"
-  - current_medications: "Keine (Demo)"
-- Skip remaining questions.
-- Click "Submit intake".
-- Confirm success message: "Intake submitted for staff review."
+### 3. Claude API integration
 
-### 6. Verify submission stored
+`backend/app/services/ai_structuring/claude_client.py` (new):
 
-- Call GET /clinics/{staging_clinic_id}/patient-intake-submissions with admin session.
-- Confirm 1 submission returned.
-- Confirm status = submitted.
-- Confirm consent_event_id is present.
-- Confirm answers JSON contains the synthetic placeholder answers.
-- Confirm production_phi_enabled = false.
-- Confirm synthetic_demo = true.
+- Use Anthropic Python SDK (`anthropic` package)
+- Model: claude-haiku-4-5-20251001 (fast, cost-effective for extraction)
+- API key from environment variable `ANTHROPIC_API_KEY` (never hardcoded)
+- max_tokens: 1024 for extraction tasks
+- temperature: 0 (deterministic extraction)
+- No streaming
+- Timeout guard: 30 seconds
+- Return raw response text for parsing
+- Never log raw answer content (pseudonymize)
 
-### 7. Verify consent event created
+### 4. Protected service trigger route
 
-- Check that consent_events table has a new row with:
-  - channel = intake_link
-  - purpose = patient_history_collection
-  - granted = true
-  - production_phi_enabled = false
+`backend/app/api/routes/ai_structuring.py` (new):
 
-### 8. Verify no patient history write
+- POST /clinics/{clinic_id}/intake-submissions/{submission_id}/structure
+  - Auth required (admin/staff session)
+  - Triggers structuring service
+  - Returns: list of created unverified history entry IDs
+  - 404 if submission not found or wrong clinic
+  - 422 if submission already structured
+  - production_phi_enabled always false
 
-- Confirm patient_history_allergies has no new rows for this submission.
-- Confirm no other patient_history_* tables were written.
+No public access. No automatic trigger. Staff/doctor must initiate.
+No DELETE. No approval route in this module (approval is a later module).
 
-### 9. Verify no PHI / no real data
+Add router include in backend/app/api/router.py.
 
-- Confirm no real patient identifiers in answers.
-- Confirm synthetic_demo = true on all rows.
-- Confirm production_phi_enabled = false everywhere.
+### 5. Database change (if needed)
 
-### 10. Evidence documentation
+Consider adding `structured_at TIMESTAMPTZ` and `structure_status TEXT` columns to
+`patient_intake_submissions` to track whether structuring has been attempted.
 
-Create: `docs/smoke/MODULE_152_INTAKE_LINK_SMOKE_EVIDENCE.md`
+If adding columns: new migration `0010_intake_submission_structuring_status.py`.
 
-Must include:
-- Date and staging environment
-- Clinic ID used (staging demo UUID)
-- Template ID used
-- token_prefix captured (not raw token)
-- HTTP response codes at each step
-- Submission ID returned
-- Consent event ID returned
-- Screenshots or curl output (redacted of raw token)
-- Confirmation: no history write occurred
-- Confirmation: no PHI / no real data
-- Production PHI remains NO-GO
+Alternative: track via patient_history entries (source_type=ai_proposal, linked submission ID).
 
-### 11. Docs
+Choose the simpler approach and document the decision.
 
-- `docs/claude/CURRENT_STATE.md` — Module 152 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 153 (AI Structuring Service Foundation or Arabic RTL Foundation)
+### 6. Tests
+
+`backend/tests/test_ai_structuring_service_foundation.py` (new — ≥60 tests):
+
+- Prompt safety: no diagnosis field, no medical_advice field, no triage_score, no treatment
+- Prompt language: extraction_confidence labeled as extraction only, not clinical
+- Prompt coverage: history_type mapped from history_target, all 7 FHIR types covered
+- Claude client: API key from env var only, never hardcoded, timeout guard present
+- Service: structure_intake_submission calls Claude client, creates unverified history entries
+- Service: all created entries have status=unverified and source_type=ai_proposal
+- Service: empty answer → no proposal created for that question
+- Service: history_target=none skips question
+- Service: invalid history_type in response → rejected proposal
+- Service: invalid extraction_confidence (>1.0 or <0.0) → rejected
+- Service: graceful failure if Claude API unavailable
+- Routes: POST trigger requires auth
+- Routes: 404 for wrong clinic or missing submission
+- Routes: production_phi_enabled=false in response
+- Forbidden: no auto-approval, no diagnosis generation, no medical advice, no triage scoring
+- Logs: no raw patient answer text in log statements
+
+### 7. Architecture doc
+
+`docs/architecture/AI_STRUCTURING_SERVICE_FOUNDATION.md` (new)
+
+### 8. Docs
+
+- `docs/claude/CURRENT_STATE.md` — Module 153 entry
+- `docs/claude/NEXT_MODULE.md` — updated to Module 154
 
 ## Constraints
 
+- ANTHROPIC_API_KEY from environment variable only — never hardcoded, never logged
+- extraction_confidence ≠ clinical confidence — must be clearly labeled
+- All structuring results = status unverified
+- No automatic approval — staff/doctor review required
+- No diagnosis. No medical advice. No triage. No treatment recommendation.
+- Logs must be pseudonymized — no raw answer text, no patient name
 - Synthetic/fake staging only
-- No real patient data
-- No PHI
-- No raw token in docs or smoke evidence
-- No diagnosis, no triage, no medical advice
-- No history writes during this smoke run
+- production_phi_enabled always False
+- Production PHI remains NO-GO
+- Full test suite must remain green
 - Commit message:
-  Sprint 20 / Module 152 — Live patient intake link smoke evidence
+  Sprint 20 / Module 153 — AI structuring service foundation

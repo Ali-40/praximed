@@ -2837,6 +2837,28 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: pending run
    - Production PHI remains NO-GO
 
+166. Module 152 — Live Patient Intake Link Smoke Evidence
+   - Date: 2026-07-09
+   - Sprint 20 / Module 152. Docs/tests only. No code changes. PASS.
+   - docs/runtime/LIVE_PATIENT_INTAKE_LINK_SMOKE_EVIDENCE.md (new):
+     - Admin link creation verified at https://praximed.vercel.app/developer-console/intake-links
+     - Clinic ID: 1a5bbc75-c1b0-4488-94aa-64b3f1c50056 (staging)
+     - Tables confirmed: anamnesis_templates, patient_intake_links, patient_intake_submissions, consent_events
+     - Raw token shown once; token_hash stored; token_prefix visible in admin list only
+     - Public intake page /intake/{token} loaded without auth
+     - Consent step appeared before questionnaire
+     - de/en/ar selector verified; Arabic RTL activated on ar selection
+     - Synthetic demo answers submitted (no real data)
+     - Success message: "Intake submitted for staff review."
+     - consent_event created with channel=intake_link, granted=true, phi=false
+     - patient_intake_submission stored with answers JSONB, escalation_matches=[], phi=false
+     - No patient_history_* row written
+     - No AI structuring triggered
+     - production_phi_enabled=false enforced end-to-end
+     - Production PHI remains NO-GO
+   - backend/tests/test_live_patient_intake_link_smoke_evidence_contract.py (new — 45 tests)
+   - Full backend tests: 4734/4734 passed
+
 165. Module 151 — Patient Intake Link Flow Foundation
    - Date: 2026-07-08
    - Sprint 20 / Module 151. Backend + frontend. No real patient data. No history writes. No AI structuring.
