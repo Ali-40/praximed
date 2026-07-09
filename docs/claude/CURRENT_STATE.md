@@ -2,7 +2,7 @@
 
 ## Completed and committed modules
 
-000. Module 160 — Sprint 21 / Live Vapi Staging Call Loop (commit: pending)
+000. Module 160 — Sprint 21 / Live Vapi Staging Call Loop (commit: 5cb8671)
    - `frontend/app/dashboard/page.tsx` — data-live-demo-hint span added to demo strip
    - `backend/tests/test_live_vapi_staging_call_loop_sales_mvp_contract.py` — new, ≥15 tests
    - `docs/product/LIVE_VAPI_STAGING_CALL_LOOP.md` — product doc with German assistant script + Vapi checklist
