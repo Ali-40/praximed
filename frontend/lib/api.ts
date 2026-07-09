@@ -688,3 +688,58 @@ export async function rejectReviewPatientHistoryProposal(
   if (!resp.ok) throw new Error(`Reject failed (HTTP ${resp.status})`)
   return resp.json() as Promise<{ ok: boolean; message?: string }>
 }
+
+// ---------------------------------------------------------------------------
+// Patient Timeline — Sprint 20 / Module 156
+// credentials: "include". No browser storage. No token storage.
+// ---------------------------------------------------------------------------
+
+export async function fetchPatientTimeline(
+  clinicId: string,
+  patientId: string,
+  options?: { includeUnverified?: boolean; limit?: number },
+): Promise<unknown> {
+  const params = new URLSearchParams()
+  if (options?.includeUnverified !== undefined)
+    params.set('include_unverified', String(options.includeUnverified))
+  if (options?.limit !== undefined)
+    params.set('limit', String(options.limit))
+  const query = params.toString() ? `?${params.toString()}` : ''
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patients/${encodeURIComponent(patientId)}/timeline${query}`,
+  )
+  if (!resp.ok) throw new Error(`Failed to load patient timeline (HTTP ${resp.status})`)
+  return resp.json()
+}
+
+export async function fetchPatientTimelineDelta(
+  clinicId: string,
+  patientId: string,
+  options?: { includeUnverified?: boolean },
+): Promise<unknown> {
+  const params = new URLSearchParams()
+  if (options?.includeUnverified !== undefined)
+    params.set('include_unverified', String(options.includeUnverified))
+  const query = params.toString() ? `?${params.toString()}` : ''
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patients/${encodeURIComponent(patientId)}/timeline/delta${query}`,
+  )
+  if (!resp.ok) throw new Error(`Failed to load timeline delta (HTTP ${resp.status})`)
+  return resp.json()
+}
+
+export async function fetchPatientTimelineDeltaSince(
+  clinicId: string,
+  patientId: string,
+  since: string,
+  options?: { includeUnverified?: boolean },
+): Promise<unknown> {
+  const params = new URLSearchParams({ since })
+  if (options?.includeUnverified !== undefined)
+    params.set('include_unverified', String(options.includeUnverified))
+  const resp = await apiFetch(
+    `/clinics/${encodeURIComponent(clinicId)}/patients/${encodeURIComponent(patientId)}/timeline/delta-since?${params.toString()}`,
+  )
+  if (!resp.ok) throw new Error(`Failed to load timeline delta-since (HTTP ${resp.status})`)
+  return resp.json()
+}

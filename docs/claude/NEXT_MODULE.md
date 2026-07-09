@@ -1,133 +1,114 @@
-# Sprint 20 / Module 156 — Longitudinal Timeline and Delta View Foundation
+# Sprint 20 / Module 157 — Live Longitudinal Timeline Smoke Evidence
 
 Status: pending.
 
 ## Context
 
-Module 155 complete (Live Doctor Review & Merge Smoke Evidence):
-- Full intake → structure → review → merge pipeline verified live on staging.
-- Staff reject and approve/merge flows confirmed.
-- Approved patient_history_* rows created only after explicit staff confirmation.
-- No auto-approval. No external LLM. No PHI.
-- 4975/4975 backend tests passing. Frontend build clean.
+Module 156 complete (Longitudinal Timeline and Delta View Foundation):
+- Timeline aggregates appointment requests, intake submissions, consent events,
+  structuring runs, unverified proposals, and approved patient_history_* entries.
+- Delta view shows items changed since last visit anchor (latest appointment_request).
+- Approved history and unverified proposals are clearly separated.
+- No diagnosis. No medical advice. No triage scoring. No treatment recommendations.
+- No external LLM. No new writes. No PHI.
+- 5067/5067 backend tests passing. Frontend build clean.
 - Production PHI remains NO-GO.
 
 ## Goal
 
-Build a longitudinal patient timeline aggregator that collects approved structured history entries,
-recent intake submissions, consent events, and structuring run summaries into a single chronological
-view for a given patient. Add a delta view showing changes since the last appointment visit.
+Deploy Module 156 to staging and document live evidence that the timeline view works
+for a staging patient with synthetic intake/review/merge data.
+Load timeline, verify approved history appears, verify unverified proposal separation,
+verify delta view, and document all safety boundaries.
 
-No diagnosis. No medical advice. No triage scoring. No treatment recommendations.
-Approved structured data only for the clinical timeline (status=approved, source_type=ai_proposal).
-Unverified proposals shown separately, clearly labeled as unverified.
-Production PHI remains NO-GO.
+Docs/static-tests only. No new backend code. No frontend changes. No migration.
 
-## What Module 156 must implement
+## What Module 157 must produce
 
-### 1. Backend timeline aggregator
+### 1. Evidence document
 
-New service: `backend/app/services/patient_timeline.py`
+`docs/runtime/LIVE_LONGITUDINAL_TIMELINE_SMOKE_EVIDENCE.md` (new)
 
-Function: `get_patient_timeline(pool, clinic_id, patient_id, limit=50) → dict`
+Sections:
+1. Purpose
+2. Current result: PASS
+3. Live route tested
+4. Clinic ID and patient ID used
+5. Timeline endpoint evidence
+6. Approved history items visible
+7. Unverified proposal items visible (labeled separately)
+8. Consent event visible
+9. Intake submission visible
+10. Appointment event visible
+11. Structuring run visible
+12. Delta since last visit evidence
+13. changed_since_last_visit anchor confirmed
+14. no_prior_visit_anchor behavior documented (if tested)
+15. production_phi_enabled false evidence
+16. Extraction confidence label evidence
+17. Safety boundaries
+18. What this proves
+19. What this does not prove
+20. Remaining blockers
 
-Aggregates in reverse chronological order:
-- Approved `patient_history_*` entries (all 7 types) — labeled `source: approved_history`
-- Unverified proposals from `patient_history_proposals` — labeled `source: unverified_proposal`
-- Structuring runs from `patient_history_structuring_runs`
-- Consent events from `consent_events`
-- Intake submissions (submitted status) from `patient_intake_submissions`
+### 2. Tests
 
-Each item has:
-- `event_type` (approved_history / unverified_proposal / structuring_run / consent_event / intake_submission)
-- `occurred_at` (timestamp for chronological sort)
-- `history_type` where applicable
-- `production_phi_enabled: false`
-- `synthetic_demo: true`
+`backend/tests/test_live_longitudinal_timeline_smoke_evidence_contract.py` (new — ≥20 tests)
 
-No raw answers. No transcript content. No diagnosis fields. No triage fields.
-No medical advice fields. No clinical_confidence. No risk_score.
+Static evidence validation tests (no live API calls):
+- Evidence doc exists
+- Result is PASS
+- Mentions Module 157
+- Mentions timeline route
+- Mentions staging clinic_id
+- Mentions approved history
+- Mentions unverified proposal
+- Mentions changed_since_last_visit or no_prior_visit_anchor
+- Mentions delta since last visit
+- Mentions consent_event
+- Mentions intake_submission
+- Mentions appointment_request
+- Mentions structuring_run
+- Mentions production_phi_enabled false
+- Mentions extraction confidence labeled correctly
+- Mentions no auto-approval
+- Mentions no diagnosis
+- Mentions no medical advice
+- Mentions no treatment recommendations
+- Mentions no triage scoring
+- Mentions no real patient data
+- Mentions no PHI
+- Mentions Production PHI remains NO-GO
+- Mentions remaining blockers
+- No DATABASE_URL, no JWT_SECRET, no sk- keys
+- No real patient names
+- No diagnosis generation claim
+- No production readiness claim
 
-### 2. Delta view
+### 3. Docs updates
 
-Function: `get_patient_timeline_delta(pool, clinic_id, patient_id, since_appointment_date) → dict`
+- docs/claude/CURRENT_STATE.md — Module 157 entry
+- docs/claude/NEXT_MODULE.md — updated to Module 158
 
-Returns only entries newer than `since_appointment_date`.
-Useful for pre-visit summary: what changed since last appointment?
+## Module 158 preview
 
-No diagnosis inference. No clinical summary generation. No LLM calls.
-Purely structural: approved history entries added since the given date.
+Sprint 20 / Module 158 — Patient Story Pre-Visit Narrative Foundation
 
-### 3. Backend routes
-
-New file: `backend/app/api/routes/patient_timeline.py`
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/clinics/{clinic_id}/patients/{patient_id}/timeline` | Full chronological timeline |
-| GET | `/clinics/{clinic_id}/patients/{patient_id}/timeline/delta` | Delta since date (query param: since) |
-
-All routes:
-- Require `get_current_user` (authenticated session)
-- Return `production_phi_enabled: false`
-- No DELETE. No public routes.
-
-### 4. Frontend timeline panel
-
-New page: `frontend/app/developer-console/patient-timeline/page.tsx`
-
-Dark admin console theme (INK=#0B132B, PANEL=#111C3D, ACCENT=#008080).
-
-Features:
-- Clinic ID + patient ID inputs
-- "Load Timeline" button
-- Chronological event list with event_type labels
-- Approved history entries highlighted (green border or badge)
-- Unverified proposals shown with "UNVERIFIED — pending staff review" label
-- Delta view: "since date" input, "Load Delta" button
-- extraction_confidence labeled "Extraction confidence only — not a medical judgment."
-- Safety warning: no diagnosis, no medical advice, no PHI, production PHI NO-GO
-
-Link from developer-console/page.tsx.
-
-### 5. Tests
-
-`backend/tests/test_longitudinal_timeline_delta_view_foundation.py` (new — ≥60 tests):
-- Service: aggregates all 7 history types + proposals + runs + consent + submissions
-- Service: delta view filters by date correctly
-- Service: no diagnosis/advice/triage fields in output
-- Service: no external LLM calls
-- Service: production_phi_enabled=False in all items
-- Routes: all require auth (401/403/503)
-- Routes: no DELETE
-- Routes: production_phi_enabled=False in responses
-- Routes: no auto-approval, no diagnosis in route source
-- Frontend page: exists, mentions patient timeline, delta view
-- Frontend page: shows unverified label separately from approved
-- Frontend page: extraction confidence labeled correctly
-- Frontend page: no localStorage, no sessionStorage
-- Frontend page: safety warning present
-- Arch doc exists and covers key constraints
-
-### 6. Docs
-
-- `docs/architecture/LONGITUDINAL_TIMELINE_DELTA_VIEW_FOUNDATION.md` (new)
-- `docs/claude/CURRENT_STATE.md` — Module 156 entry
-- `docs/claude/NEXT_MODULE.md` — updated to Module 157
+Module 158 should:
+- add a pre-visit narrative generator that summarizes the approved patient timeline
+  into a structured (non-medical-interpretation) summary for the doctor before a visit
+- approved structured data only — no unverified proposals in narrative
+- no diagnosis, no medical advice, no treatment recommendations
+- local template-based narrative generation (no external LLM)
+- production PHI remains NO-GO
 
 ## Constraints
 
-- No diagnosis. No medical advice. No triage scoring. No treatment recommendations.
-- No external LLM calls. No Anthropic/OpenAI/Vapi API calls.
-- Approved structured data only for clinical timeline items.
-- Unverified proposals shown separately and clearly labeled.
-- No raw patient answers surfaced in timeline output.
-- production_phi_enabled always False.
-- synthetic_demo always True.
-- All routes require authenticated session.
-- No DELETE route.
-- No auto-approval or auto-merge in this module.
-- Full test suite must remain green.
-- Frontend build must remain clean.
+- No new backend code — docs/tests only
+- All evidence must be synthetic staging — no real PHI
+- No diagnosis, no medical advice, no triage scoring in evidence
+- production_phi_enabled=False confirmed in all documented responses
+- Full test suite must remain green
+- Frontend build must remain clean
 - Commit message:
-  Sprint 20 / Module 156 — Longitudinal timeline and delta view foundation
+  Sprint 20 / Module 157 — Live longitudinal timeline smoke evidence

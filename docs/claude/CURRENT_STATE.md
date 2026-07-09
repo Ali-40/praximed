@@ -3106,3 +3106,55 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - backend/tests/test_live_doctor_review_merge_smoke_evidence_contract.py (new — 50 tests)
    - Full backend tests: 4975/4975 passed
    - Production PHI remains NO-GO.
+
+170. Module 156 — Longitudinal Timeline and Delta View Foundation
+   - Date: 2026-07-09
+   - Sprint 20 / Module 156. Backend service + schemas + repo + routes + frontend timeline UI + tests + arch doc.
+   - No migration. Read-only. No new writes. No patient history writes.
+   - backend/app/schemas/patient_timeline.py (new):
+     - PatientTimelineItem: item_type, item_source, title, is_approved_history, is_unverified_proposal,
+       production_phi_enabled (always False), metadata (no forbidden clinical keys)
+     - Allowed item_type: appointment_request / intake_submission / consent_event /
+       structuring_run / history_proposal / approved_history
+     - Allowed item_source: all 7 patient_history_* tables + proposal/run/submission/consent/appointment tables
+     - PatientTimelineResponse, PatientTimelineDeltaResponse, PatientTimelineFilters
+     - No diagnosis/advice/triage fields. No PHI unlock.
+   - backend/app/db/repositories/patient_timeline_repo.py (new):
+     - list_patient_appointment_events, list_patient_intake_submission_events,
+       list_patient_consent_events, list_patient_structuring_run_events,
+       list_patient_history_proposal_events (include_unverified filter),
+       list_patient_approved_history_events (status='approved' only from all 7 tables),
+       list_patient_timeline_events (all sources combined, sorted newest-first),
+       get_last_visit_anchor (latest appointment_request),
+       list_patient_delta_since (items newer than given datetime)
+     - All queries tenant-scoped (clinic_id + patient_id). No writes. No delete.
+   - backend/app/services/patient_timeline.py (new):
+     - get_patient_timeline — aggregate all sources, annotate is_approved_history / is_unverified_proposal
+     - get_patient_delta_since_last_visit — uses latest appointment as anchor; no_prior_visit_anchor if none
+     - get_patient_delta_since — explicit datetime cutoff
+     - No external LLM. No auto-approval. No diagnosis. No medical advice.
+     - production_phi_enabled=False throughout.
+   - backend/app/api/routes/patient_timeline.py (new — 3 routes):
+     - GET /clinics/{clinic_id}/patients/{patient_id}/timeline (200, auth)
+     - GET /clinics/{clinic_id}/patients/{patient_id}/timeline/delta (200, auth)
+     - GET /clinics/{clinic_id}/patients/{patient_id}/timeline/delta-since?since= (200, auth)
+     - All require get_current_user. No DELETE. No POST. No public routes.
+   - backend/app/api/router.py (modified): added patient_timeline router
+   - frontend/app/developer-console/patient-timeline/page.tsx (new):
+     - Dark admin theme: INK=#0B132B, PANEL=#111C3D, ACCENT=#008080
+     - Inputs: clinic_id, patient_id, include_unverified checkbox
+     - Load timeline + Load delta since last visit buttons
+     - Badge system: APPROVED HISTORY (green) / UNVERIFIED PROPOSAL (amber) /
+       CONSENT / INTAKE / APPOINTMENT / STRUCTURING
+     - Delta view: changed_since_last_visit or no_prior_visit_anchor status badge
+     - Safety panel: approved after staff review, unverified ≠ merged, no diagnosis, production PHI NO-GO
+     - No browser storage. No auto-approval.
+   - frontend/lib/api.ts (modified): added fetchPatientTimeline, fetchPatientTimelineDelta,
+     fetchPatientTimelineDeltaSince (credentials: include, no localStorage)
+   - frontend/app/developer-console/page.tsx (modified): added "Longitudinal Patient Timeline" nav card
+   - backend/tests/test_longitudinal_timeline_delta_view_foundation.py (new — 92 tests, all passing)
+   - docs/architecture/LONGITUDINAL_TIMELINE_DELTA_VIEW_FOUNDATION.md (new)
+   - Full backend tests: 5067/5067 passed. Frontend build: clean.
+   - No auto-approval. No external LLM. No diagnosis. No medical advice. No treatment recommendations.
+   - No triage scoring. No new writes. No real patient data. No PHI.
+   - production_phi_enabled=False enforced end-to-end. Production PHI remains NO-GO.
