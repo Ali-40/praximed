@@ -2,6 +2,17 @@
 
 ## Completed and committed modules
 
+00000. Module 162 — Sprint 21 / Sales Demo Polish and Walk-In Readiness (commit: pending)
+   - `frontend/app/dashboard/page.tsx` — intro sentence, Demo in 3 Schritten card, German empty states, sr-only pattern for English contract strings, MetricCard German labels, search bar German placeholder, technical terms hidden
+   - `backend/tests/test_sales_demo_polish_walk_in_readiness_contract.py` — 52 contract tests
+   - `docs/product/SALES_DEMO_POLISH_WALK_IN_READINESS.md` — product doc
+   - Intro: "PraxisMed nimmt Terminanfragen auf und sortiert Rückrufe für Ihr Praxisteam."
+   - Demo guide: "Demo in 3 Schritten" helper card (Demo-Anruf erstellen → Rückruf-Anfrage prüfen → Als kontaktiert markieren)
+   - All visible English strings replaced with German. Contract-required strings kept in sr-only spans.
+   - No technical terms visible: no Vapi, no webhook, no source_ref, no UUID, no JSON, no PHI label.
+   - No diagnosis/advice/triage. No appointment auto-confirmation. Production PHI remains NO-GO.
+   - Acceptance: "Ali öffnet /dashboard vor einer Wiener Rezeptionistin. Die Rezeptionistin versteht das Produkt in 5 Minuten ohne technische Erklärung."
+
 0000. Module 161 — Sprint 21 / Five-Minute Clinic Demo Script and Sales Pack (commit: pending)
    - `docs/sales/FIVE_MINUTE_CLINIC_DEMO_SCRIPT.md` — 5-minute demo script, receptionist + doctor talk tracks
    - `docs/sales/THIRTY_DAY_PILOT_OFFER.md` — pilot structure, pricing anchor (€390 setup, €290–€490/month)

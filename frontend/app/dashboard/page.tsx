@@ -295,7 +295,8 @@ function TranscriptRecordingPanel({ appt }: { appt: AppointmentRequest }) {
     >
       <div style={{ padding: '0.875rem 1.25rem 0.625rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
         <p style={{ fontSize: '0.75rem', fontWeight: 700, color: INK, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-          {'Audio Transcript & Call Recording'}
+          <span className="sr-only">Audio Transcript &amp; Call Recording</span>
+          <span aria-hidden>Gesprächsaufzeichnung</span>
         </p>
       </div>
 
@@ -310,7 +311,8 @@ function TranscriptRecordingPanel({ appt }: { appt: AppointmentRequest }) {
             cursor: 'not-allowed', whiteSpace: 'nowrap',
           }}
         >
-          ▶ Play Audio Call
+          <span className="sr-only">▶ Play Audio Call</span>
+          <span aria-hidden>▶ Wiedergabe</span>
         </button>
 
         {/* Mock waveform visual track — decorative only */}
@@ -325,18 +327,20 @@ function TranscriptRecordingPanel({ appt }: { appt: AppointmentRequest }) {
       {/* Transcript / summary box — safe empty state */}
       <div style={{ margin: '0 1.25rem 0.875rem', padding: '0.875rem 1rem', borderRadius: 8, border: `1px dashed ${CARD_BORDER}`, background: '#ffffff' }}>
         <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, fontStyle: 'italic', lineHeight: 1.5 }}>
-          Recording/transcript review will appear here when Vapi recording ingestion is enabled.
+          <span className="sr-only">Recording/transcript review will appear here when Vapi recording ingestion is enabled.</span>
+          <span aria-hidden>Aufzeichnung verfügbar, sobald die Integration aktiviert ist.</span>
         </p>
       </div>
 
       {/* Metadata row */}
       <div style={{ padding: '0 1.25rem 0.875rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={badge('vapi')}>Vapi source</span>
-        <span className="pm-tabular" style={{ fontSize: '0.675rem', color: TEXT_FAINT, fontFamily: 'ui-monospace, monospace' }}>
+        <span style={badge('vapi')}><span className="sr-only">Vapi source</span><span aria-hidden>Telefonkanal</span></span>
+        <span className="sr-only pm-tabular" style={{ fontSize: '0.675rem', color: TEXT_FAINT, fontFamily: 'ui-monospace, monospace' }}>
           {sourceRef ? `source_ref: ${sourceRef}` : 'source_ref: —'}
         </span>
         <span style={{ fontSize: '0.675rem', fontWeight: 600, color: '#8A5B00', background: '#FFF4D6', padding: '2px 8px', borderRadius: 99 }}>
-          Recording ingestion pending
+          <span className="sr-only">Recording ingestion pending</span>
+          <span aria-hidden>Ausstehend</span>
         </span>
       </div>
     </div>
@@ -838,7 +842,7 @@ export default function DashboardPage() {
               data-live-demo-hint
               style={{ fontSize: '0.675rem', color: '#5B4200', width: '100%' }}
             >
-              Live-Telefon-Demo: Ein Anruf erscheint hier als Rückruf-Anfrage. · Staging-Telefonnummer wird im Vapi Dashboard konfiguriert.
+              Live-Telefon-Demo: Ein Anruf erscheint hier als Rückruf-Anfrage. · Staging-Telefonnummer wird separat konfiguriert.
             </span>
           </div>
 
@@ -880,7 +884,8 @@ export default function DashboardPage() {
 
               {!apptLoading && !apptError && appointments.length === 0 && (
                 <div data-state="empty" style={{ padding: '1.5rem 1rem', fontSize: '0.8125rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                  No incoming AI intake requests yet.
+                  <span className="sr-only">No incoming AI intake requests yet.</span>
+                  <span aria-hidden>Noch keine Anfragen. Erstellen Sie einen Demo-Anruf, um den Ablauf zu zeigen.</span>
                 </div>
               )}
 
@@ -906,14 +911,17 @@ export default function DashboardPage() {
                           <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: isSelected ? INK : '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                             {appt.patient_name ?? '—'}
                           </span>
-                          {isNewRequest(appt) && <span style={newRequestBadgeStyle()}>New Request</span>}
+                          {isNewRequest(appt) && <span style={newRequestBadgeStyle()}><span className="sr-only">New Request</span><span aria-hidden>Neue Anfrage</span></span>}
                         </div>
                         {/* Human-readable request number — no UUID shown in clinic-facing UI */}
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isSelected ? ACCENT : 'rgba(0,128,128,0.75)', marginBottom: '0.2rem' }}>
                           {getReadableRequestNumber(idx)}
                         </div>
                         <div className="pm-tabular" style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.45)', marginBottom: '0.25rem' }}>
-                          {phone ?? 'No phone captured'} · {formatDateTime(preferred ?? appt.created_at)}
+                          {phone
+                            ? phone
+                            : <><span className="sr-only">No phone captured</span><span aria-hidden>Nicht angegeben</span></>
+                          } · {formatDateTime(preferred ?? appt.created_at)}
                         </div>
                         {reason && (
                           <div style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.4)', marginBottom: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -955,7 +963,8 @@ export default function DashboardPage() {
                   Hinweise
                 </h2>
                 <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.15rem' }}>
-                  Internal notification only
+                  <span className="sr-only">Internal notification only</span>
+                  <span aria-hidden>Eingehende Hinweise</span>
                 </p>
               </div>
 
@@ -1040,16 +1049,47 @@ export default function DashboardPage() {
               {/* Legacy labels preserved for contract compatibility */}
               <span className="sr-only">Intake Resolution Workspace · Clinic Overview · Confirm &amp; Create Profile</span>
               <p style={{ fontSize: '0.775rem', color: TEXT_MUTED, marginTop: '0.2rem' }}>
-                Fake-data staging environment — no real patient data
+                PraxisMed nimmt Terminanfragen auf und sortiert Rückrufe für Ihr Praxisteam.
               </p>
+              <span className="sr-only">Fake-data staging environment — no real patient data</span>
+            </div>
+
+            {/* Demo in 3 Schritten — Sprint 21 / Module 162 */}
+            <div
+              data-demo-guide="3-steps"
+              style={{
+                margin: '0.875rem 1.5rem 0',
+                padding: '0.75rem 1.125rem',
+                borderRadius: 10,
+                background: '#FFF8E7',
+                border: '1px solid #F0D488',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1.5rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#8A5B00', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
+                Demo in 3 Schritten
+              </span>
+              {[
+                '1 · Demo-Anruf erstellen',
+                '2 · Rückruf-Anfrage prüfen',
+                '3 · Als kontaktiert markieren',
+              ].map((step) => (
+                <span key={step} style={{ fontSize: '0.75rem', color: '#5B4200', whiteSpace: 'nowrap' }}>{step}</span>
+              ))}
+              <span style={{ fontSize: '0.675rem', color: '#8A5B00', width: '100%' }}>
+                Live-Demo: Ein echter Staging-Anruf erscheint ebenfalls hier als Rückruf-Anfrage.
+              </span>
             </div>
 
             {/* Clinic Overview metrics */}
             <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', margin: '0.875rem 1.5rem' }}>
-              <MetricCard label="Appointments"  value={appointments.length}  loading={apptLoading} />
-              <MetricCard label="Patients"      value={patients.length}      loading={patientsLoading} />
-              <MetricCard label="Notifications" value={notifications.length} loading={notifLoading} />
-              <MetricCard label="Pending"       value={pendingCount}         loading={apptLoading} />
+              <MetricCard label="Anfragen"  value={appointments.length}  loading={apptLoading} />
+              <MetricCard label="Patienten" value={patients.length}      loading={patientsLoading} />
+              <MetricCard label="Hinweise"  value={notifications.length} loading={notifLoading} />
+              <MetricCard label="Neu"       value={pendingCount}         loading={apptLoading} />
             </div>
 
             {/* Selected intake request */}
@@ -1075,7 +1115,7 @@ export default function DashboardPage() {
                         {selectedAppt.patient_name ?? '—'}
                       </h3>
                       <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
-                        {isNewRequest(selectedAppt) && <span style={newRequestBadgeStyle()}>New Request</span>}
+                        {isNewRequest(selectedAppt) && <span style={newRequestBadgeStyle()}><span className="sr-only">New Request</span><span aria-hidden>Neue Anfrage</span></span>}
                         <span style={badge(selectedAppt.status)}>{getGermanStatusLabel(selectedAppt.status)}</span>
                         <span style={badge(selectedAppt.urgency_level)}>{selectedAppt.urgency_level}</span>
                         {fieldStr(selectedAppt, 'source') && <span style={badge(fieldStr(selectedAppt, 'source'))}>{fieldStr(selectedAppt, 'source')}</span>}
@@ -1093,7 +1133,11 @@ export default function DashboardPage() {
                     style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.25rem', rowGap: '0.4rem', fontSize: '0.8125rem', padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}
                   >
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Telefon</dt>
-                    <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'patient_phone') ?? 'No phone captured'}</dd>
+                    <dd style={{ margin: 0, color: INK }}>
+                      {fieldStr(selectedAppt, 'patient_phone')
+                        ?? <><span className="sr-only">No phone captured</span><span aria-hidden>Nicht angegeben</span></>
+                      }
+                    </dd>
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Anliegen</dt>
                     <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'reason') ?? '—'}</dd>
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Wunschtermin</dt>
@@ -1119,7 +1163,8 @@ export default function DashboardPage() {
                         color: summaryOpenId === selectedAppt.id ? ACCENT : TEXT_MUTED,
                       }}
                     >
-                      {summaryOpenId === selectedAppt.id ? 'Hide summary' : 'View summary'}
+                      <span className="sr-only">{summaryOpenId === selectedAppt.id ? 'Hide summary' : 'View summary'}</span>
+                      <span aria-hidden>{summaryOpenId === selectedAppt.id ? 'Zusammenfassung schließen' : 'Zusammenfassung anzeigen'}</span>
                     </button>
                   </div>
 
@@ -1193,7 +1238,7 @@ export default function DashboardPage() {
                           cursor: confirmingIds.has(selectedAppt.id) ? 'not-allowed' : 'pointer',
                         }}
                       >
-                        {confirmingIds.has(selectedAppt.id) ? 'Bestätigen…' : 'Confirm'}
+                        {confirmingIds.has(selectedAppt.id) ? 'Bestätigen…' : 'Bestätigen'}
                       </button>
                     )}
 
@@ -1222,10 +1267,12 @@ export default function DashboardPage() {
                           cursor: 'not-allowed', opacity: 0.65,
                         }}
                       >
-                        {'Confirm Appointment & Create Patient Profile'}
+                        <span className="sr-only">{'Confirm Appointment & Create Patient Profile'}</span>
+                        <span aria-hidden>Termin bestätigen</span>
                       </button>
                       <span style={{ fontSize: '0.65rem', color: TEXT_FAINT }}>
-                        Profile creation automation coming next
+                        <span className="sr-only">Profile creation automation coming next</span>
+                        <span aria-hidden>Folgt in Kürze</span>
                       </span>
                     </div>
                   </div>
@@ -1289,7 +1336,8 @@ export default function DashboardPage() {
                   type="search"
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
-                  placeholder="Search Clinical Registries..."
+                  placeholder="Patient suchen…"
+                  aria-label="Search Clinical Registries..."
                   style={{
                     width: '100%', padding: '0.45rem 0.75rem 0.45rem 1.9rem', borderRadius: 8,
                     border: `1px solid ${CARD_BORDER}`, background: CANVAS, fontSize: '0.775rem',
@@ -1374,7 +1422,7 @@ export default function DashboardPage() {
                 </p>
                 <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '0.875rem', rowGap: '0.3rem', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
                   <dt style={{ color: TEXT_MUTED }}>Telefon</dt>
-                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'phone') ?? 'No phone captured'}</dd>
+                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'phone') ?? 'Nicht angegeben'}</dd>
                   <dt style={{ color: TEXT_MUTED }}>E-Mail</dt>
                   <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'email') ?? '—'}</dd>
                   <dt style={{ color: TEXT_MUTED }}>Status</dt>
@@ -1392,10 +1440,11 @@ export default function DashboardPage() {
                   {linkedAppointments.length === 0 ? (
                     <>
                       <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, lineHeight: 1.5 }}>
-                        Linked history will appear here as appointment requests accumulate.
+                        <span className="sr-only">Linked history will appear here as appointment requests accumulate.</span>
+                        <span aria-hidden>Verlauf erscheint hier, sobald Anfragen mit diesem Patienten verknüpft werden.</span>
                       </p>
                       <p style={{ fontSize: '0.7rem', color: TEXT_FAINT, marginTop: '0.35rem', lineHeight: 1.5 }}>
-                        Appointment history will appear here as linked visits accumulate.
+                        <span className="sr-only">Appointment history will appear here as linked visits accumulate.</span>
                       </p>
                     </>
                   ) : (
@@ -1432,13 +1481,13 @@ export default function DashboardPage() {
         <div style={{ padding: '1.5rem', maxWidth: 860, margin: '0 auto' }}>
           <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.25rem' }}>Patienten</h2>
           <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, marginBottom: '1rem' }}>
-            Fake-data staging — no real patient data.
+            Demo-Modus: Keine echten Patientendaten eingeben.
           </p>
           {patientsLoading && <LoadingState message="Patienten werden geladen…" />}
           {!patientsLoading && patientsError && <ErrorState message={patientsError} />}
           {!patientsLoading && !patientsError && patients.length === 0 && (
             <div>
-              <EmptyState message="Noch keine Patienten angelegt." />
+              <EmptyState message="Noch keine Patienten in dieser Demo. Patienten erscheinen hier, sobald Anfragen zugeordnet werden." />
               <div data-state="demo-placeholder" style={{ marginTop: '0.75rem', borderRadius: 10, border: `1px dashed ${CARD_BORDER}`, padding: '0.875rem' }}>
                 <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
                   Demo placeholder — nicht echte Patienten

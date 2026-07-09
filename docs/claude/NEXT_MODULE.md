@@ -1,16 +1,15 @@
-# Sprint 21 / Module 162 — Sales Demo Polish and Walk-In Readiness
+# Sprint 21 / Module 163 — Clinic Outreach Execution Pack
 
 Status: pending.
 
 ## Context
 
-Module 161 complete (Five-Minute Clinic Demo Script and Sales Pack):
-- FIVE_MINUTE_CLINIC_DEMO_SCRIPT.md — 5-minute script, receptionist + doctor talk tracks
-- THIRTY_DAY_PILOT_OFFER.md — pilot structure, €390 setup, €290–€490/month anchor
-- ONE_PAGE_CLINIC_HANDOUT.md — print-ready handout, no technical language
-- OBJECTION_HANDLING.md — 10 objections, honest answers, no overclaims
-- DEMO_DAY_CHECKLIST.md — before/during/after checklist
-- 71 new contract tests. 5358 total. Production PHI remains NO-GO.
+Module 162 complete (Sales Demo Polish and Walk-In Readiness):
+- Intro sentence added: "PraxisMed nimmt Terminanfragen auf und sortiert Rückrufe für Ihr Praxisteam."
+- "Demo in 3 Schritten" helper card added to center panel
+- All visible English strings replaced with German (sr-only preserves for contract tests)
+- Technical terms hidden: no Vapi, no webhook, no source_ref, no UUID visible
+- 52 new contract tests. 5410 total. Frontend build clean. Production PHI remains NO-GO.
 
 ## Sprint 21 Sales-MVP Pivot — Paused until further notice
 
@@ -24,89 +23,107 @@ The following tracks remain paused:
 
 ## Goal
 
-Inspect /dashboard from a sales perspective and smooth any rough edges that
-could cost momentum during a clinic walkthrough.
+Produce exact outreach scripts that Ali can use to contact Vienna private clinics and book
+a pilot walkthrough — email, WhatsApp, LinkedIn, walk-in cold approach.
 
-This is a polish pass — no new infrastructure, no new features, no migrations.
-Only changes that make the sales demo cleaner, faster to understand, and
-more convincing on first impression.
+The product is now demos-ready. The next conversion step is getting in the room.
 
-## What Module 162 must inspect and fix
+## What Module 163 must produce
 
-### 1. Empty-state check
+### 1. Cold Email Script
 
-When Ali first opens /dashboard with no demo calls in the queue, the Anfragen
-tab may show an empty state. This could look broken or unimpressive.
+Short, direct email to a Vienna Wahlarzt or clinic manager.
 
-Module 162 should:
-- Verify the empty state has a clean, non-technical German message
-- If the empty state shows technical copy or nothing, replace with:
-  "Noch keine Anfragen. Klicken Sie auf 'Demo-Anruf erstellen' um den Demo-Modus zu starten."
-- Do not auto-populate without user action
+Structure:
+- Subject line: one clear value sentence
+- Opening: one-line missed calls hook
+- Value: 3 bullet points max (what PraxisMed does)
+- CTA: "30-Minuten-Demo diese Woche?"
+- No technical language
+- No compliance claims
+- No diagnosis/advice/triage
 
-### 2. Button copy review
+### 2. WhatsApp / SMS Script
 
-Review these buttons for clarity:
-- "Demo-Anruf erstellen" — check it is prominent and obvious
-- "Demo zurücksetzen" — check it is labeled clearly and is secondary (not primary)
-- "Rückruf" — check it is clear (short enough, action-oriented)
-- "Als kontaktiert markieren" — check it reads naturally
+Short follow-up message after cold email or cold call.
 
-If any button copy is confusing for a non-technical receptionist, improve it.
+Structure:
+- Under 5 sentences
+- Direct value hook
+- Simple yes/no CTA
+- No technical language
 
-### 3. Heute summary bar
+### 3. LinkedIn Outreach Script
 
-Verify the Heute summary bar shows meaningful numbers in demo mode:
-- After "Demo-Anruf erstellen": "Heute" bar should reflect the new request
-- If numbers are always zero even after demo creation, fix the count logic
+Connection request + follow-up message sequence for Vienna Wahlarzt community.
 
-### 4. No visible technical terms
+Structure:
+- Connection request: 1 sentence
+- Follow-up after connection: 3–4 sentences max
+- CTA: "Demo?" or "5 Minuten diese Woche?"
 
-Scan /dashboard for any remaining technical words visible in the default view:
-- No UUID visible
-- No "staging" in visible UI text (only in hidden safety comments)
-- No "webhook", "API", "Vapi", "FHIR", "token", "JWT" in visible text
-- No "production_phi_enabled" visible
-- No error messages containing technical details
+### 4. Walk-In Cold Approach Script
 
-### 5. Einstellungen tab first impression
+For Ali to walk into a clinic without an appointment.
 
-Check the Einstellungen tab opens to a welcoming default state:
-- Praxisname field has a sensible placeholder (not empty or UUID)
-- KI-Vorschau is visible without scrolling (or close to top)
-- No technical labels visible
+Structure:
+- What to say to the receptionist first
+- What to say to the doctor/manager if available
+- Leave-behind: one-page handout
+- Follow-up step: "Darf ich Ihnen einen Demo-Termin schicken?"
 
-### 6. Tests
+### 5. Follow-Up Sequence
 
-`backend/tests/test_sales_demo_polish_walk_in_readiness_contract.py` (new — ≥10 tests)
+3-touch follow-up sequence (Day 1, Day 3, Day 7):
+- Day 1: Initial contact (email or WhatsApp)
+- Day 3: Light follow-up with social proof hook
+- Day 7: Final gentle nudge with pilot offer
 
-Static contract tests:
-- Dashboard has no visible UUID in default view
-- Dashboard has no "staging" in visible German text
-- Dashboard has no "webhook" in visible text
-- Dashboard has no "JWT" or "token" in visible text
-- Anfragen tab has empty-state text in German
-- Demo strip is yellow/warning-colored (not default gray)
-- Heute summary bar exists
-- Einstellungen tab has Praxisname placeholder
-- KI-Vorschau is present in Einstellungen tab
-- No technical error messages containing endpoint URLs in visible text
+### 6. Objection-Specific Quick Replies
 
-### 7. Docs updates
+Short replies for 5 common first-contact objections:
+- "Kein Interesse"
+- "Zu teuer"
+- "Wir haben bereits eine Lösung"
+- "Keine Zeit"
+- "Schicken Sie uns eine E-Mail"
 
-- docs/claude/CURRENT_STATE.md — Module 162 entry
-- docs/claude/NEXT_MODULE.md — updated to Module 163
+### 7. Tests
 
-## Module 163 preview
+`backend/tests/test_clinic_outreach_execution_pack_contract.py` (new — ≥15 tests)
 
-Sprint 21 / Module 163 — First Pilot Clinic Onboarding Script
+Static evidence tests:
+- Cold email script exists
+- WhatsApp script exists
+- LinkedIn script exists
+- Walk-in script exists
+- Follow-up sequence exists
+- All scripts mention missed calls / verpasste Anrufe
+- All scripts mention 30-day pilot
+- All scripts contain pilot CTA
+- No compliance claims (no "DSGVO-zertifiziert", no "fully compliant")
+- No technical language (no "API", no "webhook", no "UUID", no "FHIR")
+- No diagnosis/medical advice claims
+- No production readiness claims
+- Safety wording: no real patient data
+- No real names in scripts (generic placeholders only)
 
-Module 163 should:
+### 8. Docs updates
+
+- docs/claude/CURRENT_STATE.md — Module 163 entry
+- docs/claude/NEXT_MODULE.md — updated to Module 164
+
+## Module 164 preview
+
+Sprint 21 / Module 164 — First Pilot Clinic Activation Checklist
+
+Module 164 should:
 - Create a structured onboarding checklist for the first actual paying pilot clinic
-- Staff welcome message template
+- Staff welcome message template (German)
 - First-week support guide
-- How to handle the transition from demo to live (when AVV is signed)
-- No PHI. No automation. Staff confirms everything.
+- How to handle transition from demo to live (when AVV is signed)
+- What to set up on day 1 vs. day 7 vs. day 30
+- No PHI. No automation beyond demo flow. Staff confirms everything.
 
 ## Constraints
 
@@ -114,11 +131,12 @@ Module 163 should:
 - No production PHI
 - No new backend endpoints
 - No new migrations
+- No new developer-console tooling
 - No Arabic/RTL, no FHIR, no Gulf expansion
-- No compliance overclaims
-- No technical language in clinic-facing copy
+- No compliance overclaims in outreach copy
+- No technical language in clinic-facing or outreach copy
 - production_phi_enabled always False
 - Frontend build must remain clean
 - Full test suite must remain green
 - Commit message:
-  Sprint 21 / Module 162 — Sales demo polish and walk-in readiness
+  Sprint 21 / Module 163 — Clinic outreach execution pack
