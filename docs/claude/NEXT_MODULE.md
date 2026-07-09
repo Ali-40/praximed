@@ -1,105 +1,79 @@
-# Sprint 21 / Module 160 — Live Vapi Binding to One Staging Number
+# Sprint 21 / Module 161 — Arabic/RTL Foundation
 
 Status: pending.
 
 ## Context
 
-Module 159 complete (Simple Clinic Settings):
-- Einstellungen tab now editable: Praxisprofil, Öffnungszeiten, Sprachen, KI-Rezeption
-- Praxisname, Arzt/Ärztin, Fachrichtung, Ort, Telefonnummer fields
-- KI-Ton selector: Freundlich und ruhig / Kurz und direkt / Sehr formell
-- KI-Vorschau live preview — no appointment auto-confirmation
-- Language settings persisted via existing PATCH /clinics/{id}/language-settings
-- No technical fields. No UUIDs. No Vapi config. No PHI.
-- All existing contract tests green. Frontend build clean.
-- Production PHI remains NO-GO.
+Module 160 complete (Live Vapi Staging Call Loop):
+- data-live-demo-hint span added to dashboard demo strip (plain German, no technical content)
+- Existing POST /vapi/tools/capture-appointment-request verified — handles full call flow
+- German AI receptionist script: greeting, data collection (Name/Telefon/Anliegen/Zeit), "Praxisteam meldet sich zur Bestätigung zurück", emergency 144 routing
+- Vapi Dashboard checklist: header names only (values from environment, never in docs)
+- No transcript storage. No recording URL storage. No auto-confirmation. No diagnosis. No PHI.
+- 54+ new contract tests. Frontend build clean. Production PHI remains NO-GO.
 
 ## Goal
 
-Connect one staging Vapi phone number to the existing German AI receptionist
-so a real phone call to the staging number creates a callback request in the
-Anfragen intake queue — ending the full demo loop.
+Add RTL layout support and Arabic-language configuration so a Vienna clinic with Arabic-speaking
+patients can switch the AI receptionist to Arabic-first mode.
 
-The Vienna receptionist calls the number, speaks to the AI, hangs up, and the
-request appears in /dashboard without Ali touching any technical settings.
+## What Module 161 must produce
 
-Staging-only. No real patient data during tests. No production PHI. No
-appointment auto-confirmation. No diagnosis/advice/triage.
+### 1. RTL CSS layout
 
-## What Module 160 must produce
+- `dir="rtl"` support in dashboard shell for Arabic mode
+- Right-to-left CSS for the main layout columns and text
+- No layout breakage in default German (LTR) mode
+- Toggle in Einstellungen tab under Sprachen: "Arabisch (Vorschau)" → enables RTL when selected as primary
 
-### 1. Vapi → PraxisMed call flow (staging only)
+### 2. Arabic first_message and system_prompt
 
-The existing Vapi webhook integration (`POST /webhooks/vapi/call-event`) should
-already receive call events. Module 160 verifies and closes the loop:
+- Arabic greeting added to the Vapi config pack for the demo clinic
+- Arabic-language assistant greets in Arabic, collects the same fields (name, phone, reason, preferred time)
+- Emergency routing: "في حالة الطوارئ اتصل بـ 144 فوراً"
+- "Das Praxisteam meldet sich" equivalent in Arabic: "سيتواصل معك فريق العيادة للتأكيد"
+- No appointment auto-confirmation. No diagnosis. No medical advice. No triage.
 
-- Staging Vapi number configured in tenant config for the demo clinic
-- Vapi call event creates an appointment_request row in the DB
-- source = "vapi", source_ref = call_id
-- patient_phone captured from Vapi call metadata
-- reason captured from transcript (if available) or empty
-- status = "callback_needed"
-- No PHI. No real patient data during staging tests.
-- No recording URL stored. No transcript stored.
-- production_phi_enabled = False
+### 3. Arabic-first language mode toggle
 
-### 2. End-to-end staging test sequence
-
-Ali's demo sequence:
-1. Open `/dashboard` — empty or demo queue visible
-2. Call the staging Vapi number from any phone
-3. Speak a simple request: "Ich möchte einen Termin machen"
-4. Hang up
-5. Refresh `/dashboard` — new Anfrage visible with callback_needed status
-6. Press "Rückruf" or "Als kontaktiert markieren"
-7. Demo complete
-
-No live production number. No real patients. No real clinic calls.
-
-### 3. Checks before implementing
-
-Before adding any new code:
-- Verify the existing Vapi webhook route creates appointment_requests correctly
-- Verify the demo clinic tenant config has a staging Vapi assistant_id
-- Verify the VAPI_BINDING_METADATA table has a staging binding for the demo clinic
-- If all three are satisfied: Module 160 may be purely docs + smoke evidence
-- If not: add minimal backend wiring
+- When Arabic is selected as primary language in Einstellungen → Sprachen:
+  - KI-Vorschau preview shows Arabic greeting
+  - Dashboard subtitle switches to Arabic "مرحباً بك في العيادة الرقمية"
+  - Layout applies RTL
 
 ### 4. Tests
 
-`backend/tests/test_live_vapi_staging_call_loop_contract.py` (new — ≥10 tests)
+`backend/tests/test_arabic_rtl_foundation_contract.py` (new — ≥15 tests)
 
-Static evidence validation tests:
-- Vapi webhook route exists
-- Webhook route creates appointment_request with source=vapi
-- No transcript stored in staging
-- No recording URL stored
-- No PHI in webhook payload processing
-- production_phi_enabled = False in all created records
-- Demo clinic has staging Vapi binding (or pending binding)
-- No appointment auto-confirmation from Vapi call
-- No diagnosis from Vapi transcript
+Static evidence tests:
+- Dashboard CSS includes dir="rtl" or rtl layout class when Arabic active
+- Arabic greeting exists in Vapi config or Einstellungen preview
+- Arabic emergency routing "144" in Arabic text
+- "Arabisch" option exists in Sprachen section
+- No appointment auto-confirmation in Arabic path
+- No diagnosis in Arabic assistant config
+- No PHI. production_phi_enabled = False
+- LTR layout not broken for German mode
 - Frontend build passes
 
 ### 5. Docs updates
 
-- docs/claude/CURRENT_STATE.md — Module 160 entry
-- docs/claude/NEXT_MODULE.md — updated to Module 161
+- docs/claude/CURRENT_STATE.md — Module 161 entry
+- docs/claude/NEXT_MODULE.md — updated to Module 162
 
-## Module 161 preview
+## Module 162 preview
 
-Sprint 21 / Module 161 — Arabic/RTL Foundation
+Sprint 21 / Module 162 — Five-Minute Clinic Demo Script and Sales Pack
 
-Module 161 should:
-- Add RTL layout support for Arabic-language clinic UI
-- Arabic first_message and system_prompt in Vapi config pack
-- Right-to-left CSS for the dashboard shell
-- Arabic-first language mode toggle
-- No PHI. No real patient data. Production PHI remains NO-GO.
+Module 162 should:
+- Create a structured 5-minute demo script for Ali to use in Vienna clinic visits
+- Printable one-page "demo card" with step-by-step flow
+- Talking points for each dashboard section (Anfragen, Patienten, Einstellungen)
+- Objection handling notes (GDPR, data security, pricing, accuracy)
+- No patient data. No PHI. No technical content visible.
 
 ## Constraints
 
-- Staging-only
 - No real patient data
 - No production PHI
 - No appointment auto-confirmation
@@ -109,4 +83,4 @@ Module 161 should:
 - Frontend build must remain clean
 - Full test suite must remain green
 - Commit message:
-  Sprint 21 / Module 160 — Live Vapi staging call loop
+  Sprint 21 / Module 161 — Arabic/RTL foundation

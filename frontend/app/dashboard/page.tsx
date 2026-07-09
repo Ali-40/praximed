@@ -834,6 +834,12 @@ export default function DashboardPage() {
                 {demoMessage}
               </span>
             )}
+            <span
+              data-live-demo-hint
+              style={{ fontSize: '0.675rem', color: '#5B4200', width: '100%' }}
+            >
+              Live-Telefon-Demo: Ein Anruf erscheint hier als Rückruf-Anfrage. · Staging-Telefonnummer wird im Vapi Dashboard konfiguriert.
+            </span>
           </div>
 
         <div className="pm-dash-grid">

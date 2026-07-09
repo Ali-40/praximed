@@ -2,6 +2,16 @@
 
 ## Completed and committed modules
 
+000. Module 160 — Sprint 21 / Live Vapi Staging Call Loop (commit: pending)
+   - `frontend/app/dashboard/page.tsx` — data-live-demo-hint span added to demo strip
+   - `backend/tests/test_live_vapi_staging_call_loop_sales_mvp_contract.py` — new, ≥15 tests
+   - `docs/product/LIVE_VAPI_STAGING_CALL_LOOP.md` — product doc with German assistant script + Vapi checklist
+   - Existing POST /vapi/tools/capture-appointment-request satisfies all requirements — no backend changes
+   - German AI receptionist script: greeting, data collection, "Praxisteam meldet sich zur Bestätigung zurück", emergency 144
+   - Dashboard hint: plain German, no API URL, no header names, no UUID, no technical content
+   - No transcript storage. No recording URL storage. No auto-confirmation. Production PHI remains NO-GO.
+   - Acceptance: "Ali kann eine Staging-Telefonnummer anrufen, ein synthetisches Terminanliegen sprechen, und die Anfrage erscheint in /dashboard als Rückruf nötig."
+
 00. Module 159 — Sprint 21 / Simple Clinic Settings (commit: pending)
    - `frontend/app/dashboard/page.tsx` — Einstellungen tab replaced with editable form
    - `backend/tests/test_simple_clinic_settings_sales_mvp_contract.py` — new, ≥15 tests
