@@ -86,6 +86,8 @@ function getGermanStatusLabel(status: string | null | undefined): string {
     case 'emergency':        return 'Notfall'
     case 'closed':           return 'Erledigt'
     case 'cancelled':        return 'Abgesagt'
+    case 'archived':         return 'Archiviert'
+    case 'rejected':         return 'Abgelehnt'
     default:                 return status ?? '—'
   }
 }
@@ -304,7 +306,7 @@ function TranscriptRecordingPanel({ appt }: { appt: AppointmentRequest }) {
       <div style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
         <button
           disabled
-          title="Recording ingestion pending — no audio integration is enabled in staging"
+          title="Wiedergabe nicht verfügbar — keine Audio-Integration aktiv"
           style={{
             fontSize: '0.775rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8,
             border: `1px solid ${CARD_BORDER}`, background: '#EFF2F7', color: TEXT_FAINT,
@@ -598,7 +600,9 @@ export default function DashboardPage() {
     }
   }
 
-  const pendingCount = appointments.filter((a) => a.status === 'new').length
+  const activeAppts = appointments.filter((a) => a.status !== 'archived')
+  const archivedAppts = appointments.filter((a) => a.status === 'archived')
+  const pendingCount = activeAppts.filter((a) => a.status === 'new').length
   const selectedAppt = appointments.find((a) => a.id === selectedApptId) ?? null
   const selectedApptIndex = appointments.findIndex((a) => a.id === selectedApptId)
   const selectedPatient = patients.find((p) => p.id === selectedPatientId) ?? null
@@ -621,7 +625,7 @@ export default function DashboardPage() {
   }, [appointments, selectedPatient])
 
   function isNewRequest(appt: AppointmentRequest): boolean {
-    return appt.status === 'new' || appt.action_required === true || appt.status !== 'confirmed'
+    return appt.status === 'new' || appt.status === 'pending'
   }
 
   // ---------------------------------------------------------------------------
@@ -889,9 +893,15 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {!apptLoading && !apptError && appointments.length > 0 && (
+              {!apptLoading && !apptError && appointments.length > 0 && activeAppts.length === 0 && (
+                <div data-state="empty" style={{ padding: '1.5rem 1rem', fontSize: '0.8125rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                  Noch keine aktiven Anfragen. Erstellen Sie einen Demo-Anruf, um den Ablauf zu zeigen.
+                </div>
+              )}
+
+              {!apptLoading && !apptError && activeAppts.length > 0 && (
                 <ul data-state="list" style={{ listStyle: 'none', padding: '0 0.625rem 0.875rem' }}>
-                  {appointments.map((appt, idx) => {
+                  {activeAppts.map((appt, idx) => {
                     const isSelected = selectedApptId === appt.id
                     const phone = fieldStr(appt, 'patient_phone')
                     const reason = fieldStr(appt, 'reason')
@@ -930,8 +940,8 @@ export default function DashboardPage() {
                         )}
                         <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={badge(appt.status)}>{getGermanStatusLabel(appt.status)}</span>
-                          {source === 'vapi' && <span style={badge('vapi')}>vapi</span>}
-                          {/* Rückruf action — marks appointment as callback_needed */}
+                          {/* source badge hidden in clinic-facing UI */}
+                          {/* Rückruf markieren — marks appointment as callback_needed */}
                           <button
                             onClick={(e) => { e.stopPropagation(); void handleMarkCallback(appt.id) }}
                             disabled={callbackIds.has(appt.id)}
@@ -942,13 +952,36 @@ export default function DashboardPage() {
                               whiteSpace: 'nowrap', opacity: callbackIds.has(appt.id) ? 0.5 : 1,
                             }}
                           >
-                            {callbackIds.has(appt.id) ? '…' : 'Rückruf'}
+                            {callbackIds.has(appt.id) ? '…' : 'Rückruf markieren'}
                           </button>
                         </div>
                       </li>
                     )
                   })}
                 </ul>
+              )}
+
+              {!apptLoading && !apptError && archivedAppts.length > 0 && (
+                <div style={{ padding: '0.5rem 0.75rem 0.875rem' }}>
+                  <p style={{ fontSize: '0.625rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.375rem' }}>
+                    Archivierte Anfragen ({archivedAppts.length})
+                  </p>
+                  {archivedAppts.map((appt, idx) => (
+                    <div
+                      key={appt.id}
+                      onClick={() => { setSelectedApptId(appt.id); setSummaryOpenId(null) }}
+                      style={{
+                        padding: '0.4rem 0.6rem', borderRadius: 8, cursor: 'pointer', marginBottom: '0.25rem',
+                        background: selectedApptId === appt.id ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                        opacity: 0.6,
+                      }}
+                    >
+                      <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
+                        {appt.patient_name ?? '—'} · <span style={{ color: 'rgba(255,255,255,0.3)' }}>Archiviert</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </section>
 
@@ -1044,7 +1077,7 @@ export default function DashboardPage() {
               <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>
                 {/* Labels kept for existing contract tests */}
                 <span className="sr-only">Active Resolution Workspace</span>
-                <span aria-hidden>Anfrage-Details</span>
+                <span aria-hidden>Anfrage im Überblick</span>
               </h1>
               {/* Legacy labels preserved for contract compatibility */}
               <span className="sr-only">Intake Resolution Workspace · Clinic Overview · Confirm &amp; Create Profile</span>
@@ -1140,7 +1173,7 @@ export default function DashboardPage() {
                     </dd>
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Anliegen</dt>
                     <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'reason') ?? '—'}</dd>
-                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Wunschtermin</dt>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Gewünschte Zeit</dt>
                     <dd style={{ margin: 0, color: INK }}>{formatDateTime(fieldStr(selectedAppt, 'preferred_starts_at'))}</dd>
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Eingegangen</dt>
                     <dd style={{ margin: 0, color: INK }}>{formatDateTime(selectedAppt.created_at)}</dd>
@@ -1196,15 +1229,15 @@ export default function DashboardPage() {
                             <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1rem', rowGap: '0.4rem', fontSize: '0.8125rem' }}>
                               <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Patient</dt>
                               <dd style={{ margin: 0, color: INK, fontWeight: 600 }}>{summaryEntry.patient_name}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Type</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Art</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.patient_type}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Reason</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Anliegen</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.reason ?? '—'}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Urgency</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Dringlichkeit</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.urgency_level}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Prior visits</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Frühere Besuche</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.previous_request_count}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Suggested action</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Empfohlene Aktion</dt>
                               <dd style={{ margin: 0, color: ACCENT, fontWeight: 700 }}>{summaryEntry.suggested_next_action}</dd>
                             </dl>
                             <div style={{ marginTop: '0.875rem', paddingTop: '0.75rem', borderTop: `1px solid ${ACCENT}33`, fontSize: '0.75rem', color: TEXT_MUTED, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
@@ -1219,8 +1252,7 @@ export default function DashboardPage() {
 
                   {/* Safety boundary for the workspace */}
                   <p style={{ margin: '0 1.25rem 0.875rem', fontSize: '0.6875rem', color: TEXT_FAINT, lineHeight: 1.5 }}>
-                    AI intake output is administrative scheduling information only. Staff or doctor
-                    review is required before any clinical decision. Fake-data staging — no real patient data.
+                    Nur zur internen Planung. Das Praxisteam prüft und bestätigt jeden Schritt. Demo-Modus — keine echten Patientendaten.
                   </p>
 
                   {/* Action footprint */}

@@ -2,7 +2,17 @@
 
 ## Completed and committed modules
 
-0000000. Module 162 (outreach extension) — Sprint 21 / Sales Demo Polish and Outreach Readiness (commit: pending)
+00000000. Module 162B — Sprint 21 / Clinic-Facing Dashboard Language Hotfix (commit: pending)
+   - `frontend/app/dashboard/page.tsx` — center heading "Anfrage im Überblick", "Gewünschte Zeit", "Rückruf markieren", archived→Archiviert status, active/archived request split, removed visible vapi badge, removed English AI intake blurb, fixed isNewRequest, translated summary panel labels
+   - `backend/tests/test_clinic_facing_dashboard_language_hotfix_contract.py` — 60 contract tests
+   - `docs/product/CLINIC_FACING_DASHBOARD_LANGUAGE_HOTFIX.md` — product doc
+   - "Noch keine aktiven Anfragen" empty state after demo reset
+   - Archived requests pushed to separate collapsed section — no longer show "Neue Anfrage" badge
+   - Summary panel: Type→Art, Reason→Anliegen, Urgency→Dringlichkeit, Prior visits→Frühere Besuche, Suggested action→Empfohlene Aktion
+   - English safety blurb in workspace replaced with German: "Nur zur internen Planung. Das Praxisteam prüft und bestätigt jeden Schritt."
+   - Acceptance: "A Vienna receptionist can understand the dashboard without technical explanation."
+
+0000000. Module 162 (outreach extension) — Sprint 21 / Sales Demo Polish and Outreach Readiness (commit: d49a7f1)
    - `docs/sales/CLINIC_OUTREACH_EXECUTION_PACK.md` — expanded: target clinic profile, best niches, 50-clinic workflow, daily plan, tracking table, cold email, WhatsApp, phone script, LinkedIn, walk-in, follow-up sequence (Day 1/3/7 + after demo), 10 objection replies (calendar, DSGVO, AI claims, pricing, existing solutions), pricing (€390/€290–€490), CTA options
    - `docs/sales/SALES_ONE_LINERS.md` — 11 memorizable one-line pitches
    - `docs/sales/TOMORROW_FIRST_SALES_DAY_PLAN.md` — exact first-sales-day schedule (email block, phone block, walk-in block, LinkedIn, follow-up, success metrics)
