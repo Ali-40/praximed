@@ -1,14 +1,16 @@
-# Sprint 21 / Module 164 — First Pilot Clinic Activation Checklist
+# Sprint 21 / Module 164 — Simple Clinic Calendar Foundation
 
 Status: pending.
 
 ## Context
 
-Module 163 complete (Clinic Outreach Execution Pack):
-- Cold email, WhatsApp/SMS, LinkedIn, walk-in cold approach scripts
-- 3-touch follow-up sequence (Day 1, Day 3, Day 7)
-- Objection-specific quick replies for 5 common first-contact objections
-- 45 contract tests. 5455 total. Frontend build clean. Production PHI remains NO-GO.
+Module 162 (outreach extension) complete (Sales Demo Polish and Outreach Readiness):
+- Expanded CLINIC_OUTREACH_EXECUTION_PACK.md — phone script, follow-up after demo, 10 objections, pricing, calendar positioning, CTA options
+- SALES_ONE_LINERS.md — 11 memorizable one-line pitches
+- TOMORROW_FIRST_SALES_DAY_PLAN.md — exact first-sales-day schedule
+- clinic_outreach_tracker_template.csv — ready-to-use spreadsheet
+- 85 comprehensive contract tests. 5540 total. Frontend build clean. Production PHI remains NO-GO.
+- Calendar positioned as next pilot workflow — not built yet, not promised as finished.
 
 ## Sprint 21 Sales-MVP Pivot — Paused until further notice
 
@@ -20,109 +22,115 @@ The following tracks remain paused:
 - Additional developer-console tooling
 - Deeper anamnesis modules
 
+## Why Calendar Now
+
+After sales/demo readiness, the next actual product feature clinics will ask for is calendar:
+clinics need to turn callback requests into actual scheduled appointments.
+
+The current sales answer to calendar questions is:
+"Im Pilot starten wir mit der Rückruf- und Anfrage-Übersicht. Der nächste Schritt ist ein
+einfacher Kalender-Workflow: Anfrage prüfen, Termin vorschlagen, vom Praxisteam bestätigen.
+Wir bauen das nicht als kompliziertes Buchungssystem, sondern passend zu Ihrem Praxisablauf."
+
+Module 164 delivers that next step.
+
 ## Goal
 
-Create a structured onboarding checklist for the first actual paying pilot clinic —
-everything Ali needs to do when a clinic says "yes" to the 30-day pilot.
-
-This module bridges the gap between "demo accepted" and "pilot live."
+Add a simple clinic calendar foundation — day view, staff-created appointments only,
+no external calendar sync, no Google Calendar, no auto-confirmation.
 
 ## What Module 164 must produce
 
-### 1. First Pilot Clinic Activation Checklist
+### 1. Backend: Appointments table and basic routes
 
-A structured Markdown doc: `docs/sales/FIRST_PILOT_CLINIC_ACTIVATION_CHECKLIST.md`
+New migration:
+- `appointments` table: id, clinic_id, patient_name (optional), date, time, type, status, notes, created_by, created_at
 
-Structure:
-- Pre-activation (before Day 1): what Ali does before the clinic starts
-- Day 1 — Onboarding: what happens on the first day
-- Day 7 — First check-in: review with clinic staff
-- Day 30 — Pilot review: decision point (continue / adjust / end)
-- What Ali sets up vs. what the clinic does
-- When to escalate (staff confusion, tech issue, no calls coming in)
-- No PHI. No automation beyond demo flow. Staff confirms everything.
+Statuses: `proposed`, `confirmed`, `cancelled`, `completed`
 
-### 2. Staff Welcome Message Template (German)
+Routes (new file `backend/app/api/routes/appointments.py`):
+- `GET /clinics/{clinic_id}/appointments` — list appointments by date range
+- `POST /clinics/{clinic_id}/appointments` — staff creates appointment
+- `PATCH /clinics/{clinic_id}/appointments/{id}` — staff updates status or details
+- No DELETE route
+- Requires `get_current_user` auth
+- Requires `enforce_phi_safeguard`
+- No auto-confirmation
+- No diagnosis, no medical advice, no triage
+- No external calendar sync
 
-Short welcome message Ali sends to the clinic staff on Day 1.
+### 2. Frontend: Calendar tab in /dashboard
 
-Structure:
-- Under 8 sentences
-- Explains what PraxisMed does in plain German
-- What staff sees in the dashboard
-- Who to contact if something is unclear
-- No technical language
+Add "Kalender" tab to the existing Anfragen / Patienten / Einstellungen tab row.
 
-### 3. First-Week Support Guide
+Day view first:
+- Shows appointments for selected day
+- Staff can create a new appointment (name optional, date/time, type/Anliegen, notes)
+- Staff can change status (proposed → confirmed → completed)
+- No auto-confirmation
 
-A short guide for Ali: how to support the first pilot clinic in week 1.
+German labels only:
+- Termin
+- Vorgeschlagen / Bestätigt / Abgesagt / Erledigt
+- Neuer Termin
+- Kein Termin für diesen Tag
 
-Structure:
-- Daily check-in rhythm (how often to follow up)
-- What to look for (calls coming in, staff using dashboard)
-- What to do if no calls appear after Day 3
-- How to handle a staff question about a patient call
-- When to involve the doctor vs. reception staff
+### 3. No external sync
 
-### 4. Demo-to-Live Transition Guide
+- No Google Calendar
+- No iCal export yet
+- No patient-facing booking link
+- No SMS/email confirmation automation
 
-What changes when AVV is signed and the clinic moves from demo to live.
+### 4. Tests
 
-Structure:
-- Demo vs. live differences (staging phone vs. real phone)
-- What Ali sets up on Day 1 of live mode
-- Staff briefing template (what to tell the team)
-- Data boundary reminder: no real patient data during demo phase
-
-### 5. Tests
-
-`backend/tests/test_first_pilot_clinic_activation_checklist_contract.py` (new — ≥15 tests)
+`backend/tests/test_simple_clinic_calendar_foundation_contract.py` (new — ≥20 tests)
 
 Static evidence tests:
-- Activation checklist file exists
-- Checklist has Day 1 section
-- Checklist has Day 7 section
-- Checklist has Day 30 section
-- Checklist mentions staff confirmation requirement
-- Staff welcome message template exists in doc
-- First-week support guide exists in doc
-- Demo-to-live transition guide exists in doc
-- No compliance certification claims
-- No technical language (no API names, protocol names)
-- No PHI claims
-- No clinical or medical claims
-- No automatic appointment confirmation promise
-- Pilot offer is time-bounded (30 days)
-- Safety boundaries section exists
+- Appointments migration file exists
+- Appointments table has correct columns
+- Routes file exists with correct endpoints
+- No auto-confirmation in routes
+- No diagnosis/medical advice in routes
+- No DELETE route
+- PHI safeguard in routes
+- Frontend has Kalender tab
+- Frontend has German appointment labels
+- Frontend shows no auto-confirmation
+- No external calendar URL
+- No Google Calendar reference
+- No iCal reference
+- Safety boundaries intact
 
-### 6. Docs updates
+### 5. Docs updates
 
 - docs/claude/CURRENT_STATE.md — Module 164 entry
 - docs/claude/NEXT_MODULE.md — updated to Module 165
 
 ## Module 165 preview
 
-Sprint 21 / Module 165 — Pilot Metrics and Feedback Collection
+Sprint 21 / Module 165 — Request-to-Appointment Path
 
 Module 165 should:
-- Create a simple feedback template Ali uses after 7 days with the pilot clinic
-- Define 3–5 metrics to track during the pilot (calls answered, callbacks completed, staff satisfaction)
-- Post-pilot summary template (what worked, what to improve)
-- Simple one-page pilot report Ali can share with the clinic after 30 days
-- No PHI. No automated data collection. Staff fills in manually.
+- Allow staff to convert a callback request into a calendar appointment in one click
+- "Termin erstellen" button on a Rückruf nötig request
+- Pre-fills date/time/name from the request
+- Staff confirms before saving
+- No auto-confirmation
+- No PHI unlock
+- No external sync
 
 ## Constraints
 
 - No real patient data
 - No production PHI
-- No new backend endpoints
-- No new migrations
-- No new developer-console tooling
-- No Arabic/RTL, no FHIR, no Gulf expansion
-- No compliance overclaims in any copy
-- No technical language in clinic-facing or outreach copy
+- No external calendar sync
+- No auto-confirmation
+- No diagnosis/medical advice/triage
+- No DELETE route
+- Staff review required before confirmed status
 - production_phi_enabled always False
 - Frontend build must remain clean
 - Full test suite must remain green
 - Commit message:
-  Sprint 21 / Module 164 — First pilot clinic activation checklist
+  Sprint 21 / Module 164 — Simple clinic calendar foundation

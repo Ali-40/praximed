@@ -1,0 +1,6 @@
+clinic_name,specialty,district,website,email,phone,contact_person,status,follow_up_date,interest_level,demo_booked,notes
+Demo Dermatologie Wien,Dermatologie,1010,,,,,cold,,,no,Example row — replace with real clinic
+Demo Frauenarzt Praxis,Gynäkologie,1030,,,,,cold,,,no,Example row — replace with real clinic
+Demo Orthopädie Zentrum,Orthopädie,1040,,,,,cold,,,no,Example row — replace with real clinic
+Demo Zahnarzt Privatpraxis,Zahnarzt,1080,,,,,cold,,,no,Example row — replace with real clinic
+Demo Innere Medizin,Innere Medizin,1090,,,,,cold,,,no,Example row — replace with real clinic

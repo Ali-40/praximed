@@ -2,8 +2,17 @@
 
 ## Completed and committed modules
 
-000000. Module 163 — Sprint 21 / Clinic Outreach Execution Pack (commit: pending)
-   - `docs/sales/CLINIC_OUTREACH_EXECUTION_PACK.md` — cold email, WhatsApp/SMS, LinkedIn, walk-in, follow-up sequence (Day 1/3/7), objection quick replies (5 objections)
+0000000. Module 162 (outreach extension) — Sprint 21 / Sales Demo Polish and Outreach Readiness (commit: pending)
+   - `docs/sales/CLINIC_OUTREACH_EXECUTION_PACK.md` — expanded: target clinic profile, best niches, 50-clinic workflow, daily plan, tracking table, cold email, WhatsApp, phone script, LinkedIn, walk-in, follow-up sequence (Day 1/3/7 + after demo), 10 objection replies (calendar, DSGVO, AI claims, pricing, existing solutions), pricing (€390/€290–€490), CTA options
+   - `docs/sales/SALES_ONE_LINERS.md` — 11 memorizable one-line pitches
+   - `docs/sales/TOMORROW_FIRST_SALES_DAY_PLAN.md` — exact first-sales-day schedule (email block, phone block, walk-in block, LinkedIn, follow-up, success metrics)
+   - `docs/sales/clinic_outreach_tracker_template.csv` — ready-to-use spreadsheet with 5 fake example rows
+   - `backend/tests/test_sales_demo_polish_and_outreach_readiness_contract.py` — 85 comprehensive contract tests
+   - Calendar positioned as next pilot workflow feature — not promised as finished
+   - Acceptance: "Ali kann morgen losfahren, 20 Wiener Privatpraxen kontaktieren, und weiß auf jeden Einwand eine Antwort."
+
+000000. Module 163 — Sprint 21 / Clinic Outreach Execution Pack (commit: 4926b6e)
+   - `docs/sales/CLINIC_OUTREACH_EXECUTION_PACK.md` — initial cold email, WhatsApp/SMS, LinkedIn, walk-in, follow-up sequence (Day 1/3/7), objection quick replies (5 objections)
    - `backend/tests/test_clinic_outreach_execution_pack_contract.py` — 45 contract tests
    - Cold email subject: "Wie Ihre Praxis verpasste Anrufe automatisch zurückruft"
    - All scripts mention verpasste Anrufe, 30-day pilot, demo CTA
