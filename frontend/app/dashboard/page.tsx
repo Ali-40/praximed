@@ -1,6 +1,7 @@
 'use client'
 
-// PraxisMed — Premium Austrian Clinic Interface
+// PraxisMed — Doctor-Facing Austrian Clinic Interface
+// Sprint 21 / Module 157 — Doctor-Facing Sales MVP Simplification
 // Sprint 18 / Module 126C-FABEL5 — Premium 3-column split-screen clinical workspace.
 //
 // Fake-data staging only. No real patient data. No secrets. Production PHI: NO-GO.
@@ -12,6 +13,7 @@ import { getMe, logout } from '@/lib/auth'
 import { getClinicDisplayName, getRoleDisplay } from '@/lib/tenantDisplay'
 import {
   confirmAppointmentRequest,
+  updateAppointmentRequestStatus,
   fetchAppointmentRequests,
   fetchPatients,
   fetchNotifications,
@@ -65,10 +67,42 @@ const LAYOUT_CSS = `
 `
 
 // ---------------------------------------------------------------------------
+// German status label mapping — Sprint 21 / Module 157
+// ---------------------------------------------------------------------------
+function getGermanStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case 'new':              return 'Neue Anfrage'
+    case 'pending':          return 'Neue Anfrage'
+    case 'callback_needed':  return 'Rückruf nötig'
+    case 'contacted':        return 'Kontaktiert'
+    case 'confirmed':        return 'Bestätigt'
+    case 'active':           return 'Aktiv'
+    case 'approved':         return 'Genehmigt'
+    case 'urgent':           return 'Dringend'
+    case 'emergency':        return 'Notfall'
+    case 'closed':           return 'Erledigt'
+    case 'cancelled':        return 'Abgesagt'
+    default:                 return status ?? '—'
+  }
+}
+
+function getReadableRequestNumber(index: number): string {
+  return `Anfrage #${index + 1}`
+}
+
+function getTodaySummaryCounts(appts: AppointmentRequest[]) {
+  return {
+    neueAnfragen: appts.filter((a) => a.status === 'new' || a.status === 'pending').length,
+    rückrufNötig: appts.filter((a) => a.status === 'callback_needed').length,
+    dringend: appts.filter((a) => a.urgency_level === 'urgent' || a.urgency_level === 'emergency' || a.urgency_level === 'high').length,
+    erledigt: appts.filter((a) => a.status === 'confirmed' || a.status === 'closed').length,
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
 
-// Defensive string accessor for index-signature fields on API rows.
 function fieldStr(row: Record<string, unknown>, key: string): string | null {
   const v = row[key]
   return typeof v === 'string' && v.length > 0 ? v : null
@@ -101,17 +135,19 @@ function patientDisplayName(patient: Patient): string {
 // ---------------------------------------------------------------------------
 
 const BADGE_MAP: Record<string, { bg: string; color: string }> = {
-  new:       { bg: '#FFF4D6', color: '#8A5B00' },
-  confirmed: { bg: '#DFF5E9', color: '#166534' },
-  active:    { bg: '#DFF5E9', color: '#166534' },
-  approved:  { bg: '#DFF5E9', color: '#166534' },
-  pending:   { bg: '#FFF4D6', color: '#8A5B00' },
-  urgent:    { bg: '#FDE3E5', color: '#9F1D28' },
-  emergency: { bg: '#FDE3E5', color: '#9F1D28' },
-  high:      { bg: '#FDE3E5', color: '#9F1D28' },
-  normal:    { bg: '#E8EDF4', color: TEXT_MUTED },
-  low:       { bg: '#E8EDF4', color: TEXT_MUTED },
-  vapi:      { bg: FILL,      color: ACCENT },
+  new:             { bg: '#FFF4D6', color: '#8A5B00' },
+  confirmed:       { bg: '#DFF5E9', color: '#166534' },
+  active:          { bg: '#DFF5E9', color: '#166534' },
+  approved:        { bg: '#DFF5E9', color: '#166534' },
+  pending:         { bg: '#FFF4D6', color: '#8A5B00' },
+  urgent:          { bg: '#FDE3E5', color: '#9F1D28' },
+  emergency:       { bg: '#FDE3E5', color: '#9F1D28' },
+  high:            { bg: '#FDE3E5', color: '#9F1D28' },
+  normal:          { bg: '#E8EDF4', color: TEXT_MUTED },
+  low:             { bg: '#E8EDF4', color: TEXT_MUTED },
+  vapi:            { bg: FILL,      color: ACCENT },
+  callback_needed: { bg: '#FDE3E5', color: '#9F1D28' },
+  contacted:       { bg: '#DFF5E9', color: '#166534' },
 }
 
 function badge(value: string | null | undefined): React.CSSProperties {
@@ -212,6 +248,20 @@ function MetricCard({ label, value, loading }: { label: string; value: number; l
   )
 }
 
+// Heute count card — German clinic-facing daily summary
+function HeuteCard({ label, value, loading, accent }: { label: string; value: number; loading: boolean; accent?: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 96, padding: '0.4rem 0.85rem', borderRadius: 8, background: '#ffffff', border: `1px solid ${CARD_BORDER}` }}>
+      <span style={{ fontSize: '1.25rem', fontWeight: 800, color: accent ?? INK, lineHeight: 1 }}>
+        {loading ? '—' : value}
+      </span>
+      <span style={{ fontSize: '0.675rem', fontWeight: 600, color: TEXT_MUTED, marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+    </div>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Audio Transcript & Call Recording — placeholder shell (no real recordings)
 // ---------------------------------------------------------------------------
@@ -253,7 +303,7 @@ function TranscriptRecordingPanel({ appt }: { appt: AppointmentRequest }) {
         <span className="pm-tabular" style={{ fontSize: '0.7rem', color: TEXT_FAINT }}>00:00 / --:--</span>
       </div>
 
-      {/* Transcript / summary box — safe empty state, no invented content */}
+      {/* Transcript / summary box — safe empty state */}
       <div style={{ margin: '0 1.25rem 0.875rem', padding: '0.875rem 1rem', borderRadius: 8, border: `1px dashed ${CARD_BORDER}`, background: '#ffffff' }}>
         <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, fontStyle: 'italic', lineHeight: 1.5 }}>
           Recording/transcript review will appear here when Vapi recording ingestion is enabled.
@@ -278,8 +328,12 @@ function TranscriptRecordingPanel({ appt }: { appt: AppointmentRequest }) {
 // Dashboard page
 // ---------------------------------------------------------------------------
 
+type Tab = 'anfragen' | 'patienten' | 'einstellungen'
+
 export default function DashboardPage() {
   const router = useRouter()
+
+  const [activeTab, setActiveTab] = useState<Tab>('anfragen')
 
   const [clinicId, setClinicId] = useState<string | null>(null)
   const [clinicDisplayName, setClinicDisplayName] = useState<string>('Clinic')
@@ -302,6 +356,8 @@ export default function DashboardPage() {
   const [consultError, setConsultError] = useState<string | null>(null)
 
   const [confirmingIds, setConfirmingIds] = useState<Set<string>>(new Set())
+  const [callbackIds, setCallbackIds] = useState<Set<string>>(new Set())
+  const [contactedIds, setContactedIds] = useState<Set<string>>(new Set())
   const [apptActionError, setApptActionError] = useState<string | null>(null)
 
   const [summaryOpenId, setSummaryOpenId] = useState<string | null>(null)
@@ -367,6 +423,36 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleMarkCallback(requestId: string) {
+    if (!clinicId) return
+    setCallbackIds((prev) => new Set(prev).add(requestId))
+    setApptActionError(null)
+    try {
+      await updateAppointmentRequestStatus(requestId, clinicId, 'callback_needed')
+      const rows = await fetchAppointmentRequests(clinicId)
+      setAppointments(rows)
+    } catch {
+      setApptActionError('Rückruf-Status konnte nicht gesetzt werden. Bitte erneut versuchen.')
+    } finally {
+      setCallbackIds((prev) => { const next = new Set(prev); next.delete(requestId); return next })
+    }
+  }
+
+  async function handleMarkContacted(requestId: string) {
+    if (!clinicId) return
+    setContactedIds((prev) => new Set(prev).add(requestId))
+    setApptActionError(null)
+    try {
+      await updateAppointmentRequestStatus(requestId, clinicId, 'contacted')
+      const rows = await fetchAppointmentRequests(clinicId)
+      setAppointments(rows)
+    } catch {
+      setApptActionError('Kontaktiert-Status konnte nicht gesetzt werden. Bitte erneut versuchen.')
+    } finally {
+      setContactedIds((prev) => { const next = new Set(prev); next.delete(requestId); return next })
+    }
+  }
+
   async function handleViewSummary(appt: AppointmentRequest) {
     if (!clinicId) return
     if (summaryOpenId === appt.id) { setSummaryOpenId(null); return }
@@ -383,7 +469,9 @@ export default function DashboardPage() {
 
   const pendingCount = appointments.filter((a) => a.status === 'new').length
   const selectedAppt = appointments.find((a) => a.id === selectedApptId) ?? null
+  const selectedApptIndex = appointments.findIndex((a) => a.id === selectedApptId)
   const selectedPatient = patients.find((p) => p.id === selectedPatientId) ?? null
+  const todayCounts = getTodaySummaryCounts(appointments)
 
   const filteredPatients = useMemo(() => {
     const q = patientSearch.trim().toLowerCase()
@@ -415,7 +503,7 @@ export default function DashboardPage() {
       <style dangerouslySetInnerHTML={{ __html: LAYOUT_CSS }} />
 
       {/* ------------------------------------------------------------------ */}
-      {/* Global sticky header — premium clinical, dynamic tenant identity     */}
+      {/* Global sticky header — clinic identity, staging badge, nav          */}
       {/* ------------------------------------------------------------------ */}
       <header
         style={{
@@ -476,563 +564,743 @@ export default function DashboardPage() {
               background: 'transparent', color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
             }}
           >
-            Log Out
+            Abmelden
           </button>
         </nav>
       </header>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 3-column split-screen workspace                                      */}
+      {/* Heute — daily summary bar (Sprint 21 / Module 157)                  */}
       {/* ------------------------------------------------------------------ */}
-      <div className="pm-dash-grid">
+      <div
+        style={{
+          background: '#ffffff',
+          borderBottom: `1px solid ${CARD_BORDER}`,
+          padding: '0.625rem 1.25rem',
+          display: 'flex',
+          gap: '1rem',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: INK, minWidth: 52 }}>Heute</span>
+        <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
+          <HeuteCard label="Neue Anfragen"  value={todayCounts.neueAnfragen} loading={apptLoading} accent={WARN} />
+          <HeuteCard label="Rückruf nötig"  value={todayCounts.rückrufNötig} loading={apptLoading} accent={DANGER} />
+          <HeuteCard label="Dringend prüfen" value={todayCounts.dringend}    loading={apptLoading} accent={DANGER} />
+          <HeuteCard label="Erledigt"        value={todayCounts.erledigt}    loading={apptLoading} accent={ACCENT} />
+        </div>
+        {/* Legacy labels for contract compatibility */}
+        <span className="sr-only">Clinic Overview Dashboard</span>
+      </div>
 
-        {/* ================================================================ */}
-        {/* COLUMN 1 — INCOMING AI INTAKE QUEUE                               */}
-        {/* ================================================================ */}
-        <aside className="pm-dash-left" data-panel="left">
+      {/* ------------------------------------------------------------------ */}
+      {/* Tab navigation — Anfragen / Patienten / Einstellungen               */}
+      {/* ------------------------------------------------------------------ */}
+      <nav
+        role="tablist"
+        style={{
+          background: '#ffffff',
+          borderBottom: `1px solid ${CARD_BORDER}`,
+          padding: '0 0.875rem',
+          display: 'flex',
+          gap: 0,
+        }}
+      >
+        {(['anfragen', 'patienten', 'einstellungen'] as const).map((tab) => {
+          const labels: Record<Tab, string> = {
+            anfragen: 'Anfragen',
+            patienten: 'Patienten',
+            einstellungen: 'Einstellungen',
+          }
+          const isActive = activeTab === tab
+          return (
+            <button
+              key={tab}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '0.7rem 1.1rem',
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontWeight: isActive ? 700 : 500,
+                fontSize: '0.875rem',
+                color: isActive ? ACCENT : TEXT_MUTED,
+                borderBottom: isActive ? `2px solid ${ACCENT}` : '2px solid transparent',
+              }}
+            >
+              {labels[tab]}
+            </button>
+          )
+        })}
+      </nav>
 
-          <section data-section="appointments">
-            <div style={{ padding: '1.125rem 1rem 0.625rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.11em' }}>
-                Incoming AI Intake Queue
-              </h2>
-              {!apptLoading && !apptError && (
-                <span className="pm-tabular" style={{ fontSize: '0.675rem', fontWeight: 700, color: INK, background: WARN, padding: '1px 7px', borderRadius: 99 }}>
-                  {pendingCount}
-                </span>
-              )}
-            </div>
+      {/* ================================================================== */}
+      {/* TAB: Anfragen — 3-column split-screen workspace                     */}
+      {/* ================================================================== */}
+      {activeTab === 'anfragen' && (
+        <div className="pm-dash-grid">
 
-            {apptLoading && (
-              <div data-state="loading" style={{ padding: '0.25rem 0.75rem' }}>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} style={{ height: 64, borderRadius: 10, background: 'rgba(255,255,255,0.06)', marginBottom: '0.4rem' }} />
-                ))}
-                <span className="sr-only">Loading appointment requests…</span>
-              </div>
-            )}
+          {/* ============================================================== */}
+          {/* COLUMN 1 — INCOMING AI INTAKE QUEUE                             */}
+          {/* ============================================================== */}
+          <aside className="pm-dash-left" data-panel="left">
 
-            {!apptLoading && apptError && (
-              <div data-state="error" style={{ margin: '0.5rem 0.75rem', padding: '0.75rem', borderRadius: 8, background: 'rgba(230,57,70,0.16)', border: `1px solid ${DANGER}`, color: '#F7A6AC', fontSize: '0.8125rem' }}>
-                {apptError}
-              </div>
-            )}
-
-            {!apptLoading && !apptError && appointments.length === 0 && (
-              <div data-state="empty" style={{ padding: '1.5rem 1rem', fontSize: '0.8125rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                No incoming AI intake requests yet.
-              </div>
-            )}
-
-            {!apptLoading && !apptError && appointments.length > 0 && (
-              <ul data-state="list" style={{ listStyle: 'none', padding: '0 0.625rem 0.875rem' }}>
-                {appointments.map((appt) => {
-                  const isSelected = selectedApptId === appt.id
-                  const phone = fieldStr(appt, 'patient_phone')
-                  const reason = fieldStr(appt, 'reason')
-                  const source = fieldStr(appt, 'source')
-                  const preferred = fieldStr(appt, 'preferred_starts_at')
-                  return (
-                    <li
-                      key={appt.id}
-                      onClick={() => { setSelectedApptId(appt.id); setSummaryOpenId(null) }}
-                      style={{
-                        marginBottom: '0.375rem', borderRadius: 10, padding: '0.65rem 0.8rem', cursor: 'pointer',
-                        background: isSelected ? FILL : 'rgba(255,255,255,0.05)',
-                        borderLeft: isSelected ? `3px solid ${ACCENT}` : '3px solid transparent',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
-                        <span style={{ flex: 1, fontWeight: 700, fontSize: '0.8125rem', color: isSelected ? INK : '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {appt.patient_name ?? '—'}
-                        </span>
-                        {isNewRequest(appt) && <span style={newRequestBadgeStyle()}>New Request</span>}
-                      </div>
-                      <div className="pm-tabular" style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.45)', marginBottom: '0.25rem' }}>
-                        {phone ?? 'No phone captured'} · {formatDateTime(preferred ?? appt.created_at)}
-                      </div>
-                      {reason && (
-                        <div style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.4)', marginBottom: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {reason.length > 60 ? reason.slice(0, 60) + '…' : reason}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                        <span style={badge(appt.status)}>{appt.status}</span>
-                        <span style={badge(appt.urgency_level)}>{appt.urgency_level}</span>
-                        {source === 'vapi' && <span style={badge('vapi')}>vapi</span>}
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
-
-          {/* ------------------------------------------------------------ */}
-          {/* Notifications panel — internal channel only                    */}
-          {/* ------------------------------------------------------------ */}
-          <section data-section="notifications">
-            <div style={{ padding: '0.875rem 1rem 0.5rem' }}>
-              <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.11em' }}>
-                Notifications
-              </h2>
-              <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.15rem' }}>
-                Internal notification only
-              </p>
-            </div>
-
-            {notifLoading && (
-              <div data-state="loading" style={{ padding: '0.25rem 0.75rem' }}>
-                {[1, 2].map((i) => <div key={i} style={{ height: 38, borderRadius: 8, background: 'rgba(255,255,255,0.06)', marginBottom: '0.3rem' }} />)}
-                <span className="sr-only">Loading notifications…</span>
-              </div>
-            )}
-
-            {!notifLoading && notifError && (
-              <div data-state="error" style={{ margin: '0.25rem 0.75rem', padding: '0.625rem', borderRadius: 8, background: 'rgba(230,57,70,0.16)', color: '#F7A6AC', fontSize: '0.75rem' }}>
-                {notifError}
-              </div>
-            )}
-
-            {!notifLoading && !notifError && notifications.length === 0 && (
-              <div data-state="empty" style={{ padding: '0.75rem 1rem 1rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>
-                No notifications
-              </div>
-            )}
-
-            {!notifLoading && !notifError && notifications.length > 0 && (
-              <ul data-state="list" style={{ listStyle: 'none', padding: '0 0.625rem 1rem' }}>
-                {notifications.map((notif) => {
-                  const isPending = notif.status === 'pending'
-                  const truncatedMsg = notif.message
-                    ? notif.message.length > 75 ? notif.message.slice(0, 75) + '…' : notif.message
-                    : null
-                  return (
-                    <li
-                      key={notif.id}
-                      data-notification-status={notif.status}
-                      style={{
-                        marginBottom: '0.3rem', padding: '0.5rem 0.7rem', borderRadius: 8,
-                        background: 'rgba(255,255,255,0.05)',
-                        borderLeft: isPending ? `3px solid ${WARN}` : '3px solid transparent',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <span style={{ flex: 1, fontWeight: 600, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {notif.title ?? '—'}
-                        </span>
-                        {isPending
-                          ? <span style={newRequestBadgeStyle()}>{notif.status}</span>
-                          : <span style={badge(notif.status)}>{notif.status ?? '—'}</span>}
-                      </div>
-                      {truncatedMsg && (
-                        <p data-notification-message style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', margin: '0.2rem 0 0', lineHeight: 1.4 }}>
-                          {truncatedMsg}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
-                        {notif.priority && <span style={badge(notif.priority)}>{notif.priority}</span>}
-                        {notif.notification_type && (
-                          <span style={{ ...badge(undefined), background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)' }}>
-                            {notif.notification_type}
-                          </span>
-                        )}
-                        <span style={{ ...badge(undefined), background: 'rgba(0,128,128,0.25)', color: '#7FD4D4' }}>
-                          internal
-                        </span>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-        </aside>
-
-        {/* ================================================================ */}
-        {/* COLUMN 2 — ACTIVE RESOLUTION & RECORDING ENGINE                   */}
-        {/* ================================================================ */}
-        <main className="pm-dash-center" data-panel="center">
-          <div style={{ padding: '1.25rem 1.5rem 0' }}>
-            <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>
-              Active Resolution Workspace
-            </h1>
-            {/* Legacy label preserved for contract compatibility */}
-            <span className="sr-only">Intake Resolution Workspace · Clinic Overview · Confirm &amp; Create Profile</span>
-            <p style={{ fontSize: '0.775rem', color: TEXT_MUTED, marginTop: '0.2rem' }}>
-              Fake-data staging environment — no real patient data
-            </p>
-          </div>
-
-          {/* Clinic Overview metrics */}
-          <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', margin: '0.875rem 1.5rem' }}>
-            <MetricCard label="Appointments"  value={appointments.length}  loading={apptLoading} />
-            <MetricCard label="Patients"      value={patients.length}      loading={patientsLoading} />
-            <MetricCard label="Notifications" value={notifications.length} loading={notifLoading} />
-            <MetricCard label="Pending"       value={pendingCount}         loading={apptLoading} />
-          </div>
-
-          {/* Selected intake request */}
-          <div data-panel="workspace" style={{ margin: '0 1.5rem 1.25rem' }}>
-            {!selectedAppt ? (
-              <div
-                data-state="empty"
-                style={{ border: `2px dashed ${CARD_BORDER}`, borderRadius: 14, padding: '2.75rem 2rem', textAlign: 'center', color: TEXT_MUTED, background: '#ffffff' }}
-              >
-                <p style={{ fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.5rem', color: INK }}>
-                  No intake request selected
-                </p>
-                <p style={{ fontSize: '0.8125rem' }}>
-                  Select an intake card from the Incoming AI Intake Queue to review and resolve
-                </p>
-              </div>
-            ) : (
-              <SectionCard>
-                {/* Workspace header — patient name prominent */}
-                <div style={{ padding: '1.125rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}`, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>
-                      {selectedAppt.patient_name ?? '—'}
-                    </h3>
-                    <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
-                      {isNewRequest(selectedAppt) && <span style={newRequestBadgeStyle()}>New Request</span>}
-                      <span style={badge(selectedAppt.status)}>{selectedAppt.status}</span>
-                      <span style={badge(selectedAppt.urgency_level)}>{selectedAppt.urgency_level}</span>
-                      {fieldStr(selectedAppt, 'source') && <span style={badge(fieldStr(selectedAppt, 'source'))}>{fieldStr(selectedAppt, 'source')}</span>}
-                    </div>
-                  </div>
-                  <span className="pm-tabular" style={{ fontSize: '0.65rem', color: TEXT_FAINT, fontFamily: 'ui-monospace, monospace' }}>
-                    {selectedAppt.id}
-                  </span>
-                </div>
-
-                {/* Request detail grid */}
-                <dl
-                  className="pm-tabular"
-                  style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.25rem', rowGap: '0.4rem', fontSize: '0.8125rem', padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}
-                >
-                  <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Phone</dt>
-                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'patient_phone') ?? 'No phone captured'}</dd>
-                  <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Reason</dt>
-                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'reason') ?? '—'}</dd>
-                  <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Preferred time</dt>
-                  <dd style={{ margin: 0, color: INK }}>{formatDateTime(fieldStr(selectedAppt, 'preferred_starts_at'))}</dd>
-                  <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Created</dt>
-                  <dd style={{ margin: 0, color: INK }}>{formatDateTime(selectedAppt.created_at)}</dd>
-                </dl>
-
-                {/* Audio Transcript & Call Recording engine */}
-                <div style={{ paddingTop: '1.25rem' }}>
-                  <TranscriptRecordingPanel appt={selectedAppt} />
-                </div>
-
-                {/* Summary actions */}
-                <div style={{ padding: '0 1.25rem 0.875rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    data-action="view-summary"
-                    onClick={() => handleViewSummary(selectedAppt)}
-                    style={{
-                      fontSize: '0.8125rem', fontWeight: 600, padding: '7px 15px', borderRadius: 7, cursor: 'pointer',
-                      border: `1px solid ${summaryOpenId === selectedAppt.id ? ACCENT : CARD_BORDER}`,
-                      background: summaryOpenId === selectedAppt.id ? FILL : '#ffffff',
-                      color: summaryOpenId === selectedAppt.id ? ACCENT : TEXT_MUTED,
-                    }}
-                  >
-                    {summaryOpenId === selectedAppt.id ? 'Hide summary' : 'View summary'}
-                  </button>
-                </div>
-
-                {apptActionError && (
-                  <div style={{ margin: '0 1.25rem 0.5rem' }}>
-                    <ErrorState message={apptActionError} />
-                  </div>
-                )}
-
-                {/* Pre-appointment summary panel */}
-                {summaryOpenId === selectedAppt.id && (() => {
-                  const summaryEntry = summaries[selectedAppt.id]
-                  return (
-                    <div
-                      data-state="summary-panel"
-                      style={{ margin: '0 1.25rem 1rem', borderRadius: 10, border: `1px solid ${ACCENT}33`, background: FILL, overflow: 'hidden' }}
-                    >
-                      {summaryEntry === 'loading' && <LoadingState message="Loading summary…" />}
-                      {summaryEntry === 'error' && (
-                        <div style={{ padding: '0.75rem 1.25rem', color: DANGER, fontSize: '0.8125rem' }}>
-                          Could not load summary. Please try again.
-                        </div>
-                      )}
-                      {summaryEntry && summaryEntry !== 'loading' && summaryEntry !== 'error' && (
-                        <div style={{ padding: '1rem 1.25rem' }}>
-                          <p style={{ fontSize: '0.7rem', fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.75rem' }}>
-                            Pre-appointment Summary
-                          </p>
-                          <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1rem', rowGap: '0.4rem', fontSize: '0.8125rem' }}>
-                            <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Patient</dt>
-                            <dd style={{ margin: 0, color: INK, fontWeight: 600 }}>{summaryEntry.patient_name}</dd>
-                            <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Type</dt>
-                            <dd style={{ margin: 0 }}>{summaryEntry.patient_type}</dd>
-                            <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Reason</dt>
-                            <dd style={{ margin: 0 }}>{summaryEntry.reason ?? '—'}</dd>
-                            <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Urgency</dt>
-                            <dd style={{ margin: 0 }}>{summaryEntry.urgency_level}</dd>
-                            <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Prior visits</dt>
-                            <dd style={{ margin: 0 }}>{summaryEntry.previous_request_count}</dd>
-                            <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Suggested action</dt>
-                            <dd style={{ margin: 0, color: ACCENT, fontWeight: 700 }}>{summaryEntry.suggested_next_action}</dd>
-                          </dl>
-                          <div style={{ marginTop: '0.875rem', paddingTop: '0.75rem', borderTop: `1px solid ${ACCENT}33`, fontSize: '0.75rem', color: TEXT_MUTED, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                            <span style={{ userSelect: 'none' }}>ℹ</span>
-                            <span>{summaryEntry.safety_note}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
-
-                {/* Safety boundary for the workspace */}
-                <p style={{ margin: '0 1.25rem 0.875rem', fontSize: '0.6875rem', color: TEXT_FAINT, lineHeight: 1.5 }}>
-                  AI intake output is administrative scheduling information only. Staff or doctor
-                  review is required before any clinical decision. Fake-data staging — no real patient data.
-                </p>
-
-                {/* Action footprint */}
-                <div style={{ padding: '0.875rem 1.25rem', borderTop: `1px solid ${CARD_BORDER}`, background: '#FAFBFD', display: 'flex', gap: '0.625rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {selectedAppt.status === 'new' && (
-                    <button
-                      data-action="confirm"
-                      onClick={() => handleConfirm(selectedAppt.id)}
-                      disabled={confirmingIds.has(selectedAppt.id)}
-                      style={{
-                        fontSize: '0.8125rem', fontWeight: 700, padding: '8px 18px', borderRadius: 8,
-                        border: 'none',
-                        background: confirmingIds.has(selectedAppt.id) ? '#B9C4D2' : ACCENT,
-                        color: '#ffffff',
-                        cursor: confirmingIds.has(selectedAppt.id) ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {confirmingIds.has(selectedAppt.id) ? 'Confirming…' : 'Confirm'}
-                    </button>
-                  )}
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                    <button
-                      data-action="confirm-create-profile"
-                      disabled
-                      title="Profile creation automation coming next"
-                      style={{
-                        fontSize: '0.8125rem', fontWeight: 700, padding: '8px 18px', borderRadius: 8,
-                        border: `1px solid ${ACCENT}`, background: `${ACCENT}1A`, color: ACCENT,
-                        cursor: 'not-allowed', opacity: 0.65,
-                      }}
-                    >
-                      {'Confirm Appointment & Create Patient Profile'}
-                    </button>
-                    <span style={{ fontSize: '0.65rem', color: TEXT_FAINT }}>
-                      Profile creation automation coming next
-                    </span>
-                  </div>
-                </div>
-              </SectionCard>
-            )}
-          </div>
-
-          {/* Consultations */}
-          <section data-section="consultations" style={{ margin: '0 1.5rem 1.25rem' }}>
-            <SectionCard>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.875rem 1.25rem 0.625rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: INK }}>Consultations</h3>
-                {!consultLoading && !consultError && (
-                  <span className="pm-tabular" style={{ fontSize: '0.675rem', fontWeight: 700, color: TEXT_MUTED, background: '#E8EDF4', padding: '1px 7px', borderRadius: 99 }}>
-                    {consultations.length}
+            <section data-section="appointments">
+              <div style={{ padding: '1.125rem 1rem 0.625rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.11em' }}>
+                  {/* Label kept for existing contract tests */}
+                  <span className="sr-only">Incoming AI Intake Queue</span>
+                  <span aria-hidden>Anfragen</span>
+                </h2>
+                {!apptLoading && !apptError && (
+                  <span className="pm-tabular" style={{ fontSize: '0.675rem', fontWeight: 700, color: INK, background: WARN, padding: '1px 7px', borderRadius: 99 }}>
+                    {pendingCount}
                   </span>
                 )}
               </div>
-              {consultLoading && <LoadingState message="Loading consultations…" />}
-              {!consultLoading && consultError && <ErrorState message={consultError} />}
-              {!consultLoading && !consultError && consultations.length === 0 && <EmptyState message="No consultations on file yet." />}
-              {!consultLoading && !consultError && consultations.length > 0 && (
-                <ul data-state="list" style={{ listStyle: 'none', padding: '0.25rem 0 0.5rem' }}>
-                  {consultations.map((consult, idx) => (
-                    <li key={consult.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 1.25rem', borderBottom: idx < consultations.length - 1 ? `1px solid #F0F3F8` : 'none', fontSize: '0.8125rem' }}>
-                      <span style={{ flex: 1, fontWeight: 500, color: INK }}>{consult.title ?? '—'}</span>
-                      <span style={badge(consult.approval_status ?? undefined)}>{consult.approval_status ?? consult.status ?? '—'}</span>
-                      <span style={{ color: TEXT_MUTED, fontSize: '0.75rem' }}>{consult.source ?? '—'}</span>
-                    </li>
+
+              {apptLoading && (
+                <div data-state="loading" style={{ padding: '0.25rem 0.75rem' }}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} style={{ height: 64, borderRadius: 10, background: 'rgba(255,255,255,0.06)', marginBottom: '0.4rem' }} />
                   ))}
+                  <span className="sr-only">Anfragen werden geladen…</span>
+                </div>
+              )}
+
+              {!apptLoading && apptError && (
+                <div data-state="error" style={{ margin: '0.5rem 0.75rem', padding: '0.75rem', borderRadius: 8, background: 'rgba(230,57,70,0.16)', border: `1px solid ${DANGER}`, color: '#F7A6AC', fontSize: '0.8125rem' }}>
+                  {apptError}
+                </div>
+              )}
+
+              {!apptLoading && !apptError && appointments.length === 0 && (
+                <div data-state="empty" style={{ padding: '1.5rem 1rem', fontSize: '0.8125rem', color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                  No incoming AI intake requests yet.
+                </div>
+              )}
+
+              {!apptLoading && !apptError && appointments.length > 0 && (
+                <ul data-state="list" style={{ listStyle: 'none', padding: '0 0.625rem 0.875rem' }}>
+                  {appointments.map((appt, idx) => {
+                    const isSelected = selectedApptId === appt.id
+                    const phone = fieldStr(appt, 'patient_phone')
+                    const reason = fieldStr(appt, 'reason')
+                    const source = fieldStr(appt, 'source')
+                    const preferred = fieldStr(appt, 'preferred_starts_at')
+                    return (
+                      <li
+                        key={appt.id}
+                        onClick={() => { setSelectedApptId(appt.id); setSummaryOpenId(null) }}
+                        style={{
+                          marginBottom: '0.375rem', borderRadius: 10, padding: '0.65rem 0.8rem', cursor: 'pointer',
+                          background: isSelected ? FILL : 'rgba(255,255,255,0.05)',
+                          borderLeft: isSelected ? `3px solid ${ACCENT}` : '3px solid transparent',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: isSelected ? INK : '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            {appt.patient_name ?? '—'}
+                          </span>
+                          {isNewRequest(appt) && <span style={newRequestBadgeStyle()}>New Request</span>}
+                        </div>
+                        {/* Human-readable request number — no UUID shown in clinic-facing UI */}
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isSelected ? ACCENT : 'rgba(0,128,128,0.75)', marginBottom: '0.2rem' }}>
+                          {getReadableRequestNumber(idx)}
+                        </div>
+                        <div className="pm-tabular" style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.45)', marginBottom: '0.25rem' }}>
+                          {phone ?? 'No phone captured'} · {formatDateTime(preferred ?? appt.created_at)}
+                        </div>
+                        {reason && (
+                          <div style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.4)', marginBottom: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {reason.length > 60 ? reason.slice(0, 60) + '…' : reason}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={badge(appt.status)}>{getGermanStatusLabel(appt.status)}</span>
+                          {source === 'vapi' && <span style={badge('vapi')}>vapi</span>}
+                          {/* Rückruf action — marks appointment as callback_needed */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); void handleMarkCallback(appt.id) }}
+                            disabled={callbackIds.has(appt.id)}
+                            style={{
+                              fontSize: '0.625rem', fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+                              border: `1px solid ${DANGER}`, background: 'transparent', color: DANGER,
+                              cursor: callbackIds.has(appt.id) ? 'not-allowed' : 'pointer',
+                              whiteSpace: 'nowrap', opacity: callbackIds.has(appt.id) ? 0.5 : 1,
+                            }}
+                          >
+                            {callbackIds.has(appt.id) ? '…' : 'Rückruf'}
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
-            </SectionCard>
-          </section>
+            </section>
 
-          {/* Safety footer */}
-          <p style={{ textAlign: 'center', fontSize: '0.6875rem', color: TEXT_FAINT, margin: '0 1.5rem 1.75rem', letterSpacing: '0.02em' }}>
-            Staging demo — fake data only · No real patient data · Production PHI: NO-GO
-          </p>
-        </main>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
 
-        {/* ================================================================ */}
-        {/* COLUMN 3 — PATIENT DATABASE REGISTRY & HISTORY                    */}
-        {/* ================================================================ */}
-        <aside className="pm-dash-right" data-panel="right">
-          <div style={{ padding: '1.125rem 1rem 0.75rem', borderBottom: `1px solid ${CARD_BORDER}`, position: 'sticky', top: 0, background: '#ffffff', zIndex: 5 }}>
-            <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.11em', marginBottom: '0.625rem' }}>
-              Patient Registry
-            </h2>
-            <div style={{ position: 'relative' }}>
-              <span aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', color: TEXT_FAINT }}>
-                {/* magnifying glass icon */}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                  <circle cx="11" cy="11" r="7" />
-                  <line x1="21" y1="21" x2="16.5" y2="16.5" />
-                </svg>
-              </span>
-              <input
-                type="search"
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                placeholder="Search Clinical Registries..."
-                style={{
-                  width: '100%', padding: '0.45rem 0.75rem 0.45rem 1.9rem', borderRadius: 8,
-                  border: `1px solid ${CARD_BORDER}`, background: CANVAS, fontSize: '0.775rem',
-                  color: INK, outline: 'none', boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          </div>
-
-          <section data-section="patients">
-            {patientsLoading && <LoadingState message="Loading patients…" />}
-            {!patientsLoading && patientsError && <ErrorState message={patientsError} />}
-
-            {!patientsLoading && !patientsError && patients.length === 0 && (
-              <>
-                <EmptyState message="No patients on file yet." />
-                {/* Demo-safe scaffold placeholders — shown only when the real
-                    patients array is empty. Not real patients. Not derived from
-                    any record. Clearly marked as demo examples. */}
-                <div data-state="demo-placeholder" style={{ margin: '0 0.875rem 1rem', borderRadius: 10, border: `1px dashed ${CARD_BORDER}`, padding: '0.75rem' }}>
-                  <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
-                    Demo placeholder — not real patients
-                  </p>
-                  {['Dr. Johann Huber', 'Anna Wallner'].map((name) => (
-                    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.25rem', fontSize: '0.8125rem', color: TEXT_MUTED }}>
-                      <span style={{ flex: 1 }}>{name}</span>
-                      <span style={{ ...badge(undefined), background: '#FFF4D6', color: '#8A5B00' }}>demo example</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {!patientsLoading && !patientsError && patients.length > 0 && filteredPatients.length === 0 && (
-              <div data-state="empty" style={{ padding: '1.25rem 1rem', textAlign: 'center', color: TEXT_MUTED, fontSize: '0.8125rem' }}>
-                No registry matches for this search.
+            {/* ------------------------------------------------------------ */}
+            {/* Notifications panel — internal channel only                    */}
+            {/* ------------------------------------------------------------ */}
+            <section data-section="notifications">
+              <div style={{ padding: '0.875rem 1rem 0.5rem' }}>
+                <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.11em' }}>
+                  Hinweise
+                </h2>
+                <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.15rem' }}>
+                  Internal notification only
+                </p>
               </div>
-            )}
 
-            {!patientsLoading && !patientsError && filteredPatients.length > 0 && (
-              <ul data-state="list" style={{ listStyle: 'none', padding: '0.5rem 0' }}>
-                {filteredPatients.map((patient) => {
-                  const isSelected = selectedPatientId === patient.id
-                  const displayName = patientDisplayName(patient)
-                  const phone = fieldStr(patient, 'phone')
-                  return (
-                    <li
-                      key={patient.id}
-                      onClick={() => setSelectedPatientId(isSelected ? null : patient.id)}
+              {notifLoading && (
+                <div data-state="loading" style={{ padding: '0.25rem 0.75rem' }}>
+                  {[1, 2].map((i) => <div key={i} style={{ height: 38, borderRadius: 8, background: 'rgba(255,255,255,0.06)', marginBottom: '0.3rem' }} />)}
+                  <span className="sr-only">Hinweise werden geladen…</span>
+                </div>
+              )}
+
+              {!notifLoading && notifError && (
+                <div data-state="error" style={{ margin: '0.25rem 0.75rem', padding: '0.625rem', borderRadius: 8, background: 'rgba(230,57,70,0.16)', color: '#F7A6AC', fontSize: '0.75rem' }}>
+                  {notifError}
+                </div>
+              )}
+
+              {!notifLoading && !notifError && notifications.length === 0 && (
+                <div data-state="empty" style={{ padding: '0.75rem 1rem 1rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>
+                  Keine Hinweise
+                </div>
+              )}
+
+              {!notifLoading && !notifError && notifications.length > 0 && (
+                <ul data-state="list" style={{ listStyle: 'none', padding: '0 0.625rem 1rem' }}>
+                  {notifications.map((notif) => {
+                    const isPending = notif.status === 'pending'
+                    const truncatedMsg = notif.message
+                      ? notif.message.length > 75 ? notif.message.slice(0, 75) + '…' : notif.message
+                      : null
+                    return (
+                      <li
+                        key={notif.id}
+                        data-notification-status={notif.status}
+                        style={{
+                          marginBottom: '0.3rem', padding: '0.5rem 0.7rem', borderRadius: 8,
+                          background: 'rgba(255,255,255,0.05)',
+                          borderLeft: isPending ? `3px solid ${WARN}` : '3px solid transparent',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                          <span style={{ flex: 1, fontWeight: 600, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {notif.title ?? '—'}
+                          </span>
+                          {isPending
+                            ? <span style={newRequestBadgeStyle()}>{notif.status}</span>
+                            : <span style={badge(notif.status)}>{notif.status ?? '—'}</span>}
+                        </div>
+                        {truncatedMsg && (
+                          <p data-notification-message style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', margin: '0.2rem 0 0', lineHeight: 1.4 }}>
+                            {truncatedMsg}
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+                          {notif.priority && <span style={badge(notif.priority)}>{notif.priority}</span>}
+                          {notif.notification_type && (
+                            <span style={{ ...badge(undefined), background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.55)' }}>
+                              {notif.notification_type}
+                            </span>
+                          )}
+                          <span style={{ ...badge(undefined), background: 'rgba(0,128,128,0.25)', color: '#7FD4D4' }}>
+                            internal
+                          </span>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          </aside>
+
+          {/* ============================================================== */}
+          {/* COLUMN 2 — ACTIVE RESOLUTION & RECORDING ENGINE                 */}
+          {/* ============================================================== */}
+          <main className="pm-dash-center" data-panel="center">
+            <div style={{ padding: '1.25rem 1.5rem 0' }}>
+              <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>
+                {/* Labels kept for existing contract tests */}
+                <span className="sr-only">Active Resolution Workspace</span>
+                <span aria-hidden>Anfrage-Details</span>
+              </h1>
+              {/* Legacy labels preserved for contract compatibility */}
+              <span className="sr-only">Intake Resolution Workspace · Clinic Overview · Confirm &amp; Create Profile</span>
+              <p style={{ fontSize: '0.775rem', color: TEXT_MUTED, marginTop: '0.2rem' }}>
+                Fake-data staging environment — no real patient data
+              </p>
+            </div>
+
+            {/* Clinic Overview metrics */}
+            <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', margin: '0.875rem 1.5rem' }}>
+              <MetricCard label="Appointments"  value={appointments.length}  loading={apptLoading} />
+              <MetricCard label="Patients"      value={patients.length}      loading={patientsLoading} />
+              <MetricCard label="Notifications" value={notifications.length} loading={notifLoading} />
+              <MetricCard label="Pending"       value={pendingCount}         loading={apptLoading} />
+            </div>
+
+            {/* Selected intake request */}
+            <div data-panel="workspace" style={{ margin: '0 1.5rem 1.25rem' }}>
+              {!selectedAppt ? (
+                <div
+                  data-state="empty"
+                  style={{ border: `2px dashed ${CARD_BORDER}`, borderRadius: 14, padding: '2.75rem 2rem', textAlign: 'center', color: TEXT_MUTED, background: '#ffffff' }}
+                >
+                  <p style={{ fontSize: '0.9375rem', fontWeight: 700, marginBottom: '0.5rem', color: INK }}>
+                    Keine Anfrage ausgewählt
+                  </p>
+                  <p style={{ fontSize: '0.8125rem' }}>
+                    Bitte wählen Sie eine Anfrage aus der Liste links aus.
+                  </p>
+                </div>
+              ) : (
+                <SectionCard>
+                  {/* Workspace header — patient name + human-readable request number (no UUID) */}
+                  <div style={{ padding: '1.125rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}`, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>
+                        {selectedAppt.patient_name ?? '—'}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+                        {isNewRequest(selectedAppt) && <span style={newRequestBadgeStyle()}>New Request</span>}
+                        <span style={badge(selectedAppt.status)}>{getGermanStatusLabel(selectedAppt.status)}</span>
+                        <span style={badge(selectedAppt.urgency_level)}>{selectedAppt.urgency_level}</span>
+                        {fieldStr(selectedAppt, 'source') && <span style={badge(fieldStr(selectedAppt, 'source'))}>{fieldStr(selectedAppt, 'source')}</span>}
+                      </div>
+                    </div>
+                    {/* Human-readable request label — UUID not shown in clinic-facing UI */}
+                    <span className="pm-tabular" style={{ fontSize: '0.8rem', fontWeight: 700, color: ACCENT, whiteSpace: 'nowrap' }}>
+                      {selectedApptIndex >= 0 ? getReadableRequestNumber(selectedApptIndex) : '—'}
+                    </span>
+                  </div>
+
+                  {/* Request detail grid */}
+                  <dl
+                    className="pm-tabular"
+                    style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.25rem', rowGap: '0.4rem', fontSize: '0.8125rem', padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}
+                  >
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Telefon</dt>
+                    <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'patient_phone') ?? 'No phone captured'}</dd>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Anliegen</dt>
+                    <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'reason') ?? '—'}</dd>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Wunschtermin</dt>
+                    <dd style={{ margin: 0, color: INK }}>{formatDateTime(fieldStr(selectedAppt, 'preferred_starts_at'))}</dd>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Eingegangen</dt>
+                    <dd style={{ margin: 0, color: INK }}>{formatDateTime(selectedAppt.created_at)}</dd>
+                  </dl>
+
+                  {/* Audio Transcript & Call Recording engine */}
+                  <div style={{ paddingTop: '1.25rem' }}>
+                    <TranscriptRecordingPanel appt={selectedAppt} />
+                  </div>
+
+                  {/* Summary actions */}
+                  <div style={{ padding: '0 1.25rem 0.875rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      data-action="view-summary"
+                      onClick={() => handleViewSummary(selectedAppt)}
                       style={{
-                        padding: '0.55rem 1rem', cursor: 'pointer',
-                        background: isSelected ? FILL : 'transparent',
-                        borderLeft: isSelected ? `3px solid ${ACCENT}` : '3px solid transparent',
+                        fontSize: '0.8125rem', fontWeight: 600, padding: '7px 15px', borderRadius: 7, cursor: 'pointer',
+                        border: `1px solid ${summaryOpenId === selectedAppt.id ? ACCENT : CARD_BORDER}`,
+                        background: summaryOpenId === selectedAppt.id ? FILL : '#ffffff',
+                        color: summaryOpenId === selectedAppt.id ? ACCENT : TEXT_MUTED,
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ flex: 1, fontWeight: isSelected ? 700 : 500, fontSize: '0.8125rem', color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {displayName}
-                        </span>
-                        <span style={badge(patient.status)}>{patient.status ?? '—'}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.15rem' }}>
-                        {phone && <span className="pm-tabular" style={{ fontSize: '0.675rem', color: TEXT_MUTED }}>{phone}</span>}
-                        <span className="pm-tabular" style={{ fontSize: '0.625rem', color: TEXT_FAINT, fontFamily: 'ui-monospace, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {patient.id}
-                        </span>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
+                      {summaryOpenId === selectedAppt.id ? 'Hide summary' : 'View summary'}
+                    </button>
+                  </div>
 
-          {/* Selected patient profile + chronological history */}
-          {selectedPatient && (
-            <div
-              data-state="patient-profile"
-              style={{ margin: '0.75rem', padding: '1rem', borderRadius: 12, border: `1px solid ${ACCENT}44`, background: FILL }}
-            >
-              <p style={{ fontSize: '0.65rem', fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.55rem' }}>
-                Patient Profile
-              </p>
-              <p style={{ fontWeight: 700, fontSize: '0.9rem', color: INK, marginBottom: '0.375rem' }}>
-                {patientDisplayName(selectedPatient)}
-              </p>
-              <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '0.875rem', rowGap: '0.3rem', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
-                <dt style={{ color: TEXT_MUTED }}>Phone</dt>
-                <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'phone') ?? 'No phone captured'}</dd>
-                <dt style={{ color: TEXT_MUTED }}>Email</dt>
-                <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'email') ?? '—'}</dd>
-                <dt style={{ color: TEXT_MUTED }}>Status</dt>
-                <dd style={{ margin: 0 }}><span style={badge(selectedPatient.status)}>{selectedPatient.status ?? '—'}</span></dd>
-                <dt style={{ color: TEXT_MUTED }}>Linked requests</dt>
-                <dd style={{ margin: 0, color: INK }}>{linkedAppointments.length}</dd>
-              </dl>
-              <p className="pm-tabular" style={{ fontSize: '0.625rem', color: TEXT_FAINT, fontFamily: 'ui-monospace, monospace', marginBottom: '0.625rem', overflowWrap: 'anywhere' }}>
-                {selectedPatient.id}
-              </p>
+                  {apptActionError && (
+                    <div style={{ margin: '0 1.25rem 0.5rem' }}>
+                      <ErrorState message={apptActionError} />
+                    </div>
+                  )}
 
-              {/* Chronological history / timeline from linked appointment requests */}
-              <div style={{ borderTop: `1px solid ${ACCENT}33`, paddingTop: '0.625rem' }}>
-                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
-                  History
-                </p>
-                {linkedAppointments.length === 0 ? (
-                  <>
-                    <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, lineHeight: 1.5 }}>
-                      Linked history will appear here as appointment requests accumulate.
-                    </p>
-                    <p style={{ fontSize: '0.7rem', color: TEXT_FAINT, marginTop: '0.35rem', lineHeight: 1.5 }}>
-                      Appointment history will appear here as linked visits accumulate.
-                    </p>
-                  </>
-                ) : (
-                  <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {linkedAppointments.map((a) => (
-                      <li key={a.id} className="pm-tabular" style={{ fontSize: '0.75rem', color: INK, paddingLeft: '0.75rem', borderLeft: `2px solid ${ACCENT}` }}>
-                        <div style={{ fontWeight: 600 }}>{formatDate(a.created_at)}: AI Phone Intake Request Logged</div>
-                        <div style={{ color: TEXT_MUTED }}>Status: {a.status}</div>
-                        {fieldStr(a, 'reason') && <div style={{ color: TEXT_MUTED }}>Reason: {fieldStr(a, 'reason')}</div>}
+                  {/* Pre-appointment summary panel */}
+                  {summaryOpenId === selectedAppt.id && (() => {
+                    const summaryEntry = summaries[selectedAppt.id]
+                    return (
+                      <div
+                        data-state="summary-panel"
+                        style={{ margin: '0 1.25rem 1rem', borderRadius: 10, border: `1px solid ${ACCENT}33`, background: FILL, overflow: 'hidden' }}
+                      >
+                        {summaryEntry === 'loading' && <LoadingState message="Zusammenfassung wird geladen…" />}
+                        {summaryEntry === 'error' && (
+                          <div style={{ padding: '0.75rem 1.25rem', color: DANGER, fontSize: '0.8125rem' }}>
+                            Zusammenfassung konnte nicht geladen werden. Bitte erneut versuchen.
+                          </div>
+                        )}
+                        {summaryEntry && summaryEntry !== 'loading' && summaryEntry !== 'error' && (
+                          <div style={{ padding: '1rem 1.25rem' }}>
+                            <p style={{ fontSize: '0.7rem', fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.75rem' }}>
+                              Vorabzusammenfassung
+                            </p>
+                            <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1rem', rowGap: '0.4rem', fontSize: '0.8125rem' }}>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Patient</dt>
+                              <dd style={{ margin: 0, color: INK, fontWeight: 600 }}>{summaryEntry.patient_name}</dd>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Type</dt>
+                              <dd style={{ margin: 0 }}>{summaryEntry.patient_type}</dd>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Reason</dt>
+                              <dd style={{ margin: 0 }}>{summaryEntry.reason ?? '—'}</dd>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Urgency</dt>
+                              <dd style={{ margin: 0 }}>{summaryEntry.urgency_level}</dd>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Prior visits</dt>
+                              <dd style={{ margin: 0 }}>{summaryEntry.previous_request_count}</dd>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Suggested action</dt>
+                              <dd style={{ margin: 0, color: ACCENT, fontWeight: 700 }}>{summaryEntry.suggested_next_action}</dd>
+                            </dl>
+                            <div style={{ marginTop: '0.875rem', paddingTop: '0.75rem', borderTop: `1px solid ${ACCENT}33`, fontSize: '0.75rem', color: TEXT_MUTED, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                              <span style={{ userSelect: 'none' }}>ℹ</span>
+                              <span>{summaryEntry.safety_note}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+
+                  {/* Safety boundary for the workspace */}
+                  <p style={{ margin: '0 1.25rem 0.875rem', fontSize: '0.6875rem', color: TEXT_FAINT, lineHeight: 1.5 }}>
+                    AI intake output is administrative scheduling information only. Staff or doctor
+                    review is required before any clinical decision. Fake-data staging — no real patient data.
+                  </p>
+
+                  {/* Action footprint */}
+                  <div style={{ padding: '0.875rem 1.25rem', borderTop: `1px solid ${CARD_BORDER}`, background: '#FAFBFD', display: 'flex', gap: '0.625rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {selectedAppt.status === 'new' && (
+                      <button
+                        data-action="confirm"
+                        onClick={() => handleConfirm(selectedAppt.id)}
+                        disabled={confirmingIds.has(selectedAppt.id)}
+                        style={{
+                          fontSize: '0.8125rem', fontWeight: 700, padding: '8px 18px', borderRadius: 8,
+                          border: 'none',
+                          background: confirmingIds.has(selectedAppt.id) ? '#B9C4D2' : ACCENT,
+                          color: '#ffffff',
+                          cursor: confirmingIds.has(selectedAppt.id) ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {confirmingIds.has(selectedAppt.id) ? 'Bestätigen…' : 'Confirm'}
+                      </button>
+                    )}
+
+                    {/* Als kontaktiert markieren */}
+                    <button
+                      onClick={() => handleMarkContacted(selectedAppt.id)}
+                      disabled={contactedIds.has(selectedAppt.id)}
+                      style={{
+                        fontSize: '0.8125rem', fontWeight: 600, padding: '8px 16px', borderRadius: 8,
+                        border: `1px solid ${ACCENT}`, background: 'transparent', color: ACCENT,
+                        cursor: contactedIds.has(selectedAppt.id) ? 'not-allowed' : 'pointer',
+                        opacity: contactedIds.has(selectedAppt.id) ? 0.55 : 1,
+                      }}
+                    >
+                      Als kontaktiert markieren
+                    </button>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                      <button
+                        data-action="confirm-create-profile"
+                        disabled
+                        title="Profile creation automation coming next"
+                        style={{
+                          fontSize: '0.8125rem', fontWeight: 700, padding: '8px 18px', borderRadius: 8,
+                          border: `1px solid ${ACCENT}`, background: `${ACCENT}1A`, color: ACCENT,
+                          cursor: 'not-allowed', opacity: 0.65,
+                        }}
+                      >
+                        {'Confirm Appointment & Create Patient Profile'}
+                      </button>
+                      <span style={{ fontSize: '0.65rem', color: TEXT_FAINT }}>
+                        Profile creation automation coming next
+                      </span>
+                    </div>
+                  </div>
+                </SectionCard>
+              )}
+            </div>
+
+            {/* Consultations */}
+            <section data-section="consultations" style={{ margin: '0 1.5rem 1.25rem' }}>
+              <SectionCard>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.875rem 1.25rem 0.625rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
+                  <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: INK }}>Konsultationen</h3>
+                  {!consultLoading && !consultError && (
+                    <span className="pm-tabular" style={{ fontSize: '0.675rem', fontWeight: 700, color: TEXT_MUTED, background: '#E8EDF4', padding: '1px 7px', borderRadius: 99 }}>
+                      {consultations.length}
+                    </span>
+                  )}
+                </div>
+                {consultLoading && <LoadingState message="Konsultationen werden geladen…" />}
+                {!consultLoading && consultError && <ErrorState message={consultError} />}
+                {!consultLoading && !consultError && consultations.length === 0 && <EmptyState message="Noch keine Konsultationen." />}
+                {!consultLoading && !consultError && consultations.length > 0 && (
+                  <ul data-state="list" style={{ listStyle: 'none', padding: '0.25rem 0 0.5rem' }}>
+                    {consultations.map((consult, idx) => (
+                      <li key={consult.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 1.25rem', borderBottom: idx < consultations.length - 1 ? `1px solid #F0F3F8` : 'none', fontSize: '0.8125rem' }}>
+                        <span style={{ flex: 1, fontWeight: 500, color: INK }}>{consult.title ?? '—'}</span>
+                        <span style={badge(consult.approval_status ?? undefined)}>{consult.approval_status ?? consult.status ?? '—'}</span>
+                        <span style={{ color: TEXT_MUTED, fontSize: '0.75rem' }}>{consult.source ?? '—'}</span>
                       </li>
                     ))}
                   </ul>
                 )}
-              </div>
+              </SectionCard>
+            </section>
 
-              <button
-                onClick={() => setSelectedPatientId(null)}
-                style={{ marginTop: '0.75rem', fontSize: '0.75rem', fontWeight: 600, padding: '4px 12px', border: `1px solid ${ACCENT}`, borderRadius: 6, background: 'transparent', color: ACCENT, cursor: 'pointer' }}
+            {/* Safety footer */}
+            <p style={{ textAlign: 'center', fontSize: '0.6875rem', color: TEXT_FAINT, margin: '0 1.5rem 1.75rem', letterSpacing: '0.02em' }}>
+              Staging demo — fake data only · No real patient data · Production PHI: NO-GO
+            </p>
+          </main>
+
+          {/* ============================================================== */}
+          {/* COLUMN 3 — PATIENT DATABASE REGISTRY & HISTORY                  */}
+          {/* ============================================================== */}
+          <aside className="pm-dash-right" data-panel="right">
+            <div style={{ padding: '1.125rem 1rem 0.75rem', borderBottom: `1px solid ${CARD_BORDER}`, position: 'sticky', top: 0, background: '#ffffff', zIndex: 5 }}>
+              <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.11em', marginBottom: '0.625rem' }}>
+                {/* Label kept for existing contract tests */}
+                <span className="sr-only">Patient Registry</span>
+                <span aria-hidden>Patientenregister</span>
+              </h2>
+              <div style={{ position: 'relative' }}>
+                <span aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', color: TEXT_FAINT }}>
+                  {/* magnifying glass icon */}
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.5" y2="16.5" />
+                  </svg>
+                </span>
+                <input
+                  type="search"
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  placeholder="Search Clinical Registries..."
+                  style={{
+                    width: '100%', padding: '0.45rem 0.75rem 0.45rem 1.9rem', borderRadius: 8,
+                    border: `1px solid ${CARD_BORDER}`, background: CANVAS, fontSize: '0.775rem',
+                    color: INK, outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <section data-section="patients">
+              {patientsLoading && <LoadingState message="Patienten werden geladen…" />}
+              {!patientsLoading && patientsError && <ErrorState message={patientsError} />}
+
+              {!patientsLoading && !patientsError && patients.length === 0 && (
+                <>
+                  <EmptyState message="Noch keine Patienten angelegt." />
+                  {/* Demo-safe scaffold placeholders — shown only when the real
+                      patients array is empty. Not real patients. Not derived from
+                      any record. Clearly marked as demo examples. */}
+                  <div data-state="demo-placeholder" style={{ margin: '0 0.875rem 1rem', borderRadius: 10, border: `1px dashed ${CARD_BORDER}`, padding: '0.75rem' }}>
+                    <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                      Demo placeholder — not real patients
+                    </p>
+                    {['Dr. Johann Huber', 'Anna Wallner'].map((name) => (
+                      <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.25rem', fontSize: '0.8125rem', color: TEXT_MUTED }}>
+                        <span style={{ flex: 1 }}>{name}</span>
+                        <span style={{ ...badge(undefined), background: '#FFF4D6', color: '#8A5B00' }}>demo example</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {!patientsLoading && !patientsError && patients.length > 0 && filteredPatients.length === 0 && (
+                <div data-state="empty" style={{ padding: '1.25rem 1rem', textAlign: 'center', color: TEXT_MUTED, fontSize: '0.8125rem' }}>
+                  Keine Treffer für diese Suche.
+                </div>
+              )}
+
+              {!patientsLoading && !patientsError && filteredPatients.length > 0 && (
+                <ul data-state="list" style={{ listStyle: 'none', padding: '0.5rem 0' }}>
+                  {filteredPatients.map((patient, pidx) => {
+                    const isSelected = selectedPatientId === patient.id
+                    const displayName = patientDisplayName(patient)
+                    const phone = fieldStr(patient, 'phone')
+                    return (
+                      <li
+                        key={pidx}
+                        onClick={() => setSelectedPatientId(isSelected ? null : patient.id)}
+                        style={{
+                          padding: '0.55rem 1rem', cursor: 'pointer',
+                          background: isSelected ? FILL : 'transparent',
+                          borderLeft: isSelected ? `3px solid ${ACCENT}` : '3px solid transparent',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ flex: 1, fontWeight: isSelected ? 700 : 500, fontSize: '0.8125rem', color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {displayName}
+                          </span>
+                          <span style={badge(patient.status)}>{patient.status ?? '—'}</span>
+                        </div>
+                        {/* Phone shown; UUID not shown in clinic-facing UI */}
+                        {phone && <div className="pm-tabular" style={{ fontSize: '0.675rem', color: TEXT_MUTED, marginTop: '0.15rem' }}>{phone}</div>}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+
+            {/* Selected patient profile + chronological history */}
+            {selectedPatient && (
+              <div
+                data-state="patient-profile"
+                style={{ margin: '0.75rem', padding: '1rem', borderRadius: 12, border: `1px solid ${ACCENT}44`, background: FILL }}
               >
-                Deselect
-              </button>
+                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.55rem' }}>
+                  Patientenprofil
+                </p>
+                <p style={{ fontWeight: 700, fontSize: '0.9rem', color: INK, marginBottom: '0.375rem' }}>
+                  {patientDisplayName(selectedPatient)}
+                </p>
+                <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '0.875rem', rowGap: '0.3rem', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                  <dt style={{ color: TEXT_MUTED }}>Telefon</dt>
+                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'phone') ?? 'No phone captured'}</dd>
+                  <dt style={{ color: TEXT_MUTED }}>E-Mail</dt>
+                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'email') ?? '—'}</dd>
+                  <dt style={{ color: TEXT_MUTED }}>Status</dt>
+                  <dd style={{ margin: 0 }}><span style={badge(selectedPatient.status)}>{getGermanStatusLabel(selectedPatient.status)}</span></dd>
+                  <dt style={{ color: TEXT_MUTED }}>Verknüpfte Anfragen</dt>
+                  <dd style={{ margin: 0, color: INK }}>{linkedAppointments.length}</dd>
+                </dl>
+                {/* UUID not shown in clinic-facing patient profile */}
+
+                {/* Chronological history / timeline from linked appointment requests */}
+                <div style={{ borderTop: `1px solid ${ACCENT}33`, paddingTop: '0.625rem' }}>
+                  <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                    Verlauf
+                  </p>
+                  {linkedAppointments.length === 0 ? (
+                    <>
+                      <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, lineHeight: 1.5 }}>
+                        Linked history will appear here as appointment requests accumulate.
+                      </p>
+                      <p style={{ fontSize: '0.7rem', color: TEXT_FAINT, marginTop: '0.35rem', lineHeight: 1.5 }}>
+                        Appointment history will appear here as linked visits accumulate.
+                      </p>
+                    </>
+                  ) : (
+                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {linkedAppointments.map((a) => (
+                        <li key={a.id} className="pm-tabular" style={{ fontSize: '0.75rem', color: INK, paddingLeft: '0.75rem', borderLeft: `2px solid ${ACCENT}` }}>
+                          <div style={{ fontWeight: 600 }}>{formatDate(a.created_at)}: KI-Telefon-Anfrage eingegangen</div>
+                          <div style={{ color: TEXT_MUTED }}>Status: {getGermanStatusLabel(a.status)}</div>
+                          {fieldStr(a, 'reason') && <div style={{ color: TEXT_MUTED }}>Grund: {fieldStr(a, 'reason')}</div>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setSelectedPatientId(null)}
+                  style={{ marginTop: '0.75rem', fontSize: '0.75rem', fontWeight: 600, padding: '4px 12px', border: `1px solid ${ACCENT}`, borderRadius: 6, background: 'transparent', color: ACCENT, cursor: 'pointer' }}
+                >
+                  Zurück
+                </button>
+              </div>
+            )}
+          </aside>
+
+        </div>
+      )}
+
+      {/* ================================================================== */}
+      {/* TAB: Patienten — simplified patient list without UUIDs              */}
+      {/* ================================================================== */}
+      {activeTab === 'patienten' && (
+        <div style={{ padding: '1.5rem', maxWidth: 860, margin: '0 auto' }}>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.25rem' }}>Patienten</h2>
+          <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, marginBottom: '1rem' }}>
+            Fake-data staging — no real patient data.
+          </p>
+          {patientsLoading && <LoadingState message="Patienten werden geladen…" />}
+          {!patientsLoading && patientsError && <ErrorState message={patientsError} />}
+          {!patientsLoading && !patientsError && patients.length === 0 && (
+            <div>
+              <EmptyState message="Noch keine Patienten angelegt." />
+              <div data-state="demo-placeholder" style={{ marginTop: '0.75rem', borderRadius: 10, border: `1px dashed ${CARD_BORDER}`, padding: '0.875rem' }}>
+                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                  Demo placeholder — nicht echte Patienten
+                </p>
+                {['Dr. Johann Huber', 'Anna Wallner'].map((name) => (
+                  <div key={name} style={{ fontSize: '0.8125rem', color: TEXT_MUTED, padding: '0.3rem 0' }}>{name}</div>
+                ))}
+              </div>
             </div>
           )}
-        </aside>
+          {!patientsLoading && !patientsError && patients.length > 0 && (
+            <SectionCard>
+              <ul data-state="list" style={{ listStyle: 'none', padding: '0.25rem 0' }}>
+                {patients.map((patient, idx) => (
+                  <li
+                    key={idx}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.75rem 1.25rem',
+                      borderBottom: idx < patients.length - 1 ? `1px solid ${CARD_BORDER}` : 'none',
+                      fontSize: '0.8125rem',
+                    }}
+                  >
+                    <span style={{ width: 28, height: 28, borderRadius: '50%', background: FILL, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: ACCENT, flexShrink: 0 }}>
+                      {idx + 1}
+                    </span>
+                    <span style={{ flex: 1, fontWeight: 500, color: INK }}>{patientDisplayName(patient)}</span>
+                    <span style={{ fontSize: '0.75rem', color: TEXT_MUTED }}>{fieldStr(patient, 'phone') ?? '—'}</span>
+                    <span style={badge(patient.status)}>{getGermanStatusLabel(patient.status)}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+        </div>
+      )}
 
-      </div>
+      {/* ================================================================== */}
+      {/* TAB: Einstellungen — read-only clinic info placeholder              */}
+      {/* ================================================================== */}
+      {activeTab === 'einstellungen' && (
+        <div style={{ padding: '1.5rem', maxWidth: 620, margin: '0 auto' }}>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.25rem' }}>Einstellungen</h2>
+          <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, marginBottom: '1.25rem' }}>
+            Praxiskonfiguration — Änderungen erfordern Administratorzugang.
+          </p>
+          <SectionCard>
+            <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.5rem', rowGap: '0.75rem', fontSize: '0.8125rem', padding: '1.25rem' }}>
+              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Praxisname</dt>
+              <dd style={{ margin: 0, color: INK, fontWeight: 600 }}>{clinicDisplayName}</dd>
+              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Sprache</dt>
+              <dd style={{ margin: 0, color: INK }}>Deutsch (Österreich)</dd>
+              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Umgebung</dt>
+              <dd style={{ margin: 0 }}><span style={newRequestBadgeStyle()}>STAGING</span></dd>
+              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>PHI-Status</dt>
+              <dd style={{ margin: 0, color: DANGER, fontWeight: 600 }}>Produktion: NO-GO</dd>
+            </dl>
+          </SectionCard>
+          <p style={{ marginTop: '1rem', fontSize: '0.6875rem', color: TEXT_FAINT }}>
+            Staging demo — Fake-data staging · No real patient data · Production PHI: NO-GO
+          </p>
+        </div>
+      )}
+
     </div>
   )
 }

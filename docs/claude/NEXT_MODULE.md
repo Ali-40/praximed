@@ -1,114 +1,123 @@
-# Sprint 20 / Module 157 — Live Longitudinal Timeline Smoke Evidence
+# Sprint 21 / Module 158 — One-Click Demo Flow
 
 Status: pending.
 
 ## Context
 
-Module 156 complete (Longitudinal Timeline and Delta View Foundation):
-- Timeline aggregates appointment requests, intake submissions, consent events,
-  structuring runs, unverified proposals, and approved patient_history_* entries.
-- Delta view shows items changed since last visit anchor (latest appointment_request).
-- Approved history and unverified proposals are clearly separated.
-- No diagnosis. No medical advice. No triage scoring. No treatment recommendations.
-- No external LLM. No new writes. No PHI.
-- 5067/5067 backend tests passing. Frontend build clean.
+Module 157 complete (Doctor-Facing Sales MVP Simplification):
+- Existing /dashboard simplified into clinic-facing, German-first, UUID-hidden MVP.
+- Heute summary bar: Neue Anfragen / Rückruf nötig / Dringend prüfen / Erledigt.
+- Anfragen / Patienten / Einstellungen tabs.
+- Human-readable request numbers (Anfrage #1, Anfrage #2).
+- German status labels via getGermanStatusLabel.
+- Rückruf and Als kontaktiert markieren actions.
+- No visible UUIDs in clinic-facing UI.
+- All existing contract tests green. Frontend build clean.
 - Production PHI remains NO-GO.
 
 ## Goal
 
-Deploy Module 156 to staging and document live evidence that the timeline view works
-for a staging patient with synthetic intake/review/merge data.
-Load timeline, verify approved history appears, verify unverified proposal separation,
-verify delta view, and document all safety boundaries.
+Add a "Create demo call" button to the existing /dashboard that instantly populates
+the Anfragen queue with a realistic synthetic appointment request, so Ali can demo
+the full intake-to-callback flow in a Vienna clinic without needing backend setup.
 
-Docs/static-tests only. No new backend code. No frontend changes. No migration.
+Staging-only synthetic data. No Vapi live call. No real patient data. No PHI.
+No diagnosis. No medical advice. No triage scoring. Production PHI remains NO-GO.
 
-## What Module 157 must produce
+Docs/tests only. No new backend domain complexity. No migration.
 
-### 1. Evidence document
+## What Module 158 must produce
 
-`docs/runtime/LIVE_LONGITUDINAL_TIMELINE_SMOKE_EVIDENCE.md` (new)
+### 1. Backend route (optional — inspect existing synthetic data endpoints first)
 
-Sections:
-1. Purpose
-2. Current result: PASS
-3. Live route tested
-4. Clinic ID and patient ID used
-5. Timeline endpoint evidence
-6. Approved history items visible
-7. Unverified proposal items visible (labeled separately)
-8. Consent event visible
-9. Intake submission visible
-10. Appointment event visible
-11. Structuring run visible
-12. Delta since last visit evidence
-13. changed_since_last_visit anchor confirmed
-14. no_prior_visit_anchor behavior documented (if tested)
-15. production_phi_enabled false evidence
-16. Extraction confidence label evidence
-17. Safety boundaries
-18. What this proves
-19. What this does not prove
-20. Remaining blockers
+Check if a synthetic/demo-data creation endpoint already exists.
+If it does, wire the frontend to it.
+If it does not, add a safe staging-only POST endpoint:
 
-### 2. Tests
+`POST /clinics/{clinic_id}/demo/create-demo-request`
 
-`backend/tests/test_live_longitudinal_timeline_smoke_evidence_contract.py` (new — ≥20 tests)
+- Creates a synthetic appointment_request row
+- patient_name: realistic Austrian name (e.g., "Mag. Klaus Hofer")
+- reason: "Rücken­schmerzen seit 3 Tagen"
+- status: new
+- urgency_level: normal
+- source: staging_demo
+- production_phi_enabled: false
+- synthetic_demo: true
+
+Returns: `{ ok: true, request_id: "...", message: "Demo-Anfrage erstellt." }`
+
+No real patient data. No PHI. No Vapi. No audio. No real call.
+
+### 2. Frontend: "Demo-Anfrage erstellen" button
+
+Add to /dashboard (Anfragen tab or Heute header):
+
+Button: **"Demo-Anfrage erstellen"**
+- Calls POST endpoint (or uses existing synthetic data API)
+- Refreshes the Anfragen queue
+- Shows a brief success message: "Demo-Anfrage wurde der Warteschlange hinzugefügt."
+- Error copy: "Demo-Anfrage konnte nicht erstellt werden."
+- Button disabled while in progress
+
+### 3. Optional: one-click demo reset
+
+If a demo reset endpoint exists or can be safely added:
+
+Button: **"Demo zurücksetzen"**
+- Clears all synthetic_demo=true requests for the clinic
+- Refreshes the queue
+- Staging-only. Protected behind staging-only guard.
+
+If reset is complex, defer to Module 159.
+
+### 4. Tests
+
+`backend/tests/test_one_click_demo_flow_contract.py` (new — ≥15 tests)
 
 Static evidence validation tests (no live API calls):
-- Evidence doc exists
-- Result is PASS
-- Mentions Module 157
-- Mentions timeline route
-- Mentions staging clinic_id
-- Mentions approved history
-- Mentions unverified proposal
-- Mentions changed_since_last_visit or no_prior_visit_anchor
-- Mentions delta since last visit
-- Mentions consent_event
-- Mentions intake_submission
-- Mentions appointment_request
-- Mentions structuring_run
-- Mentions production_phi_enabled false
-- Mentions extraction confidence labeled correctly
-- Mentions no auto-approval
-- Mentions no diagnosis
-- Mentions no medical advice
-- Mentions no treatment recommendations
-- Mentions no triage scoring
-- Mentions no real patient data
-- Mentions no PHI
-- Mentions Production PHI remains NO-GO
-- Mentions remaining blockers
-- No DATABASE_URL, no JWT_SECRET, no sk- keys
-- No real patient names
-- No diagnosis generation claim
-- No production readiness claim
+- Demo button exists in dashboard source
+- Demo button label is in German
+- Demo button wires to demo endpoint
+- Demo success copy is German
+- Demo error copy is German
+- Demo data is synthetic (production_phi_enabled=false)
+- No real patient names in demo request creation code
+- No PHI in demo endpoint
+- No diagnosis in demo endpoint
+- No medical advice in demo endpoint
+- No live Vapi call triggered
+- No real patient data in demo flow
+- Demo endpoint is staging-only (if added)
+- Frontend build passes
+- Existing tests still green
 
-### 3. Docs updates
+### 5. Docs updates
 
-- docs/claude/CURRENT_STATE.md — Module 157 entry
-- docs/claude/NEXT_MODULE.md — updated to Module 158
+- docs/claude/CURRENT_STATE.md — Module 158 entry
+- docs/claude/NEXT_MODULE.md — updated to Module 159
 
-## Module 158 preview
+## Module 159 preview
 
-Sprint 20 / Module 158 — Patient Story Pre-Visit Narrative Foundation
+Sprint 21 / Module 159 — Clinic Settings Editor
 
-Module 158 should:
-- add a pre-visit narrative generator that summarizes the approved patient timeline
-  into a structured (non-medical-interpretation) summary for the doctor before a visit
-- approved structured data only — no unverified proposals in narrative
-- no diagnosis, no medical advice, no treatment recommendations
-- local template-based narrative generation (no external LLM)
-- production PHI remains NO-GO
+Module 159 should:
+- Add editable clinic settings to the Einstellungen tab in /dashboard
+- Doctor name, specialty, clinic name, language preference
+- Read from existing clinic language settings endpoint
+- Write via existing PATCH /clinics/{clinic_id}/language-settings
+- No PHI fields
+- No Vapi credential entry in clinic-facing UI (that stays in developer console)
+- Production PHI remains NO-GO
 
 ## Constraints
 
-- No new backend code — docs/tests only
-- All evidence must be synthetic staging — no real PHI
-- No diagnosis, no medical advice, no triage scoring in evidence
-- production_phi_enabled=False confirmed in all documented responses
-- Full test suite must remain green
+- Staging-only synthetic data — no real patient data
+- No PHI unlock
+- No Vapi live call
+- No diagnosis, no medical advice, no triage scoring
+- production_phi_enabled=False in all demo data
 - Frontend build must remain clean
+- Full test suite must remain green
 - Commit message:
-  Sprint 20 / Module 157 — Live longitudinal timeline smoke evidence
+  Sprint 21 / Module 158 — One-click demo flow

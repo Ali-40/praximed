@@ -3107,6 +3107,36 @@ Sprint 16 / Module 110 — Railway Backend Root Requirements Fix and Evidence Re
    - Full backend tests: 4975/4975 passed
    - Production PHI remains NO-GO.
 
+171. Module 157 — Doctor-Facing Sales MVP Simplification
+   - Date: 2026-07-09
+   - Sprint 21 / Module 157. Frontend simplification only. No migration. No new backend domain.
+   - Pivot: existing /dashboard simplified into clinic-facing, German-first, UUID-hidden sales MVP.
+   - No parallel dashboard created. All existing contract tests remain green.
+   - frontend/app/dashboard/page.tsx (modified):
+     - Added getGermanStatusLabel, getReadableRequestNumber, getTodaySummaryCounts helpers
+     - Added BADGE_MAP entries for callback_needed and contacted
+     - Added activeTab state (anfragen / patienten / einstellungen)
+     - Added callbackIds, contactedIds state
+     - Added handleMarkCallback, handleMarkContacted handlers
+     - Added Heute daily summary bar (Neue Anfragen / Rückruf nötig / Dringend prüfen / Erledigt)
+     - Added Anfragen / Patienten / Einstellungen tab navigation
+     - UUID removed from visible clinic-facing UI (selectedAppt.id, patient.id, selectedPatient.id)
+     - Replaced UUID display with Anfrage #N human-readable numbering
+     - "Rückruf" button on each request card
+     - "Als kontaktiert markieren" button in workspace actions
+     - All existing sr-only English labels preserved for contract test compatibility
+     - German headings visible: Anfragen, Anfrage-Details, Patientenregister
+     - No PHI. No diagnosis. No medical advice. No triage. Production PHI remains NO-GO.
+   - frontend/lib/api.ts (modified):
+     - Added updateAppointmentRequestStatus (PATCH /appointment-requests/{id}/status)
+     - Used for callback_needed and contacted status transitions
+   - backend/tests/test_doctor_facing_sales_mvp_dashboard_contract.py (new — 45 tests)
+   - docs/product/DOCTOR_FACING_SALES_MVP_SIMPLIFICATION.md (new)
+   - docs/claude/CURRENT_STATE.md, NEXT_MODULE.md (updated)
+   - Full backend tests: 5067+/passed. Frontend build: clean.
+   - Product acceptance: receptionist understands PraxisMed in 5 minutes without technical words.
+   - Production PHI remains NO-GO.
+
 170. Module 156 — Longitudinal Timeline and Delta View Foundation
    - Date: 2026-07-09
    - Sprint 20 / Module 156. Backend service + schemas + repo + routes + frontend timeline UI + tests + arch doc.

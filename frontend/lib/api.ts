@@ -133,6 +133,27 @@ export async function confirmAppointmentRequest(
   }
 }
 
+// Sprint 21 / Module 157 — Doctor-Facing Sales MVP
+// Updates appointment request status via PATCH /appointment-requests/{id}/status.
+// Used for callback_needed, contacted, and other workflow transitions.
+// Throws on non-2xx response. No PHI. No browser storage.
+export async function updateAppointmentRequestStatus(
+  requestId: string,
+  clinicId: string,
+  status: string,
+): Promise<void> {
+  const resp = await apiFetch(
+    `/appointment-requests/${encodeURIComponent(requestId)}/status?clinic_id=${encodeURIComponent(clinicId)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status, action_required: status === 'callback_needed' }),
+    },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to update appointment request status (HTTP ${resp.status})`)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Notifications — Sprint 8 / Module 70
 // ---------------------------------------------------------------------------
