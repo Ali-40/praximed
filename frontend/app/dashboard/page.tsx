@@ -21,6 +21,8 @@ import {
   fetchNotifications,
   fetchConsultations,
   fetchPreAppointmentSummary,
+  fetchClinicLanguageSettings,
+  updateClinicLanguageSettings,
   AppointmentRequest,
   Patient,
   Notification,
@@ -98,6 +100,21 @@ function getTodaySummaryCounts(appts: AppointmentRequest[]) {
     rückrufNötig: appts.filter((a) => a.status === 'callback_needed').length,
     dringend: appts.filter((a) => a.urgency_level === 'urgent' || a.urgency_level === 'emergency' || a.urgency_level === 'high').length,
     erledigt: appts.filter((a) => a.status === 'confirmed' || a.status === 'closed').length,
+  }
+}
+
+// KI-Vorschau text — Sprint 21 / Module 159
+// No appointment auto-confirmation. No Vapi reference. Administrative only.
+// "Das Praxisteam meldet sich zur Bestätigung zurück."
+function getKiPreviewText(tone: string, praxisname: string): string {
+  const name = praxisname.trim() || 'Ihrer Praxis'
+  switch (tone) {
+    case 'direkt':
+      return `Hallo, digitale Rezeption der ${name}. Ich nehme Ihre Terminanfrage auf. Das Praxisteam meldet sich.`
+    case 'formell':
+      return `Sehr geehrte Damen und Herren, hier ist die digitale Rezeption der ${name}. Ihre Terminanfrage wird aufgenommen. Das Praxisteam meldet sich zur Bestätigung zurück.`
+    default: // freundlich
+      return `Guten Tag, hier ist die digitale Rezeption der ${name}. Ich nehme gerne Ihre Terminanfrage auf — das Praxisteam meldet sich zur Bestätigung zurück.`
   }
 }
 
@@ -368,6 +385,23 @@ export default function DashboardPage() {
   const [demoResetting, setDemoResetting] = useState(false)
   const [demoMessage, setDemoMessage] = useState<string | null>(null)
 
+  // Sprint 21 / Module 159 — Simple Clinic Settings
+  // Local state for display fields. Language persisted via existing endpoint.
+  // No PHI. No Vapi config. No technical fields. No UUIDs. Production PHI remains NO-GO.
+  const [settingsForm, setSettingsForm] = useState({
+    praxisname: '',
+    arzt: '',
+    fachrichtung: '',
+    ort: 'Wien',
+    telefon: '',
+    oeffnungszeiten: 'Mo–Fr 08:00–17:00',
+    primaryLanguage: 'de',
+    supportedLanguages: ['de', 'en'] as string[],
+    kiTon: 'freundlich',
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsMessage, setSettingsMessage] = useState<string | null>(null)
+
   const [summaryOpenId, setSummaryOpenId] = useState<string | null>(null)
   const [summaries, setSummaries] = useState<Record<string, PreAppointmentSummary | 'loading' | 'error'>>({})
 
@@ -408,6 +442,23 @@ export default function DashboardPage() {
         .then(setConsultations)
         .catch(() => setConsultError('Could not load consultations. Please try again.'))
         .finally(() => setConsultLoading(false))
+
+      // Sprint 21 / Module 159 — pre-populate language settings form
+      fetchClinicLanguageSettings(user.clinic_id)
+        .then((ls) => {
+          setSettingsForm((prev) => ({
+            ...prev,
+            praxisname: prev.praxisname || getClinicDisplayName(user.clinic_id),
+            primaryLanguage: ls.primary_language ?? 'de',
+            supportedLanguages: ls.supported_languages?.length ? ls.supported_languages : ['de', 'en'],
+          }))
+        })
+        .catch(() => {
+          setSettingsForm((prev) => ({
+            ...prev,
+            praxisname: prev.praxisname || getClinicDisplayName(user.clinic_id),
+          }))
+        })
     })
   }, [router])
 
@@ -493,6 +544,40 @@ export default function DashboardPage() {
     } finally {
       setDemoResetting(false)
     }
+  }
+
+  async function handleSaveSettings() {
+    if (!clinicId || settingsSaving) return
+    setSettingsSaving(true)
+    setSettingsMessage(null)
+    try {
+      await updateClinicLanguageSettings(clinicId, {
+        primary_language: settingsForm.primaryLanguage,
+        clinic_ui_language: settingsForm.primaryLanguage,
+        supported_languages: settingsForm.supportedLanguages,
+      })
+      if (settingsForm.praxisname) setClinicDisplayName(settingsForm.praxisname)
+      setSettingsMessage('Einstellungen gespeichert.')
+    } catch {
+      setSettingsMessage('Einstellungen konnten nicht gespeichert werden.')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
+  function handleResetSettings() {
+    setSettingsForm({
+      praxisname: getClinicDisplayName(clinicId ?? ''),
+      arzt: '',
+      fachrichtung: '',
+      ort: 'Wien',
+      telefon: '',
+      oeffnungszeiten: 'Mo–Fr 08:00–17:00',
+      primaryLanguage: 'de',
+      supportedLanguages: ['de', 'en'],
+      kiTon: 'freundlich',
+    })
+    setSettingsMessage(null)
   }
 
   async function handleViewSummary(appt: AppointmentRequest) {
@@ -1386,27 +1471,203 @@ export default function DashboardPage() {
       )}
 
       {/* ================================================================== */}
-      {/* TAB: Einstellungen — read-only clinic info placeholder              */}
+      {/* TAB: Einstellungen — simple clinic settings (Sprint 21 / M159)    */}
+      {/* No technical fields. No UUIDs. No Vapi config. No PHI.            */}
+      {/* Production PHI remains NO-GO.                                     */}
       {/* ================================================================== */}
       {activeTab === 'einstellungen' && (
-        <div style={{ padding: '1.5rem', maxWidth: 620, margin: '0 auto' }}>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.25rem' }}>Einstellungen</h2>
+        <div style={{ padding: '1.5rem', maxWidth: 680, margin: '0 auto' }}>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.2rem' }}>Einstellungen</h2>
           <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, marginBottom: '1.25rem' }}>
-            Praxiskonfiguration — Änderungen erfordern Administratorzugang.
+            Passen Sie an, wie Ihre Praxis in PraxisMed angezeigt wird.
           </p>
-          <SectionCard>
-            <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.5rem', rowGap: '0.75rem', fontSize: '0.8125rem', padding: '1.25rem' }}>
-              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Praxisname</dt>
-              <dd style={{ margin: 0, color: INK, fontWeight: 600 }}>{clinicDisplayName}</dd>
-              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Sprache</dt>
-              <dd style={{ margin: 0, color: INK }}>Deutsch (Österreich)</dd>
-              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Umgebung</dt>
-              <dd style={{ margin: 0 }}><span style={newRequestBadgeStyle()}>STAGING</span></dd>
-              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>PHI-Status</dt>
-              <dd style={{ margin: 0, color: DANGER, fontWeight: 600 }}>Produktion: NO-GO</dd>
-            </dl>
+
+          {settingsMessage && (
+            <div
+              data-settings-message
+              style={{
+                marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: 8,
+                background: settingsMessage.includes('nicht') ? '#FDF1F2' : '#DFF5E9',
+                border: `1px solid ${settingsMessage.includes('nicht') ? DANGER : '#A7D7B9'}`,
+                fontSize: '0.8125rem', fontWeight: 600,
+                color: settingsMessage.includes('nicht') ? DANGER : '#166534',
+              }}
+            >
+              {settingsMessage}
+            </div>
+          )}
+
+          {/* ---- Praxisprofil ---- */}
+          <SectionCard style={{ marginBottom: '1rem' }}>
+            <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>Praxisprofil</h3>
+            </div>
+            <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.25rem', rowGap: '0.875rem', alignItems: 'center' }}>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: TEXT_MUTED, whiteSpace: 'nowrap' }}>Praxisname</label>
+              <input
+                type="text"
+                value={settingsForm.praxisname}
+                onChange={(e) => setSettingsForm((prev) => ({ ...prev, praxisname: e.target.value }))}
+                placeholder="z.B. Ordination Wien"
+                style={{ padding: '0.45rem 0.75rem', borderRadius: 7, border: `1px solid ${CARD_BORDER}`, fontSize: '0.8125rem', color: INK, background: CANVAS, outline: 'none' }}
+              />
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: TEXT_MUTED, whiteSpace: 'nowrap' }}>Arzt / Ärztin</label>
+              <input
+                type="text"
+                value={settingsForm.arzt}
+                onChange={(e) => setSettingsForm((prev) => ({ ...prev, arzt: e.target.value }))}
+                placeholder="z.B. Dr. Vorname Nachname"
+                style={{ padding: '0.45rem 0.75rem', borderRadius: 7, border: `1px solid ${CARD_BORDER}`, fontSize: '0.8125rem', color: INK, background: CANVAS, outline: 'none' }}
+              />
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: TEXT_MUTED, whiteSpace: 'nowrap' }}>Fachrichtung</label>
+              <input
+                type="text"
+                value={settingsForm.fachrichtung}
+                onChange={(e) => setSettingsForm((prev) => ({ ...prev, fachrichtung: e.target.value }))}
+                placeholder="Innere Medizin"
+                style={{ padding: '0.45rem 0.75rem', borderRadius: 7, border: `1px solid ${CARD_BORDER}`, fontSize: '0.8125rem', color: INK, background: CANVAS, outline: 'none' }}
+              />
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: TEXT_MUTED, whiteSpace: 'nowrap' }}>Ort</label>
+              <input
+                type="text"
+                value={settingsForm.ort}
+                onChange={(e) => setSettingsForm((prev) => ({ ...prev, ort: e.target.value }))}
+                placeholder="Wien"
+                style={{ padding: '0.45rem 0.75rem', borderRadius: 7, border: `1px solid ${CARD_BORDER}`, fontSize: '0.8125rem', color: INK, background: CANVAS, outline: 'none' }}
+              />
+              <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: TEXT_MUTED, whiteSpace: 'nowrap' }}>Telefonnummer</label>
+              <input
+                type="tel"
+                value={settingsForm.telefon}
+                onChange={(e) => setSettingsForm((prev) => ({ ...prev, telefon: e.target.value }))}
+                placeholder="+43 1 000 0000"
+                style={{ padding: '0.45rem 0.75rem', borderRadius: 7, border: `1px solid ${CARD_BORDER}`, fontSize: '0.8125rem', color: INK, background: CANVAS, outline: 'none' }}
+              />
+            </div>
           </SectionCard>
-          <p style={{ marginTop: '1rem', fontSize: '0.6875rem', color: TEXT_FAINT }}>
+
+          {/* ---- Öffnungszeiten ---- */}
+          <SectionCard style={{ marginBottom: '1rem' }}>
+            <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>Öffnungszeiten</h3>
+            </div>
+            <div style={{ padding: '1.25rem' }}>
+              <textarea
+                value={settingsForm.oeffnungszeiten}
+                onChange={(e) => setSettingsForm((prev) => ({ ...prev, oeffnungszeiten: e.target.value }))}
+                rows={3}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 7, border: `1px solid ${CARD_BORDER}`, fontSize: '0.8125rem', color: INK, background: CANVAS, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+              <p style={{ fontSize: '0.675rem', color: TEXT_FAINT, marginTop: '0.375rem' }}>
+                Beispiel: Mo–Fr 08:00–17:00
+              </p>
+            </div>
+          </SectionCard>
+
+          {/* ---- Sprachen ---- */}
+          <SectionCard style={{ marginBottom: '1rem' }}>
+            <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>Sprachen</h3>
+            </div>
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              {([{ code: 'de', label: 'Deutsch' }, { code: 'en', label: 'Englisch' }] as const).map(({ code, label }) => (
+                <label key={code} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', color: INK }}>
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.supportedLanguages.includes(code)}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setSettingsForm((prev) => ({
+                        ...prev,
+                        supportedLanguages: checked
+                          ? [...prev.supportedLanguages, code]
+                          : prev.supportedLanguages.filter((l) => l !== code),
+                      }))
+                    }}
+                  />
+                  {label}
+                </label>
+              ))}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: TEXT_FAINT, cursor: 'default' }}>
+                <input type="checkbox" disabled />
+                Arabisch <span style={{ fontSize: '0.675rem', marginLeft: '0.25rem' }}>(demnächst verfügbar)</span>
+              </label>
+            </div>
+          </SectionCard>
+
+          {/* ---- KI-Rezeption ---- */}
+          <SectionCard style={{ marginBottom: '1.25rem' }}>
+            <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>KI-Rezeption</h3>
+              <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, marginTop: '0.2rem' }}>
+                Ton beim Entgegennehmen von Terminanfragen.
+              </p>
+            </div>
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+              {([
+                { value: 'freundlich', label: 'Freundlich und ruhig' },
+                { value: 'direkt',    label: 'Kurz und direkt' },
+                { value: 'formell',   label: 'Sehr formell' },
+              ] as const).map(({ value, label }) => (
+                <label key={value} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', color: INK }}>
+                  <input
+                    type="radio"
+                    name="ki-ton"
+                    value={value}
+                    checked={settingsForm.kiTon === value}
+                    onChange={() => setSettingsForm((prev) => ({ ...prev, kiTon: value }))}
+                  />
+                  {label}
+                </label>
+              ))}
+
+              {/* KI-Vorschau */}
+              <div
+                data-ki-vorschau
+                style={{ marginTop: '0.75rem', padding: '1rem 1.125rem', borderRadius: 10, background: FILL, border: `1px solid ${ACCENT}33` }}
+              >
+                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                  KI-Vorschau
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: INK, lineHeight: 1.6, fontStyle: 'italic' }}>
+                  {getKiPreviewText(settingsForm.kiTon, settingsForm.praxisname)}
+                </p>
+                <p style={{ fontSize: '0.675rem', color: TEXT_FAINT, marginTop: '0.5rem' }}>
+                  Das Praxisteam meldet sich zur Bestätigung. Kein automatischer Terminabschluss.
+                </p>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Save / Reset */}
+          <div style={{ display: 'flex', gap: '0.625rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <button
+              data-action="save-settings"
+              onClick={() => void handleSaveSettings()}
+              disabled={settingsSaving}
+              style={{
+                fontSize: '0.875rem', fontWeight: 700, padding: '9px 22px', borderRadius: 8,
+                border: 'none', background: settingsSaving ? '#B9C4D2' : ACCENT, color: '#ffffff',
+                cursor: settingsSaving ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {settingsSaving ? 'Wird gespeichert…' : 'Speichern'}
+            </button>
+            <button
+              data-action="reset-settings"
+              onClick={handleResetSettings}
+              disabled={settingsSaving}
+              style={{
+                fontSize: '0.875rem', fontWeight: 500, padding: '9px 18px', borderRadius: 8,
+                border: `1px solid ${CARD_BORDER}`, background: '#ffffff', color: TEXT_MUTED,
+                cursor: settingsSaving ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Änderungen zurücksetzen
+            </button>
+          </div>
+
+          <p style={{ fontSize: '0.6875rem', color: TEXT_FAINT }}>
             Staging demo — Fake-data staging · No real patient data · Production PHI: NO-GO
           </p>
         </div>

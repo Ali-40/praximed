@@ -2,6 +2,16 @@
 
 ## Completed and committed modules
 
+00. Module 159 — Sprint 21 / Simple Clinic Settings (commit: pending)
+   - `frontend/app/dashboard/page.tsx` — Einstellungen tab replaced with editable form
+   - `backend/tests/test_simple_clinic_settings_sales_mvp_contract.py` — new, ≥15 tests
+   - `docs/product/SIMPLE_CLINIC_SETTINGS.md` — product doc
+   - Praxisprofil fields: Praxisname, Arzt/Ärztin, Fachrichtung, Ort, Telefonnummer
+   - Öffnungszeiten free-text. Sprachen checkboxes. KI-Rezeption tone + KI-Vorschau.
+   - Language settings persisted via existing PATCH /clinics/{id}/language-settings
+   - No technical fields. No UUIDs. No Vapi config. No PHI. Production PHI remains NO-GO.
+   - Acceptance: "A receptionist can open Einstellungen and understand/customize the demo without any technical word."
+
 0. Module 158 — Sprint 21 / One-Click Demo Flow (commit: pending)
    - `backend/app/api/routes/sales_demo.py` — new staging-only demo routes
    - `backend/app/api/router.py` — sales_demo router registered
