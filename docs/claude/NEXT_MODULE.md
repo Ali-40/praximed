@@ -4,13 +4,12 @@ Status: pending.
 
 ## Context
 
-Module 162 (outreach extension) complete (Sales Demo Polish and Outreach Readiness):
-- Expanded CLINIC_OUTREACH_EXECUTION_PACK.md — phone script, follow-up after demo, 10 objections, pricing, calendar positioning, CTA options
-- SALES_ONE_LINERS.md — 11 memorizable one-line pitches
-- TOMORROW_FIRST_SALES_DAY_PLAN.md — exact first-sales-day schedule
-- clinic_outreach_tracker_template.csv — ready-to-use spreadsheet
-- 85 comprehensive contract tests. 5540 total. Frontend build clean. Production PHI remains NO-GO.
-- Calendar positioned as next pilot workflow — not built yet, not promised as finished.
+Module 163 (Clinic Dashboard Language Switch) complete:
+- TRANSLATIONS constant (de/en, 28 keys), uiLang state, t() helper
+- Language selector in Settings tab ("Sprache der Oberfläche / Interface language")
+- German default; English via radio buttons
+- No external i18n library
+- 56 contract tests. 5656 total. Frontend build clean. Production PHI remains NO-GO.
 
 ## Sprint 21 Sales-MVP Pivot — Paused until further notice
 

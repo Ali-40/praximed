@@ -204,6 +204,74 @@ function newRequestBadgeStyle(): React.CSSProperties {
 }
 
 // ---------------------------------------------------------------------------
+// UI translations — Sprint 21 / Module 163
+// German-first. English available via language selector in Settings.
+// No external i18n library — plain dictionary lookup.
+// ---------------------------------------------------------------------------
+const TRANSLATIONS = {
+  de: {
+    heute:                   'Heute',
+    tabAnfragen:             'Anfragen',
+    tabPatienten:            'Patienten',
+    tabEinstellungen:        'Einstellungen',
+    neueAnfragen:            'Neue Anfragen',
+    rueckrufNoetig:          'Rückruf nötig',
+    dringendPruefen:         'Dringend prüfen',
+    erledigt:                'Erledigt',
+    demoAnrufErstellen:      'Demo-Anruf erstellen',
+    demoZuruecksetzen:       'Demo zurücksetzen',
+    rueckrufMarkieren:       'Rückruf markieren',
+    alsKontaktiertMarkieren: 'Als kontaktiert markieren',
+    anfrageImUeberblick:     'Anfrage im Überblick',
+    telefon:                 'Telefon',
+    anliegen:                'Anliegen',
+    gewuenschteZeit:         'Gewünschte Zeit',
+    eingegangen:             'Eingegangen',
+    praxisprofil:            'Praxisprofil',
+    oeffnungszeiten:         'Öffnungszeiten',
+    sprachen:                'Sprachen',
+    kiRezeption:             'KI-Rezeption',
+    kiVorschau:              'KI-Vorschau',
+    summaryArt:              'Art',
+    summaryDringlichkeit:    'Dringlichkeit',
+    summaryFruehereBesuche:  'Frühere Besuche',
+    summaryEmpfohleneAktion: 'Empfohlene Aktion',
+    safetyNote:              'Nur zur internen Planung. Das Praxisteam prüft und bestätigt jeden Schritt.',
+    uiSprache:               'Sprache der Oberfläche',
+  },
+  en: {
+    heute:                   'Today',
+    tabAnfragen:             'Requests',
+    tabPatienten:            'Patients',
+    tabEinstellungen:        'Settings',
+    neueAnfragen:            'New requests',
+    rueckrufNoetig:          'Needs callback',
+    dringendPruefen:         'Staff review',
+    erledigt:                'Completed',
+    demoAnrufErstellen:      'Create demo call',
+    demoZuruecksetzen:       'Reset demo',
+    rueckrufMarkieren:       'Mark callback',
+    alsKontaktiertMarkieren: 'Mark contacted',
+    anfrageImUeberblick:     'Request overview',
+    telefon:                 'Phone',
+    anliegen:                'Issue',
+    gewuenschteZeit:         'Preferred time',
+    eingegangen:             'Received',
+    praxisprofil:            'Practice profile',
+    oeffnungszeiten:         'Opening hours',
+    sprachen:                'Languages',
+    kiRezeption:             'AI receptionist',
+    kiVorschau:              'Preview',
+    summaryArt:              'Category',
+    summaryDringlichkeit:    'Urgency',
+    summaryFruehereBesuche:  'Past visits',
+    summaryEmpfohleneAktion: 'Next step',
+    safetyNote:              'For internal scheduling only. Staff review and confirmation required.',
+    uiSprache:               'Interface language',
+  },
+} as const
+
+// ---------------------------------------------------------------------------
 // Shared shell components
 // ---------------------------------------------------------------------------
 
@@ -407,6 +475,9 @@ export default function DashboardPage() {
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null)
+
+  // Sprint 21 / Module 163 — UI language selector. Default German. No external i18n library.
+  const [uiLang, setUiLang] = useState<'de' | 'en'>('de')
 
   const [summaryOpenId, setSummaryOpenId] = useState<string | null>(null)
   const [summaries, setSummaries] = useState<Record<string, PreAppointmentSummary | 'loading' | 'error'>>({})
@@ -628,6 +699,8 @@ export default function DashboardPage() {
     return appt.status === 'new' || appt.status === 'pending'
   }
 
+  const t = (key: keyof typeof TRANSLATIONS.de) => TRANSLATIONS[uiLang][key]
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -718,12 +791,12 @@ export default function DashboardPage() {
           alignItems: 'center',
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: INK, minWidth: 52 }}>Heute</span>
+        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: INK, minWidth: 52 }}>{t('heute')}</span>
         <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap' }}>
-          <HeuteCard label="Neue Anfragen"  value={todayCounts.neueAnfragen} loading={apptLoading} accent={WARN} />
-          <HeuteCard label="Rückruf nötig"  value={todayCounts.rückrufNötig} loading={apptLoading} accent={DANGER} />
-          <HeuteCard label="Dringend prüfen" value={todayCounts.dringend}    loading={apptLoading} accent={DANGER} />
-          <HeuteCard label="Erledigt"        value={todayCounts.erledigt}    loading={apptLoading} accent={ACCENT} />
+          <HeuteCard label={t('neueAnfragen')}  value={todayCounts.neueAnfragen} loading={apptLoading} accent={WARN} />
+          <HeuteCard label={t('rueckrufNoetig')}  value={todayCounts.rückrufNötig} loading={apptLoading} accent={DANGER} />
+          <HeuteCard label={t('dringendPruefen')} value={todayCounts.dringend}    loading={apptLoading} accent={DANGER} />
+          <HeuteCard label={t('erledigt')}        value={todayCounts.erledigt}    loading={apptLoading} accent={ACCENT} />
         </div>
         {/* Legacy labels for contract compatibility */}
         <span className="sr-only">Clinic Overview Dashboard</span>
@@ -744,9 +817,9 @@ export default function DashboardPage() {
       >
         {(['anfragen', 'patienten', 'einstellungen'] as const).map((tab) => {
           const labels: Record<Tab, string> = {
-            anfragen: 'Anfragen',
-            patienten: 'Patienten',
-            einstellungen: 'Einstellungen',
+            anfragen: t('tabAnfragen'),
+            patienten: t('tabPatienten'),
+            einstellungen: t('tabEinstellungen'),
           }
           const isActive = activeTab === tab
           return (
@@ -814,7 +887,7 @@ export default function DashboardPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {demoCallCreating ? 'Erstelle…' : 'Demo-Anruf erstellen'}
+                {demoCallCreating ? 'Erstelle…' : t('demoAnrufErstellen')}
               </button>
               <button
                 data-action="reset-demo"
@@ -828,7 +901,7 @@ export default function DashboardPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {demoResetting ? 'Zurücksetzen…' : 'Demo zurücksetzen'}
+                {demoResetting ? 'Zurücksetzen…' : t('demoZuruecksetzen')}
               </button>
             </div>
             {demoMessage && (
@@ -952,7 +1025,7 @@ export default function DashboardPage() {
                               whiteSpace: 'nowrap', opacity: callbackIds.has(appt.id) ? 0.5 : 1,
                             }}
                           >
-                            {callbackIds.has(appt.id) ? '…' : 'Rückruf markieren'}
+                            {callbackIds.has(appt.id) ? '…' : t('rueckrufMarkieren')}
                           </button>
                         </div>
                       </li>
@@ -1077,7 +1150,7 @@ export default function DashboardPage() {
               <h1 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, letterSpacing: '-0.01em' }}>
                 {/* Labels kept for existing contract tests */}
                 <span className="sr-only">Active Resolution Workspace</span>
-                <span aria-hidden>Anfrage im Überblick</span>
+                <span aria-hidden>{t('anfrageImUeberblick')}</span>
               </h1>
               {/* Legacy labels preserved for contract compatibility */}
               <span className="sr-only">Intake Resolution Workspace · Clinic Overview · Confirm &amp; Create Profile</span>
@@ -1165,17 +1238,17 @@ export default function DashboardPage() {
                     className="pm-tabular"
                     style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.25rem', rowGap: '0.4rem', fontSize: '0.8125rem', padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}
                   >
-                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Telefon</dt>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('telefon')}</dt>
                     <dd style={{ margin: 0, color: INK }}>
                       {fieldStr(selectedAppt, 'patient_phone')
                         ?? <><span className="sr-only">No phone captured</span><span aria-hidden>Nicht angegeben</span></>
                       }
                     </dd>
-                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Anliegen</dt>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('anliegen')}</dt>
                     <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedAppt, 'reason') ?? '—'}</dd>
-                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Gewünschte Zeit</dt>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('gewuenschteZeit')}</dt>
                     <dd style={{ margin: 0, color: INK }}>{formatDateTime(fieldStr(selectedAppt, 'preferred_starts_at'))}</dd>
-                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Eingegangen</dt>
+                    <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('eingegangen')}</dt>
                     <dd style={{ margin: 0, color: INK }}>{formatDateTime(selectedAppt.created_at)}</dd>
                   </dl>
 
@@ -1229,15 +1302,15 @@ export default function DashboardPage() {
                             <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1rem', rowGap: '0.4rem', fontSize: '0.8125rem' }}>
                               <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Patient</dt>
                               <dd style={{ margin: 0, color: INK, fontWeight: 600 }}>{summaryEntry.patient_name}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Art</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('summaryArt')}</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.patient_type}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Anliegen</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('anliegen')}</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.reason ?? '—'}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Dringlichkeit</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('summaryDringlichkeit')}</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.urgency_level}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Frühere Besuche</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('summaryFruehereBesuche')}</dt>
                               <dd style={{ margin: 0 }}>{summaryEntry.previous_request_count}</dd>
-                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>Empfohlene Aktion</dt>
+                              <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('summaryEmpfohleneAktion')}</dt>
                               <dd style={{ margin: 0, color: ACCENT, fontWeight: 700 }}>{summaryEntry.suggested_next_action}</dd>
                             </dl>
                             <div style={{ marginTop: '0.875rem', paddingTop: '0.75rem', borderTop: `1px solid ${ACCENT}33`, fontSize: '0.75rem', color: TEXT_MUTED, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
@@ -1252,7 +1325,7 @@ export default function DashboardPage() {
 
                   {/* Safety boundary for the workspace */}
                   <p style={{ margin: '0 1.25rem 0.875rem', fontSize: '0.6875rem', color: TEXT_FAINT, lineHeight: 1.5 }}>
-                    Nur zur internen Planung. Das Praxisteam prüft und bestätigt jeden Schritt. Demo-Modus — keine echten Patientendaten.
+                    {t('safetyNote')} Demo-Modus — keine echten Patientendaten.
                   </p>
 
                   {/* Action footprint */}
@@ -1285,7 +1358,7 @@ export default function DashboardPage() {
                         opacity: contactedIds.has(selectedAppt.id) ? 0.55 : 1,
                       }}
                     >
-                      Als kontaktiert markieren
+                      {t('alsKontaktiertMarkieren')}
                     </button>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
@@ -1584,10 +1657,37 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* ---- Sprache der Oberfläche / Interface language — Module 163 ---- */}
+          <SectionCard style={{ marginBottom: '1rem' }}>
+            <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>
+                Sprache der Oberfläche / Interface language
+              </h3>
+            </div>
+            <div style={{ padding: '1.25rem', display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+              {(['de', 'en'] as const).map((lang) => (
+                <label
+                  key={lang}
+                  data-ui-lang={lang}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8125rem', color: INK }}
+                >
+                  <input
+                    type="radio"
+                    name="ui-lang"
+                    value={lang}
+                    checked={uiLang === lang}
+                    onChange={() => setUiLang(lang)}
+                  />
+                  {lang === 'de' ? 'Deutsch' : 'English'}
+                </label>
+              ))}
+            </div>
+          </SectionCard>
+
           {/* ---- Praxisprofil ---- */}
           <SectionCard style={{ marginBottom: '1rem' }}>
             <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>Praxisprofil</h3>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>{t('praxisprofil')}</h3>
             </div>
             <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '1.25rem', rowGap: '0.875rem', alignItems: 'center' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: TEXT_MUTED, whiteSpace: 'nowrap' }}>Praxisname</label>
@@ -1636,7 +1736,7 @@ export default function DashboardPage() {
           {/* ---- Öffnungszeiten ---- */}
           <SectionCard style={{ marginBottom: '1rem' }}>
             <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>Öffnungszeiten</h3>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>{t('oeffnungszeiten')}</h3>
             </div>
             <div style={{ padding: '1.25rem' }}>
               <textarea
@@ -1654,7 +1754,7 @@ export default function DashboardPage() {
           {/* ---- Sprachen ---- */}
           <SectionCard style={{ marginBottom: '1rem' }}>
             <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>Sprachen</h3>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>{t('sprachen')}</h3>
             </div>
             <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
               {([{ code: 'de', label: 'Deutsch' }, { code: 'en', label: 'Englisch' }] as const).map(({ code, label }) => (
@@ -1685,7 +1785,7 @@ export default function DashboardPage() {
           {/* ---- KI-Rezeption ---- */}
           <SectionCard style={{ marginBottom: '1.25rem' }}>
             <div style={{ padding: '0.875rem 1.25rem', borderBottom: `1px solid ${CARD_BORDER}` }}>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>KI-Rezeption</h3>
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: INK }}>{t('kiRezeption')}</h3>
               <p style={{ fontSize: '0.75rem', color: TEXT_MUTED, marginTop: '0.2rem' }}>
                 Ton beim Entgegennehmen von Terminanfragen.
               </p>
@@ -1714,7 +1814,7 @@ export default function DashboardPage() {
                 style={{ marginTop: '0.75rem', padding: '1rem 1.125rem', borderRadius: 10, background: FILL, border: `1px solid ${ACCENT}33` }}
               >
                 <p style={{ fontSize: '0.65rem', fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
-                  KI-Vorschau
+                  {t('kiVorschau')}
                 </p>
                 <p style={{ fontSize: '0.8125rem', color: INK, lineHeight: 1.6, fontStyle: 'italic' }}>
                   {getKiPreviewText(settingsForm.kiTon, settingsForm.praxisname)}

@@ -2,7 +2,17 @@
 
 ## Completed and committed modules
 
-00000000. Module 162B — Sprint 21 / Clinic-Facing Dashboard Language Hotfix (commit: pending)
+000000000. Module 163 — Sprint 21 / Clinic Dashboard Language Switch (commit: pending)
+   - `frontend/app/dashboard/page.tsx` — TRANSLATIONS constant (de/en), uiLang state, t() helper, language selector card in Settings tab ("Sprache der Oberfläche / Interface language")
+   - `backend/tests/test_clinic_dashboard_language_switch_contract.py` — 56 contract tests
+   - `docs/product/CLINIC_DASHBOARD_LANGUAGE_SWITCH.md` — product doc
+   - 28-key translation dictionary, no external i18n library
+   - German default; English available via radio selector in Settings
+   - Switched labels: Heute/Today, tab labels, HeuteCard metrics, demo buttons, detail dl fields, summary panel fields, settings section headings, safety note
+   - All prior module markers and safety invariants intact
+   - 5656 total tests. Build clean. Production PHI remains NO-GO.
+
+00000000. Module 162B — Sprint 21 / Clinic-Facing Dashboard Language Hotfix (commit: b286913)
    - `frontend/app/dashboard/page.tsx` — center heading "Anfrage im Überblick", "Gewünschte Zeit", "Rückruf markieren", archived→Archiviert status, active/archived request split, removed visible vapi badge, removed English AI intake blurb, fixed isNewRequest, translated summary panel labels
    - `backend/tests/test_clinic_facing_dashboard_language_hotfix_contract.py` — 60 contract tests
    - `docs/product/CLINIC_FACING_DASHBOARD_LANGUAGE_HOTFIX.md` — product doc
