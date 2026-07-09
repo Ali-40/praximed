@@ -2,7 +2,17 @@
 
 ## Completed and committed modules
 
-00000. Module 162 — Sprint 21 / Sales Demo Polish and Walk-In Readiness (commit: pending)
+000000. Module 163 — Sprint 21 / Clinic Outreach Execution Pack (commit: pending)
+   - `docs/sales/CLINIC_OUTREACH_EXECUTION_PACK.md` — cold email, WhatsApp/SMS, LinkedIn, walk-in, follow-up sequence (Day 1/3/7), objection quick replies (5 objections)
+   - `backend/tests/test_clinic_outreach_execution_pack_contract.py` — 45 contract tests
+   - Cold email subject: "Wie Ihre Praxis verpasste Anrufe automatisch zurückruft"
+   - All scripts mention verpasste Anrufe, 30-day pilot, demo CTA
+   - No compliance claims. No clinical or medical claims. No technical terms in clinic-facing copy. No PHI.
+   - Walk-in script: reception step → doctor/manager step → leave-behind (ONE_PAGE_CLINIC_HANDOUT) → follow-up within 24h
+   - 5 objection quick replies: Kein Interesse, Zu teuer, Wir haben bereits eine Lösung, Keine Zeit, Schicken Sie uns eine E-Mail
+   - Acceptance: "Ali kann heute eine Wiener Privatpraxis anschreiben oder besuchen und weiß auf jeden Einwand eine Antwort."
+
+00000. Module 162 — Sprint 21 / Sales Demo Polish and Walk-In Readiness (commit: b3c9656)
    - `frontend/app/dashboard/page.tsx` — intro sentence, Demo in 3 Schritten card, German empty states, sr-only pattern for English contract strings, MetricCard German labels, search bar German placeholder, technical terms hidden
    - `backend/tests/test_sales_demo_polish_walk_in_readiness_contract.py` — 52 contract tests
    - `docs/product/SALES_DEMO_POLISH_WALK_IN_READINESS.md` — product doc
