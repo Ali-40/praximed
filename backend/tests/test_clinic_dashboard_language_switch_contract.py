@@ -361,3 +361,98 @@ def test_dashboard_noch_keine_aktiven_anfragen_present() -> None:
 def test_dashboard_archivierte_anfragen_present() -> None:
     assert "Archivierte Anfragen" in _dashboard(), \
         "Module 162B archived section label must still be present"
+
+
+# ---------------------------------------------------------------------------
+# 9. Module 163A — Language-aware helpers (stronger assertions)
+# ---------------------------------------------------------------------------
+
+
+def test_get_status_label_function_present() -> None:
+    assert "getStatusLabel" in _dashboard(), \
+        "dashboard must define getStatusLabel(status, lang) language-aware helper"
+
+
+def test_get_status_label_takes_lang_parameter() -> None:
+    content = _dashboard()
+    assert "getStatusLabel(status" in content or "getStatusLabel(s," in content or \
+           "lang: 'de' | 'en'" in content, \
+        "getStatusLabel must accept a lang parameter"
+
+
+def test_get_readable_request_number_language_aware() -> None:
+    content = _dashboard()
+    assert "getReadableRequestNumber" in content, \
+        "dashboard must define getReadableRequestNumber helper"
+    assert "lang" in content, \
+        "getReadableRequestNumber must accept a lang parameter"
+
+
+def test_translations_de_has_anfrage_hash_prefix() -> None:
+    assert "'Anfrage #'" in _dashboard(), \
+        "de TRANSLATIONS must contain 'Anfrage #' request prefix"
+
+
+def test_translations_en_has_request_hash_prefix() -> None:
+    assert "'Request #'" in _dashboard(), \
+        "en TRANSLATIONS must contain 'Request #' request prefix"
+
+
+def test_translations_en_has_not_provided() -> None:
+    assert "'Not provided'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Not provided' for missing fields"
+
+
+def test_translations_de_has_nicht_angegeben() -> None:
+    assert "'Nicht angegeben'" in _dashboard(), \
+        "de TRANSLATIONS must have 'Nicht angegeben'"
+
+
+def test_translations_en_has_archived_requests() -> None:
+    assert "'Archived requests'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Archived requests'"
+
+
+def test_translations_de_has_archivierte_anfragen() -> None:
+    assert "'Archivierte Anfragen'" in _dashboard(), \
+        "de TRANSLATIONS must have 'Archivierte Anfragen'"
+
+
+def test_translations_en_has_demo_in_3_steps() -> None:
+    assert "'Demo in 3 steps'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Demo in 3 steps'"
+
+
+def test_translations_de_has_demo_in_3_schritten() -> None:
+    assert "'Demo in 3 Schritten'" in _dashboard(), \
+        "de TRANSLATIONS must have 'Demo in 3 Schritten'"
+
+
+def test_translations_en_has_create_demo_call() -> None:
+    assert "'Create demo call'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Create demo call'"
+
+
+def test_translations_en_has_staff_review() -> None:
+    assert "'Staff review'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Staff review' label"
+
+
+def test_translations_en_has_completed() -> None:
+    assert "'Completed'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Completed' label"
+
+
+def test_translations_en_has_received() -> None:
+    assert "'Received'" in _dashboard(), \
+        "en TRANSLATIONS must have 'Received' label"
+
+
+def test_all_get_status_label_calls_pass_uilang() -> None:
+    content = _dashboard()
+    assert "getStatusLabel(" in content, \
+        "dashboard must call getStatusLabel with uiLang argument"
+    assert "getStatusLabel(appt.status, uiLang)" in content or \
+           "getStatusLabel(selectedAppt.status, uiLang)" in content or \
+           "getStatusLabel(patient.status, uiLang)" in content, \
+        "getStatusLabel calls must pass uiLang"

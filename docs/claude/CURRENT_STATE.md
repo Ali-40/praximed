@@ -2,7 +2,16 @@
 
 ## Completed and committed modules
 
-000000000. Module 163 — Sprint 21 / Clinic Dashboard Language Switch (commit: pending)
+0000000000. Module 163A — Sprint 21 / Fix Clinic Dashboard Language Switch (commit: pending)
+   - `frontend/app/dashboard/page.tsx` — full live switch: `getStatusLabel(status, lang)` replaces `getGermanStatusLabel`; `getReadableRequestNumber(index, lang)`; TRANSLATIONS expanded to ~44 keys; all JSX call sites updated; backward-compat alias `getGermanStatusLabel` preserved
+   - `backend/tests/test_clinic_dashboard_language_switch_contract.py` — expanded to 72 contract tests (16 new 163A assertions)
+   - `docs/product/CLINIC_DASHBOARD_LANGUAGE_SWITCH.md` — 163A hotfix section added
+   - All labels now live-switch on Deutsch/English radio change; no hardcoded German visible in UI
+   - requestPrefix in de: 'Anfrage #', in en: 'Request #'
+   - Settings messages language-aware (einstellungenGespeichert / einstellungenFehler)
+   - 5656 total tests. Build clean. Production PHI remains NO-GO.
+
+000000000. Module 163 — Sprint 21 / Clinic Dashboard Language Switch (commit: 8a92660)
    - `frontend/app/dashboard/page.tsx` — TRANSLATIONS constant (de/en), uiLang state, t() helper, language selector card in Settings tab ("Sprache der Oberfläche / Interface language")
    - `backend/tests/test_clinic_dashboard_language_switch_contract.py` — 56 contract tests
    - `docs/product/CLINIC_DASHBOARD_LANGUAGE_SWITCH.md` — product doc

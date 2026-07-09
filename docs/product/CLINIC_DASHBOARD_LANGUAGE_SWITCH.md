@@ -91,7 +91,7 @@ TRANSLATIONS.en  — English labels
 ## Files Modified
 
 - `frontend/app/dashboard/page.tsx` — TRANSLATIONS constant, uiLang state, t() helper, language selector in Settings tab
-- `backend/tests/test_clinic_dashboard_language_switch_contract.py` — 56 contract tests
+- `backend/tests/test_clinic_dashboard_language_switch_contract.py` — 56 contract tests (72 after 163A)
 - `docs/product/CLINIC_DASHBOARD_LANGUAGE_SWITCH.md` — this file
 
 ---
@@ -99,3 +99,35 @@ TRANSLATIONS.en  — English labels
 ## Test Count
 
 5656 total tests. 56 new. All passing. Build clean.
+
+---
+
+## Module 163A Hotfix
+
+**Sprint 21 / Module 163A — Fix clinic dashboard language switch**
+**Date:** 2026-07-09
+
+### Problem
+
+Module 163 introduced `uiLang` state and `t()` helper but the live UI did not fully switch
+because:
+
+- `getGermanStatusLabel` was always German — not language-aware
+- `getReadableRequestNumber` always returned 'Anfrage #N' regardless of language
+- Many visible labels remained hardcoded German (badges, section headings, tab headers,
+  metric cards, placeholders, demo strip, Patienten tab, Settings tab)
+
+### What Was Fixed
+
+- `getGermanStatusLabel` → renamed to `getStatusLabel(status, lang)` with full en/de switch;
+  backward-compat alias `getGermanStatusLabel` preserved for existing contract tests
+- `getReadableRequestNumber(index, lang)` — passes lang through to TRANSLATIONS prefix;
+  `requestPrefix` in de is `'Anfrage #'`, in en is `'Request #'`
+- TRANSLATIONS expanded from 28 to ~44 keys per language, covering all previously hardcoded labels
+- All JSX call sites updated to use `t()` or pass `uiLang` to helpers
+- Settings message language-aware: `TRANSLATIONS[uiLang].einstellungenGespeichert/Fehler`
+- Settings error detection: `settingsMessage.includes('nicht') || settingsMessage.includes('not')`
+
+### Test Count After 163A
+
+5656 total. Contract tests for this module: 72 (up from 56). All passing.

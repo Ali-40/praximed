@@ -71,9 +71,27 @@ const LAYOUT_CSS = `
 `
 
 // ---------------------------------------------------------------------------
-// German status label mapping — Sprint 21 / Module 157
+// Language-aware status label — Sprint 21 / Module 163A
 // ---------------------------------------------------------------------------
-function getGermanStatusLabel(status: string | null | undefined): string {
+function getStatusLabel(status: string | null | undefined, lang: 'de' | 'en'): string {
+  if (lang === 'en') {
+    switch (status) {
+      case 'new':              return 'New request'
+      case 'pending':          return 'New request'
+      case 'callback_needed':  return 'Needs callback'
+      case 'contacted':        return 'Contacted'
+      case 'confirmed':        return 'Confirmed'
+      case 'active':           return 'Active'
+      case 'approved':         return 'Approved'
+      case 'urgent':           return 'Urgent'
+      case 'emergency':        return 'Emergency'
+      case 'closed':           return 'Completed'
+      case 'cancelled':        return 'Cancelled'
+      case 'archived':         return 'Archived'
+      case 'rejected':         return 'Rejected'
+      default:                 return status ?? '—'
+    }
+  }
   switch (status) {
     case 'new':              return 'Neue Anfrage'
     case 'pending':          return 'Neue Anfrage'
@@ -91,9 +109,11 @@ function getGermanStatusLabel(status: string | null | undefined): string {
     default:                 return status ?? '—'
   }
 }
+// backward-compat alias — getGermanStatusLabel preserved for existing contract tests
+const getGermanStatusLabel = (s: string | null | undefined) => getStatusLabel(s, 'de')
 
-function getReadableRequestNumber(index: number): string {
-  return `Anfrage #${index + 1}`
+function getReadableRequestNumber(index: number, lang: 'de' | 'en'): string {
+  return `${TRANSLATIONS[lang].requestPrefix}${index + 1}`
 }
 
 function getTodaySummaryCounts(appts: AppointmentRequest[]) {
@@ -210,64 +230,96 @@ function newRequestBadgeStyle(): React.CSSProperties {
 // ---------------------------------------------------------------------------
 const TRANSLATIONS = {
   de: {
-    heute:                   'Heute',
-    tabAnfragen:             'Anfragen',
-    tabPatienten:            'Patienten',
-    tabEinstellungen:        'Einstellungen',
-    neueAnfragen:            'Neue Anfragen',
-    rueckrufNoetig:          'Rückruf nötig',
-    dringendPruefen:         'Dringend prüfen',
-    erledigt:                'Erledigt',
-    demoAnrufErstellen:      'Demo-Anruf erstellen',
-    demoZuruecksetzen:       'Demo zurücksetzen',
-    rueckrufMarkieren:       'Rückruf markieren',
-    alsKontaktiertMarkieren: 'Als kontaktiert markieren',
-    anfrageImUeberblick:     'Anfrage im Überblick',
-    telefon:                 'Telefon',
-    anliegen:                'Anliegen',
-    gewuenschteZeit:         'Gewünschte Zeit',
-    eingegangen:             'Eingegangen',
-    praxisprofil:            'Praxisprofil',
-    oeffnungszeiten:         'Öffnungszeiten',
-    sprachen:                'Sprachen',
-    kiRezeption:             'KI-Rezeption',
-    kiVorschau:              'KI-Vorschau',
-    summaryArt:              'Art',
-    summaryDringlichkeit:    'Dringlichkeit',
-    summaryFruehereBesuche:  'Frühere Besuche',
-    summaryEmpfohleneAktion: 'Empfohlene Aktion',
-    safetyNote:              'Nur zur internen Planung. Das Praxisteam prüft und bestätigt jeden Schritt.',
-    uiSprache:               'Sprache der Oberfläche',
+    heute:                    'Heute',
+    tabAnfragen:              'Anfragen',
+    tabPatienten:             'Patienten',
+    tabEinstellungen:         'Einstellungen',
+    neueAnfragen:             'Neue Anfragen',
+    neueAnfrageLabel:         'Neue Anfrage',
+    rueckrufNoetig:           'Rückruf nötig',
+    dringendPruefen:          'Dringend prüfen',
+    erledigt:                 'Erledigt',
+    demoAnrufErstellen:       'Demo-Anruf erstellen',
+    demoZuruecksetzen:        'Demo zurücksetzen',
+    rueckrufMarkieren:        'Rückruf markieren',
+    alsKontaktiertMarkieren:  'Als kontaktiert markieren',
+    anfrageImUeberblick:      'Anfrage im Überblick',
+    telefon:                  'Telefon',
+    anliegen:                 'Anliegen',
+    gewuenschteZeit:          'Gewünschte Zeit',
+    eingegangen:              'Eingegangen',
+    nichtAngegeben:           'Nicht angegeben',
+    archivierteAnfragen:      'Archivierte Anfragen',
+    archiviert:               'Archiviert',
+    requestPrefix:            'Anfrage #',
+    praxismedIntro:           'PraxisMed nimmt Terminanfragen auf und sortiert Rückrufe für Ihr Praxisteam.',
+    demoIn3Schritten:         'Demo in 3 Schritten',
+    demoSchritt1:             '1 · Demo-Anruf erstellen',
+    demoSchritt2:             '2 · Rückruf-Anfrage prüfen',
+    demoSchritt3:             '3 · Als kontaktiert markieren',
+    patientSuchen:            'Patient suchen…',
+    patientenTabNote:         'Demo-Modus: Keine echten Patientendaten eingeben.',
+    nochKeinePatienten:       'Noch keine Patienten in dieser Demo. Patienten erscheinen hier, sobald Anfragen zugeordnet werden.',
+    praxisprofil:             'Praxisprofil',
+    oeffnungszeiten:          'Öffnungszeiten',
+    sprachen:                 'Sprachen',
+    kiRezeption:              'KI-Rezeption',
+    kiVorschau:               'KI-Vorschau',
+    summaryArt:               'Art',
+    summaryDringlichkeit:     'Dringlichkeit',
+    summaryFruehereBesuche:   'Frühere Besuche',
+    summaryEmpfohleneAktion:  'Empfohlene Aktion',
+    speichern:                'Speichern',
+    einstellungenGespeichert: 'Einstellungen gespeichert.',
+    einstellungenFehler:      'Einstellungen konnten nicht gespeichert werden.',
+    safetyNote:               'Nur zur internen Planung. Das Praxisteam prüft und bestätigt jeden Schritt.',
+    uiSprache:                'Sprache der Oberfläche',
   },
   en: {
-    heute:                   'Today',
-    tabAnfragen:             'Requests',
-    tabPatienten:            'Patients',
-    tabEinstellungen:        'Settings',
-    neueAnfragen:            'New requests',
-    rueckrufNoetig:          'Needs callback',
-    dringendPruefen:         'Staff review',
-    erledigt:                'Completed',
-    demoAnrufErstellen:      'Create demo call',
-    demoZuruecksetzen:       'Reset demo',
-    rueckrufMarkieren:       'Mark callback',
-    alsKontaktiertMarkieren: 'Mark contacted',
-    anfrageImUeberblick:     'Request overview',
-    telefon:                 'Phone',
-    anliegen:                'Issue',
-    gewuenschteZeit:         'Preferred time',
-    eingegangen:             'Received',
-    praxisprofil:            'Practice profile',
-    oeffnungszeiten:         'Opening hours',
-    sprachen:                'Languages',
-    kiRezeption:             'AI receptionist',
-    kiVorschau:              'Preview',
-    summaryArt:              'Category',
-    summaryDringlichkeit:    'Urgency',
-    summaryFruehereBesuche:  'Past visits',
-    summaryEmpfohleneAktion: 'Next step',
-    safetyNote:              'For internal scheduling only. Staff review and confirmation required.',
-    uiSprache:               'Interface language',
+    heute:                    'Today',
+    tabAnfragen:              'Requests',
+    tabPatienten:             'Patients',
+    tabEinstellungen:         'Settings',
+    neueAnfragen:             'New requests',
+    neueAnfrageLabel:         'New request',
+    rueckrufNoetig:           'Needs callback',
+    dringendPruefen:          'Staff review',
+    erledigt:                 'Completed',
+    demoAnrufErstellen:       'Create demo call',
+    demoZuruecksetzen:        'Reset demo',
+    rueckrufMarkieren:        'Mark callback',
+    alsKontaktiertMarkieren:  'Mark contacted',
+    anfrageImUeberblick:      'Request overview',
+    telefon:                  'Phone',
+    anliegen:                 'Issue',
+    gewuenschteZeit:          'Preferred time',
+    eingegangen:              'Received',
+    nichtAngegeben:           'Not provided',
+    archivierteAnfragen:      'Archived requests',
+    archiviert:               'Archived',
+    requestPrefix:            'Request #',
+    praxismedIntro:           'PraxisMed captures appointment requests and organizes callbacks for your practice team.',
+    demoIn3Schritten:         'Demo in 3 steps',
+    demoSchritt1:             '1 · Create demo call',
+    demoSchritt2:             '2 · Review callback request',
+    demoSchritt3:             '3 · Mark as contacted',
+    patientSuchen:            'Search patients…',
+    patientenTabNote:         'Demo mode: Do not enter real patient data.',
+    nochKeinePatienten:       'No patients in this demo yet. Patients appear here once requests are linked.',
+    praxisprofil:             'Practice profile',
+    oeffnungszeiten:          'Opening hours',
+    sprachen:                 'Languages',
+    kiRezeption:              'AI receptionist',
+    kiVorschau:               'Preview',
+    summaryArt:               'Category',
+    summaryDringlichkeit:     'Urgency',
+    summaryFruehereBesuche:   'Past visits',
+    summaryEmpfohleneAktion:  'Next step',
+    speichern:                'Save',
+    einstellungenGespeichert: 'Settings saved.',
+    einstellungenFehler:      'Settings could not be saved.',
+    safetyNote:               'For internal scheduling only. Staff review and confirmation required.',
+    uiSprache:                'Interface language',
   },
 } as const
 
@@ -634,9 +686,9 @@ export default function DashboardPage() {
         supported_languages: settingsForm.supportedLanguages,
       })
       if (settingsForm.praxisname) setClinicDisplayName(settingsForm.praxisname)
-      setSettingsMessage('Einstellungen gespeichert.')
+      setSettingsMessage(TRANSLATIONS[uiLang].einstellungenGespeichert)
     } catch {
-      setSettingsMessage('Einstellungen konnten nicht gespeichert werden.')
+      setSettingsMessage(TRANSLATIONS[uiLang].einstellungenFehler)
     } finally {
       setSettingsSaving(false)
     }
@@ -935,7 +987,7 @@ export default function DashboardPage() {
                 <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.11em' }}>
                   {/* Label kept for existing contract tests */}
                   <span className="sr-only">Incoming AI Intake Queue</span>
-                  <span aria-hidden>Anfragen</span>
+                  <span aria-hidden>{t('tabAnfragen')}</span>
                 </h2>
                 {!apptLoading && !apptError && (
                   <span className="pm-tabular" style={{ fontSize: '0.675rem', fontWeight: 700, color: INK, background: WARN, padding: '1px 7px', borderRadius: 99 }}>
@@ -994,16 +1046,16 @@ export default function DashboardPage() {
                           <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: isSelected ? INK : '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                             {appt.patient_name ?? '—'}
                           </span>
-                          {isNewRequest(appt) && <span style={newRequestBadgeStyle()}><span className="sr-only">New Request</span><span aria-hidden>Neue Anfrage</span></span>}
+                          {isNewRequest(appt) && <span style={newRequestBadgeStyle()}><span className="sr-only">New Request</span><span aria-hidden>{t('neueAnfrageLabel')}</span></span>}
                         </div>
                         {/* Human-readable request number — no UUID shown in clinic-facing UI */}
                         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: isSelected ? ACCENT : 'rgba(0,128,128,0.75)', marginBottom: '0.2rem' }}>
-                          {getReadableRequestNumber(idx)}
+                          {getReadableRequestNumber(idx, uiLang)}
                         </div>
                         <div className="pm-tabular" style={{ fontSize: '0.7rem', color: isSelected ? TEXT_MUTED : 'rgba(255,255,255,0.45)', marginBottom: '0.25rem' }}>
                           {phone
                             ? phone
-                            : <><span className="sr-only">No phone captured</span><span aria-hidden>Nicht angegeben</span></>
+                            : <><span className="sr-only">No phone captured</span><span aria-hidden>{t('nichtAngegeben')}</span></>
                           } · {formatDateTime(preferred ?? appt.created_at)}
                         </div>
                         {reason && (
@@ -1012,7 +1064,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={badge(appt.status)}>{getGermanStatusLabel(appt.status)}</span>
+                          <span style={badge(appt.status)}>{getStatusLabel(appt.status, uiLang)}</span>
                           {/* source badge hidden in clinic-facing UI */}
                           {/* Rückruf markieren — marks appointment as callback_needed */}
                           <button
@@ -1037,7 +1089,7 @@ export default function DashboardPage() {
               {!apptLoading && !apptError && archivedAppts.length > 0 && (
                 <div style={{ padding: '0.5rem 0.75rem 0.875rem' }}>
                   <p style={{ fontSize: '0.625rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.375rem' }}>
-                    Archivierte Anfragen ({archivedAppts.length})
+                    {t('archivierteAnfragen')} ({archivedAppts.length})
                   </p>
                   {archivedAppts.map((appt, idx) => (
                     <div
@@ -1050,7 +1102,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.55)', fontWeight: 500 }}>
-                        {appt.patient_name ?? '—'} · <span style={{ color: 'rgba(255,255,255,0.3)' }}>Archiviert</span>
+                        {appt.patient_name ?? '—'} · <span style={{ color: 'rgba(255,255,255,0.3)' }}>{t('archiviert')}</span>
                       </span>
                     </div>
                   ))}
@@ -1155,7 +1207,7 @@ export default function DashboardPage() {
               {/* Legacy labels preserved for contract compatibility */}
               <span className="sr-only">Intake Resolution Workspace · Clinic Overview · Confirm &amp; Create Profile</span>
               <p style={{ fontSize: '0.775rem', color: TEXT_MUTED, marginTop: '0.2rem' }}>
-                PraxisMed nimmt Terminanfragen auf und sortiert Rückrufe für Ihr Praxisteam.
+                {t('praxismedIntro')}
               </p>
               <span className="sr-only">Fake-data staging environment — no real patient data</span>
             </div>
@@ -1176,13 +1228,9 @@ export default function DashboardPage() {
               }}
             >
               <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#8A5B00', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
-                Demo in 3 Schritten
+                {t('demoIn3Schritten')}
               </span>
-              {[
-                '1 · Demo-Anruf erstellen',
-                '2 · Rückruf-Anfrage prüfen',
-                '3 · Als kontaktiert markieren',
-              ].map((step) => (
+              {[t('demoSchritt1'), t('demoSchritt2'), t('demoSchritt3')].map((step) => (
                 <span key={step} style={{ fontSize: '0.75rem', color: '#5B4200', whiteSpace: 'nowrap' }}>{step}</span>
               ))}
               <span style={{ fontSize: '0.675rem', color: '#8A5B00', width: '100%' }}>
@@ -1192,10 +1240,10 @@ export default function DashboardPage() {
 
             {/* Clinic Overview metrics */}
             <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', margin: '0.875rem 1.5rem' }}>
-              <MetricCard label="Anfragen"  value={appointments.length}  loading={apptLoading} />
-              <MetricCard label="Patienten" value={patients.length}      loading={patientsLoading} />
-              <MetricCard label="Hinweise"  value={notifications.length} loading={notifLoading} />
-              <MetricCard label="Neu"       value={pendingCount}         loading={apptLoading} />
+              <MetricCard label={t('tabAnfragen')}  value={appointments.length}  loading={apptLoading} />
+              <MetricCard label={t('tabPatienten')} value={patients.length}      loading={patientsLoading} />
+              <MetricCard label={uiLang === 'en' ? 'Notices' : 'Hinweise'}  value={notifications.length} loading={notifLoading} />
+              <MetricCard label={uiLang === 'en' ? 'New' : 'Neu'}       value={pendingCount}         loading={apptLoading} />
             </div>
 
             {/* Selected intake request */}
@@ -1221,15 +1269,15 @@ export default function DashboardPage() {
                         {selectedAppt.patient_name ?? '—'}
                       </h3>
                       <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
-                        {isNewRequest(selectedAppt) && <span style={newRequestBadgeStyle()}><span className="sr-only">New Request</span><span aria-hidden>Neue Anfrage</span></span>}
-                        <span style={badge(selectedAppt.status)}>{getGermanStatusLabel(selectedAppt.status)}</span>
+                        {isNewRequest(selectedAppt) && <span style={newRequestBadgeStyle()}><span className="sr-only">New Request</span><span aria-hidden>{t('neueAnfrageLabel')}</span></span>}
+                        <span style={badge(selectedAppt.status)}>{getStatusLabel(selectedAppt.status, uiLang)}</span>
                         <span style={badge(selectedAppt.urgency_level)}>{selectedAppt.urgency_level}</span>
                         {fieldStr(selectedAppt, 'source') && <span style={badge(fieldStr(selectedAppt, 'source'))}>{fieldStr(selectedAppt, 'source')}</span>}
                       </div>
                     </div>
                     {/* Human-readable request label — UUID not shown in clinic-facing UI */}
                     <span className="pm-tabular" style={{ fontSize: '0.8rem', fontWeight: 700, color: ACCENT, whiteSpace: 'nowrap' }}>
-                      {selectedApptIndex >= 0 ? getReadableRequestNumber(selectedApptIndex) : '—'}
+                      {selectedApptIndex >= 0 ? getReadableRequestNumber(selectedApptIndex, uiLang) : '—'}
                     </span>
                   </div>
 
@@ -1241,7 +1289,7 @@ export default function DashboardPage() {
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('telefon')}</dt>
                     <dd style={{ margin: 0, color: INK }}>
                       {fieldStr(selectedAppt, 'patient_phone')
-                        ?? <><span className="sr-only">No phone captured</span><span aria-hidden>Nicht angegeben</span></>
+                        ?? <><span className="sr-only">No phone captured</span><span aria-hidden>{t('nichtAngegeben')}</span></>
                       }
                     </dd>
                     <dt style={{ color: TEXT_MUTED, fontWeight: 500 }}>{t('anliegen')}</dt>
@@ -1441,7 +1489,7 @@ export default function DashboardPage() {
                   type="search"
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
-                  placeholder="Patient suchen…"
+                  placeholder={t('patientSuchen')}
                   aria-label="Search Clinical Registries..."
                   style={{
                     width: '100%', padding: '0.45rem 0.75rem 0.45rem 1.9rem', borderRadius: 8,
@@ -1527,11 +1575,11 @@ export default function DashboardPage() {
                 </p>
                 <dl className="pm-tabular" style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: '0.875rem', rowGap: '0.3rem', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
                   <dt style={{ color: TEXT_MUTED }}>Telefon</dt>
-                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'phone') ?? 'Nicht angegeben'}</dd>
+                  <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'phone') ?? t('nichtAngegeben')}</dd>
                   <dt style={{ color: TEXT_MUTED }}>E-Mail</dt>
                   <dd style={{ margin: 0, color: INK }}>{fieldStr(selectedPatient, 'email') ?? '—'}</dd>
                   <dt style={{ color: TEXT_MUTED }}>Status</dt>
-                  <dd style={{ margin: 0 }}><span style={badge(selectedPatient.status)}>{getGermanStatusLabel(selectedPatient.status)}</span></dd>
+                  <dd style={{ margin: 0 }}><span style={badge(selectedPatient.status)}>{getStatusLabel(selectedPatient.status, uiLang)}</span></dd>
                   <dt style={{ color: TEXT_MUTED }}>Verknüpfte Anfragen</dt>
                   <dd style={{ margin: 0, color: INK }}>{linkedAppointments.length}</dd>
                 </dl>
@@ -1557,7 +1605,7 @@ export default function DashboardPage() {
                       {linkedAppointments.map((a) => (
                         <li key={a.id} className="pm-tabular" style={{ fontSize: '0.75rem', color: INK, paddingLeft: '0.75rem', borderLeft: `2px solid ${ACCENT}` }}>
                           <div style={{ fontWeight: 600 }}>{formatDate(a.created_at)}: KI-Telefon-Anfrage eingegangen</div>
-                          <div style={{ color: TEXT_MUTED }}>Status: {getGermanStatusLabel(a.status)}</div>
+                          <div style={{ color: TEXT_MUTED }}>Status: {getStatusLabel(a.status, uiLang)}</div>
                           {fieldStr(a, 'reason') && <div style={{ color: TEXT_MUTED }}>Grund: {fieldStr(a, 'reason')}</div>}
                         </li>
                       ))}
@@ -1584,15 +1632,15 @@ export default function DashboardPage() {
       {/* ================================================================== */}
       {activeTab === 'patienten' && (
         <div style={{ padding: '1.5rem', maxWidth: 860, margin: '0 auto' }}>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.25rem' }}>Patienten</h2>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.25rem' }}>{t('tabPatienten')}</h2>
           <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, marginBottom: '1rem' }}>
-            Demo-Modus: Keine echten Patientendaten eingeben.
+            {t('patientenTabNote')}
           </p>
           {patientsLoading && <LoadingState message="Patienten werden geladen…" />}
           {!patientsLoading && patientsError && <ErrorState message={patientsError} />}
           {!patientsLoading && !patientsError && patients.length === 0 && (
             <div>
-              <EmptyState message="Noch keine Patienten in dieser Demo. Patienten erscheinen hier, sobald Anfragen zugeordnet werden." />
+              <EmptyState message={t('nochKeinePatienten')} />
               <div data-state="demo-placeholder" style={{ marginTop: '0.75rem', borderRadius: 10, border: `1px dashed ${CARD_BORDER}`, padding: '0.875rem' }}>
                 <p style={{ fontSize: '0.65rem', fontWeight: 700, color: TEXT_FAINT, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
                   Demo placeholder — nicht echte Patienten
@@ -1621,7 +1669,7 @@ export default function DashboardPage() {
                     </span>
                     <span style={{ flex: 1, fontWeight: 500, color: INK }}>{patientDisplayName(patient)}</span>
                     <span style={{ fontSize: '0.75rem', color: TEXT_MUTED }}>{fieldStr(patient, 'phone') ?? '—'}</span>
-                    <span style={badge(patient.status)}>{getGermanStatusLabel(patient.status)}</span>
+                    <span style={badge(patient.status)}>{getStatusLabel(patient.status, uiLang)}</span>
                   </li>
                 ))}
               </ul>
@@ -1637,25 +1685,28 @@ export default function DashboardPage() {
       {/* ================================================================== */}
       {activeTab === 'einstellungen' && (
         <div style={{ padding: '1.5rem', maxWidth: 680, margin: '0 auto' }}>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.2rem' }}>Einstellungen</h2>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: INK, marginBottom: '0.2rem' }}>{t('tabEinstellungen')}</h2>
           <p style={{ fontSize: '0.8125rem', color: TEXT_MUTED, marginBottom: '1.25rem' }}>
             Passen Sie an, wie Ihre Praxis in PraxisMed angezeigt wird.
           </p>
 
-          {settingsMessage && (
-            <div
-              data-settings-message
-              style={{
-                marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: 8,
-                background: settingsMessage.includes('nicht') ? '#FDF1F2' : '#DFF5E9',
-                border: `1px solid ${settingsMessage.includes('nicht') ? DANGER : '#A7D7B9'}`,
-                fontSize: '0.8125rem', fontWeight: 600,
-                color: settingsMessage.includes('nicht') ? DANGER : '#166534',
-              }}
-            >
-              {settingsMessage}
-            </div>
-          )}
+          {settingsMessage && (() => {
+            const isErr = settingsMessage.includes('nicht') || settingsMessage.includes('not')
+            return (
+              <div
+                data-settings-message
+                style={{
+                  marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: 8,
+                  background: isErr ? '#FDF1F2' : '#DFF5E9',
+                  border: `1px solid ${isErr ? DANGER : '#A7D7B9'}`,
+                  fontSize: '0.8125rem', fontWeight: 600,
+                  color: isErr ? DANGER : '#166534',
+                }}
+              >
+                {settingsMessage}
+              </div>
+            )
+          })()}
 
           {/* ---- Sprache der Oberfläche / Interface language — Module 163 ---- */}
           <SectionCard style={{ marginBottom: '1rem' }}>
@@ -1838,7 +1889,7 @@ export default function DashboardPage() {
                 cursor: settingsSaving ? 'not-allowed' : 'pointer',
               }}
             >
-              {settingsSaving ? 'Wird gespeichert…' : 'Speichern'}
+              {settingsSaving ? (uiLang === 'en' ? 'Saving…' : 'Wird gespeichert…') : t('speichern')}
             </button>
             <button
               data-action="reset-settings"
