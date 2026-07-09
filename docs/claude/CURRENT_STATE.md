@@ -2,6 +2,17 @@
 
 ## Completed and committed modules
 
+0000. Module 161 — Sprint 21 / Five-Minute Clinic Demo Script and Sales Pack (commit: pending)
+   - `docs/sales/FIVE_MINUTE_CLINIC_DEMO_SCRIPT.md` — 5-minute demo script, receptionist + doctor talk tracks
+   - `docs/sales/THIRTY_DAY_PILOT_OFFER.md` — pilot structure, pricing anchor (€390 setup, €290–€490/month)
+   - `docs/sales/ONE_PAGE_CLINIC_HANDOUT.md` — print-ready one-page handout, no technical language
+   - `docs/sales/OBJECTION_HANDLING.md` — 10 objections with honest answers, no overclaims
+   - `docs/sales/DEMO_DAY_CHECKLIST.md` — before/during/after checklist for clinic visits
+   - `backend/tests/test_five_minute_clinic_demo_sales_pack_contract.py` — 71 contract tests
+   - Sales focus: missed calls, callback queue, staff control, simple workflow, no technical language
+   - No compliance overclaims. No PHI claims. No diagnosis/advice/triage claims. Production PHI remains NO-GO.
+   - Acceptance: "Ali kann in eine Wiener Privatpraxis gehen und PraxisMed in 5 Minuten erklären."
+
 000. Module 160 — Sprint 21 / Live Vapi Staging Call Loop (commit: 5cb8671)
    - `frontend/app/dashboard/page.tsx` — data-live-demo-hint span added to demo strip
    - `backend/tests/test_live_vapi_staging_call_loop_sales_mvp_contract.py` — new, ≥15 tests

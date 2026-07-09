@@ -1,18 +1,20 @@
-# Sprint 21 / Module 161 — Five-Minute Clinic Demo Script and Sales Pack
+# Sprint 21 / Module 162 — Sales Demo Polish and Walk-In Readiness
 
 Status: pending.
 
 ## Context
 
-Module 160 complete (Live Vapi Staging Call Loop — commit 5cb8671):
-- data-live-demo-hint added to dashboard demo strip
-- Existing POST /vapi/tools/capture-appointment-request verified — no backend changes needed
-- German AI receptionist script documented
-- 52 new contract tests. 5287 total. Frontend build clean. Production PHI remains NO-GO.
+Module 161 complete (Five-Minute Clinic Demo Script and Sales Pack):
+- FIVE_MINUTE_CLINIC_DEMO_SCRIPT.md — 5-minute script, receptionist + doctor talk tracks
+- THIRTY_DAY_PILOT_OFFER.md — pilot structure, €390 setup, €290–€490/month anchor
+- ONE_PAGE_CLINIC_HANDOUT.md — print-ready handout, no technical language
+- OBJECTION_HANDLING.md — 10 objections, honest answers, no overclaims
+- DEMO_DAY_CHECKLIST.md — before/during/after checklist
+- 71 new contract tests. 5358 total. Production PHI remains NO-GO.
 
 ## Sprint 21 Sales-MVP Pivot — Paused until further notice
 
-The following tracks are paused and must NOT be included in upcoming modules:
+The following tracks remain paused:
 - Arabic/RTL foundation
 - Gulf/FHIR/pediatric expansion
 - Smoke evidence docs
@@ -20,142 +22,103 @@ The following tracks are paused and must NOT be included in upcoming modules:
 - Additional developer-console tooling
 - Deeper anamnesis modules
 
-The sole focus of Sprint 21 remaining modules is closing a Vienna pilot sale.
-
 ## Goal
 
-Produce a practical sales pack that Ali can use in a Vienna clinic visit today:
-a 5-minute demo script, receptionist talk track, doctor talk track, 30-day pilot offer,
-simple pricing anchor, and objection handling — all in plain German, no technical language.
+Inspect /dashboard from a sales perspective and smooth any rough edges that
+could cost momentum during a clinic walkthrough.
 
-## What Module 161 must produce
+This is a polish pass — no new infrastructure, no new features, no migrations.
+Only changes that make the sales demo cleaner, faster to understand, and
+more convincing on first impression.
 
-### 1. Five-Minute Demo Script
+## What Module 162 must inspect and fix
 
-A structured, time-boxed walkthrough of /dashboard for a receptionist + doctor audience.
+### 1. Empty-state check
 
-Sections:
-- **00:00 – 00:30** — Opening hook (missed calls problem)
-- **00:30 – 02:00** — Live Anfragen queue walkthrough
-- **02:00 – 03:00** — Live phone demo moment
-- **03:00 – 04:00** — Einstellungen personalization
-- **04:00 – 05:00** — Pilot offer close
-
-Each section: what to say, what to show, what to listen for.
-
-### 2. Receptionist Talk Track
-
-Focus: staff time, missed calls, no new software to learn, simple callback workflow.
-
-Key messages:
-- "Das System nimmt Anrufe entgegen, wenn Sie beschäftigt sind."
-- "Sie sehen alle Anfragen auf einem Blick und rufen zurück, wenn Sie Zeit haben."
-- "Kein Termin wird automatisch bestätigt — Sie haben immer die Kontrolle."
-
-### 3. Doctor Talk Track
-
-Focus: fewer interruptions, no missed new patients, simple overview, pilot framing.
-
-Key messages:
-- "Neue Patienten gehen nicht verloren, auch wenn das Telefon nicht abgenommen wird."
-- "Sie sehen den Überblick — Ihr Team kümmert sich um die Details."
-- "Wir testen das 30 Tage — ohne Risiko."
-
-### 4. Live Phone Demo Moment (script)
-
-Script for the moment Ali calls the staging number in the room:
-
-> "Ich rufe jetzt die Staging-Nummer an. Das KI-System antwortet auf Deutsch,
-> nimmt die Terminanfrage auf — und in wenigen Sekunden sehen Sie die Anfrage
-> hier in der Warteschlange als 'Rückruf nötig'."
-
-After call appears:
-> "Das war ein echter Anruf. Keine echten Patientendaten — das ist unser
-> Demo-System. Aber genau so funktioniert es im echten Betrieb."
-
-### 5. 30-Day Pilot Offer
-
-Simple, low-commitment framing:
-
-- 30-Tage-Pilotprogramm
-- Setup in einem Nachmittag
-- Kein Vertrag, keine Mindestlaufzeit für den Pilot
-- Wir konfigurieren alles — die Praxis tut nichts Technisches
-
-### 6. Simple Pricing Anchor
-
-One clear line. No tiers, no feature matrix. One number that sounds reasonable
-relative to one missed new patient per month.
-
-### 7. Objection Handling
-
-Common objections with short, honest responses:
-
-| Einwand | Antwort |
-|---|---|
-| "Was ist mit Datenschutz?" | Demo-Modus: keine echten Patientendaten. Pilotdaten bleiben in Österreich. |
-| "Macht das KI Diagnosen?" | Nein. Das System nimmt nur Terminanfragen auf. Ihr Team entscheidet alles. |
-| "Wir haben schon ein Telefonsystem." | Ergänzung, kein Ersatz. Anrufe außerhalb der Öffnungszeiten fallen nicht mehr weg. |
-| "Zu teuer." | Wie viele neue Patienten verlieren Sie pro Monat durch verpasste Anrufe? |
-| "Wir sind noch nicht bereit." | Pilot: 30 Tage, kein Risiko. Wir richten alles ein. |
-
-### 8. Safety wording (required in script)
-
-Every copy of the demo script must include:
-
-- "Demo/Staging only — keine echten Patientendaten"
-- "Kein automatischer Terminabschluss — das Praxisteam bestätigt jeden Termin"
-- "Keine Diagnose, keine medizinische Beratung"
-- "Das Personal bestätigt jeden Termin vor der Buchung"
-
-### 9. Tests
-
-`backend/tests/test_five_minute_demo_script_sales_pack_contract.py` (new — ≥15 tests)
-
-Static evidence tests:
-- Sales pack doc exists
-- Doc mentions receptionist talk track
-- Doc mentions doctor talk track
-- Doc mentions 30-day pilot
-- Doc mentions live phone demo moment
-- Doc mentions "Rückruf nötig"
-- Doc includes staging safety wording ("keine echten Patientendaten")
-- Doc states no automatic appointment confirmation
-- Doc states no diagnosis
-- Doc states no medical advice
-- Doc does not make compliance overclaims (no "DSGVO-zertifiziert", no "HIPAA")
-- Doc does not make production readiness claims
-- Doc does not mention UUID, API, webhook, DATABASE_URL, JWT
-- Objection handling section present
-- Pricing anchor section present
-
-### 10. Docs updates
-
-- docs/claude/CURRENT_STATE.md — Module 161 entry
-- docs/claude/NEXT_MODULE.md — updated to Module 162
-
-## Module 162 preview
-
-Sprint 21 / Module 162 — Demo Polish: Instant Visual Impact
+When Ali first opens /dashboard with no demo calls in the queue, the Anfragen
+tab may show an empty state. This could look broken or unimpressive.
 
 Module 162 should:
-- Ensure /dashboard opens to an already-populated demo queue (one demo call visible by default)
-- "Heute" summary bar shows non-zero numbers on first load
-- No empty-state placeholder on the sales demo day
-- No new patient data. No PHI. Staging only.
+- Verify the empty state has a clean, non-technical German message
+- If the empty state shows technical copy or nothing, replace with:
+  "Noch keine Anfragen. Klicken Sie auf 'Demo-Anruf erstellen' um den Demo-Modus zu starten."
+- Do not auto-populate without user action
+
+### 2. Button copy review
+
+Review these buttons for clarity:
+- "Demo-Anruf erstellen" — check it is prominent and obvious
+- "Demo zurücksetzen" — check it is labeled clearly and is secondary (not primary)
+- "Rückruf" — check it is clear (short enough, action-oriented)
+- "Als kontaktiert markieren" — check it reads naturally
+
+If any button copy is confusing for a non-technical receptionist, improve it.
+
+### 3. Heute summary bar
+
+Verify the Heute summary bar shows meaningful numbers in demo mode:
+- After "Demo-Anruf erstellen": "Heute" bar should reflect the new request
+- If numbers are always zero even after demo creation, fix the count logic
+
+### 4. No visible technical terms
+
+Scan /dashboard for any remaining technical words visible in the default view:
+- No UUID visible
+- No "staging" in visible UI text (only in hidden safety comments)
+- No "webhook", "API", "Vapi", "FHIR", "token", "JWT" in visible text
+- No "production_phi_enabled" visible
+- No error messages containing technical details
+
+### 5. Einstellungen tab first impression
+
+Check the Einstellungen tab opens to a welcoming default state:
+- Praxisname field has a sensible placeholder (not empty or UUID)
+- KI-Vorschau is visible without scrolling (or close to top)
+- No technical labels visible
+
+### 6. Tests
+
+`backend/tests/test_sales_demo_polish_walk_in_readiness_contract.py` (new — ≥10 tests)
+
+Static contract tests:
+- Dashboard has no visible UUID in default view
+- Dashboard has no "staging" in visible German text
+- Dashboard has no "webhook" in visible text
+- Dashboard has no "JWT" or "token" in visible text
+- Anfragen tab has empty-state text in German
+- Demo strip is yellow/warning-colored (not default gray)
+- Heute summary bar exists
+- Einstellungen tab has Praxisname placeholder
+- KI-Vorschau is present in Einstellungen tab
+- No technical error messages containing endpoint URLs in visible text
+
+### 7. Docs updates
+
+- docs/claude/CURRENT_STATE.md — Module 162 entry
+- docs/claude/NEXT_MODULE.md — updated to Module 163
+
+## Module 163 preview
+
+Sprint 21 / Module 163 — First Pilot Clinic Onboarding Script
+
+Module 163 should:
+- Create a structured onboarding checklist for the first actual paying pilot clinic
+- Staff welcome message template
+- First-week support guide
+- How to handle the transition from demo to live (when AVV is signed)
+- No PHI. No automation. Staff confirms everything.
 
 ## Constraints
 
 - No real patient data
 - No production PHI
-- No appointment auto-confirmation
-- No diagnosis/advice/triage
-- No compliance overclaims
-- No production readiness claims
-- No technical language in sales copy
+- No new backend endpoints
+- No new migrations
 - No Arabic/RTL, no FHIR, no Gulf expansion
+- No compliance overclaims
+- No technical language in clinic-facing copy
 - production_phi_enabled always False
 - Frontend build must remain clean
 - Full test suite must remain green
 - Commit message:
-  Sprint 21 / Module 161 — Five-minute clinic demo script and sales pack
+  Sprint 21 / Module 162 — Sales demo polish and walk-in readiness
