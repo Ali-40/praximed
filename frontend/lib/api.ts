@@ -749,6 +749,33 @@ export async function fetchPatientTimelineDelta(
   return resp.json()
 }
 
+// ---------------------------------------------------------------------------
+// Sales Demo — Sprint 21 / Module 158
+// Staging-only. No real patient data. No PHI. No Vapi live calls. No audio.
+// No diagnosis. No medical advice. production_phi_enabled always false.
+// Production PHI remains NO-GO.
+// ---------------------------------------------------------------------------
+
+export async function createSalesDemoCall(
+  clinicId: string,
+): Promise<{ ok: boolean; message: string; request_id?: string; production_phi_enabled?: false }> {
+  const resp = await apiFetch('/demo/sales-mvp/create-call', { method: 'POST' })
+  if (!resp.ok) {
+    throw new Error(`Demo-Anfrage konnte nicht erstellt werden. (HTTP ${resp.status})`)
+  }
+  return resp.json()
+}
+
+export async function resetSalesDemoData(
+  clinicId: string,
+): Promise<{ ok: boolean; message: string; archived_count?: number; production_phi_enabled?: false }> {
+  const resp = await apiFetch('/demo/sales-mvp/reset', { method: 'POST' })
+  if (!resp.ok) {
+    throw new Error(`Demo konnte nicht zurückgesetzt werden. (HTTP ${resp.status})`)
+  }
+  return resp.json()
+}
+
 export async function fetchPatientTimelineDeltaSince(
   clinicId: string,
   patientId: string,

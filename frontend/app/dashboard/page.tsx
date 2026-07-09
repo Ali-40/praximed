@@ -14,6 +14,8 @@ import { getClinicDisplayName, getRoleDisplay } from '@/lib/tenantDisplay'
 import {
   confirmAppointmentRequest,
   updateAppointmentRequestStatus,
+  createSalesDemoCall,
+  resetSalesDemoData,
   fetchAppointmentRequests,
   fetchPatients,
   fetchNotifications,
@@ -360,6 +362,12 @@ export default function DashboardPage() {
   const [contactedIds, setContactedIds] = useState<Set<string>>(new Set())
   const [apptActionError, setApptActionError] = useState<string | null>(null)
 
+  // Sprint 21 / Module 158 — One-Click Demo Flow
+  // Staging-only. No real patient data. No PHI. Production PHI remains NO-GO.
+  const [demoCallCreating, setDemoCallCreating] = useState(false)
+  const [demoResetting, setDemoResetting] = useState(false)
+  const [demoMessage, setDemoMessage] = useState<string | null>(null)
+
   const [summaryOpenId, setSummaryOpenId] = useState<string | null>(null)
   const [summaries, setSummaries] = useState<Record<string, PreAppointmentSummary | 'loading' | 'error'>>({})
 
@@ -450,6 +458,40 @@ export default function DashboardPage() {
       setApptActionError('Kontaktiert-Status konnte nicht gesetzt werden. Bitte erneut versuchen.')
     } finally {
       setContactedIds((prev) => { const next = new Set(prev); next.delete(requestId); return next })
+    }
+  }
+
+  async function handleCreateDemoCall() {
+    if (!clinicId || demoCallCreating) return
+    setDemoCallCreating(true)
+    setDemoMessage(null)
+    try {
+      const result = await createSalesDemoCall(clinicId)
+      const rows = await fetchAppointmentRequests(clinicId)
+      setAppointments(rows)
+      if (rows.length > 0 && !selectedApptId) setSelectedApptId(rows[0].id)
+      setDemoMessage(result.message ?? 'Demo-Anfrage wurde der Warteschlange hinzugefügt.')
+    } catch {
+      setDemoMessage('Demo-Anfrage konnte nicht erstellt werden.')
+    } finally {
+      setDemoCallCreating(false)
+    }
+  }
+
+  async function handleResetDemo() {
+    if (!clinicId || demoResetting) return
+    setDemoResetting(true)
+    setDemoMessage(null)
+    try {
+      const result = await resetSalesDemoData(clinicId)
+      const rows = await fetchAppointmentRequests(clinicId)
+      setAppointments(rows)
+      setSelectedApptId(rows.length > 0 ? rows[0].id : null)
+      setDemoMessage(result.message ?? 'Demo-Daten wurden zurückgesetzt.')
+    } catch {
+      setDemoMessage('Demo konnte nicht zurückgesetzt werden.')
+    } finally {
+      setDemoResetting(false)
     }
   }
 
@@ -641,6 +683,74 @@ export default function DashboardPage() {
       {/* TAB: Anfragen — 3-column split-screen workspace                     */}
       {/* ================================================================== */}
       {activeTab === 'anfragen' && (
+        <>
+
+          {/* ================================================================ */}
+          {/* Demo-Modus strip — Sprint 21 / Module 158                        */}
+          {/* Staging-only. Nur Demo. Keine echten Patientendaten.             */}
+          {/* No PHI. No real patient data. Production PHI remains NO-GO.      */}
+          {/* ================================================================ */}
+          <div
+            data-demo-strip="sales-mvp"
+            style={{
+              background: '#FFF8E7',
+              borderBottom: `1px solid #F0D488`,
+              padding: '0.5rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.875rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <span style={{ fontSize: '0.675rem', fontWeight: 700, color: '#8A5B00', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
+              Demo-Modus
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#5B4200' }}>
+              Nur Demo. Keine echten Patientendaten.
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: 'auto' }}>
+              <button
+                data-action="create-demo-call"
+                onClick={() => void handleCreateDemoCall()}
+                disabled={demoCallCreating || demoResetting}
+                style={{
+                  fontSize: '0.775rem', fontWeight: 700, padding: '6px 14px', borderRadius: 7,
+                  border: 'none', background: ACCENT, color: '#ffffff',
+                  cursor: demoCallCreating || demoResetting ? 'not-allowed' : 'pointer',
+                  opacity: demoCallCreating || demoResetting ? 0.6 : 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {demoCallCreating ? 'Erstelle…' : 'Demo-Anruf erstellen'}
+              </button>
+              <button
+                data-action="reset-demo"
+                onClick={() => void handleResetDemo()}
+                disabled={demoCallCreating || demoResetting}
+                style={{
+                  fontSize: '0.775rem', fontWeight: 600, padding: '6px 14px', borderRadius: 7,
+                  border: `1px solid ${CARD_BORDER}`, background: '#ffffff', color: TEXT_MUTED,
+                  cursor: demoCallCreating || demoResetting ? 'not-allowed' : 'pointer',
+                  opacity: demoCallCreating || demoResetting ? 0.6 : 1,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {demoResetting ? 'Zurücksetzen…' : 'Demo zurücksetzen'}
+              </button>
+            </div>
+            {demoMessage && (
+              <span
+                data-demo-message
+                style={{
+                  fontSize: '0.75rem', fontWeight: 600, width: '100%',
+                  color: demoMessage.includes('nicht') ? DANGER : '#166534',
+                }}
+              >
+                {demoMessage}
+              </span>
+            )}
+          </div>
+
         <div className="pm-dash-grid">
 
           {/* ============================================================== */}
@@ -1221,6 +1331,7 @@ export default function DashboardPage() {
           </aside>
 
         </div>
+        </>
       )}
 
       {/* ================================================================== */}

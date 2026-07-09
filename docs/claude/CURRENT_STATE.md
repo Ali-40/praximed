@@ -2,6 +2,27 @@
 
 ## Completed and committed modules
 
+0. Module 158 — Sprint 21 / One-Click Demo Flow (commit: pending)
+   - `backend/app/api/routes/sales_demo.py` — new staging-only demo routes
+   - `backend/app/api/router.py` — sales_demo router registered
+   - `frontend/lib/api.ts` — createSalesDemoCall, resetSalesDemoData
+   - `frontend/app/dashboard/page.tsx` — Demo-Modus strip, handlers, state
+   - `backend/tests/test_one_click_demo_flow_sales_mvp_contract.py` — new, ≥15 tests
+   - `docs/product/ONE_CLICK_DEMO_FLOW.md` — product doc
+   - Staging-only endpoints: POST /demo/sales-mvp/create-call, POST /demo/sales-mvp/reset
+   - No real patient data. No PHI. No Vapi live call. Production PHI remains NO-GO.
+   - Acceptance: "Ali can open /dashboard, press 'Demo-Anruf erstellen', and within seconds show a Vienna receptionist a realistic callback request in the intake queue."
+
+00. Module 157 — Sprint 21 / Doctor-Facing Sales MVP Simplification (commit: f7baaf4)
+   - `frontend/app/dashboard/page.tsx` — simplified, German-first, tabbed, UUID-hidden
+   - `frontend/lib/api.ts` — updateAppointmentRequestStatus added
+   - `backend/tests/test_doctor_facing_sales_mvp_dashboard_contract.py` — new, 64 tests
+   - `docs/product/DOCTOR_FACING_SALES_MVP_SIMPLIFICATION.md` — product doc
+   - Heute summary, Anfragen/Patienten/Einstellungen tabs, Anfrage #N numbering
+   - Rückruf + Als kontaktiert markieren actions, no visible UUIDs
+   - All existing contract tests green. Frontend build clean.
+   - Acceptance: "Ali can walk into a Vienna clinic and in 5 minutes a receptionist understands the product without a single technical word being spoken."
+
 1. Module 1 — Secure clinic config loader
    - `backend/app/core/config_loader.py`
    - Secure tenant config loading
