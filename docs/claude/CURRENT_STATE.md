@@ -2,7 +2,18 @@
 
 ## Completed and committed modules
 
-0000000000000. Sprint 21 / Outreach — PraxisMed outreach copilot (commit: pending)
+00000000000000. Sprint 21 / Outreach — Start-here sales folder (commit: pending)
+   - `docs/sales/outreach/START_HERE/` — human-friendly daily sales folder; does not replace any existing files
+   - `1_START_HERE.md` — open this first; explains 3-file workflow in simple language
+   - `2_TODAY_CALL_LIST.xlsx` — prioritized call list from daily plan CSV; bold headers, freeze, filters, dropdowns for Status and Call Result, Call Order, Opening Line
+   - `3_EMAIL_DRAFTS.md` — copy/paste email drafts with prominent "do not mass-send" rule
+   - `4_MASTER_TRACKER.xlsx` — pointer file; explains why to use original tracker (no duplicate confusion)
+   - `5_AFTER_CALL_UPDATE_GUIDE.md` — field-by-field post-call update guide; Do not contact rule, no patient data
+   - `README_FOR_ALI.md` — 5-line actionable list: "stop coding, start calling"
+   - `backend/tests/test_start_here_outreach_folder_contract.py` — 46 contract tests
+   - 5949 total tests. Production PHI remains NO-GO.
+
+0000000000000. Sprint 21 / Outreach — PraxisMed outreach copilot (commit: 0a5e954)
    - `scripts/sales/praximed_outreach_copilot.py` — local copilot: reads 1,245 leads CSV, prioritizes, generates daily call plan + call list CSV + German email drafts + follow-up list + sales report; all output is manual-review-only, no auto-email, no auto-call
    - `docs/sales/outreach/daily_plans/` — daily output directory: plan.md, call_list.csv, email_drafts.md, followups.md, outreach_report.md, update_instructions.md
    - `docs/sales/outreach/RESPONSIBLE_OUTREACH_GUARDRAILS.md` — full guardrails: public contacts only, no patient data, no PHI, no auto-calling, no auto-email, no mass spam, opt-out rules
