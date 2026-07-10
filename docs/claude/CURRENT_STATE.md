@@ -2,6 +2,18 @@
 
 ## Completed and committed modules
 
+0000000000000. Sprint 21 / Outreach — PraxisMed outreach copilot (commit: pending)
+   - `scripts/sales/praximed_outreach_copilot.py` — local copilot: reads 1,245 leads CSV, prioritizes, generates daily call plan + call list CSV + German email drafts + follow-up list + sales report; all output is manual-review-only, no auto-email, no auto-call
+   - `docs/sales/outreach/daily_plans/` — daily output directory: plan.md, call_list.csv, email_drafts.md, followups.md, outreach_report.md, update_instructions.md
+   - `docs/sales/outreach/RESPONSIBLE_OUTREACH_GUARDRAILS.md` — full guardrails: public contacts only, no patient data, no PHI, no auto-calling, no auto-email, no mass spam, opt-out rules
+   - `backend/tests/test_praximed_outreach_copilot_contract.py` — 72 contract tests (functional + safety)
+   - CLI: --input, --output-dir, --daily-limit, --specialty, --tier, --mode (plan/drafts/followups/report)
+   - Lead scoring: Tier 1 > Tier 2 > Tier 3; phone > email > no contact; Vienna; priority score
+   - Excludes: Do not contact, Not interested, Demo booked
+   - Follow-up detection: Asked to send email, Follow-up needed, Email sent w/o reply, Call later, Demo offered not booked
+   - No SMTP. No Twilio. No Vapi. No auto-send. No auto-dial. No secrets.
+   - 5903 total tests. Production PHI remains NO-GO.
+
 000000000000. Sprint 21 / Outreach — Multi-specialty Praxisplan lead database builder (commit: 91fdf5e)
    - `scripts/sales/build_praxisplan_multi_specialty_leads.py` — multi-specialty builder: --all, --specialty KEY, --templates-only, --config; rate-limited, cross-specialty dedup, per-specialty XLSX+CSV, master combined workbook
    - `docs/sales/outreach/praxisplan_specialty_sources.json` — 15-specialty config with Praxisplan IDs, tiers, output slugs, notes on unavailable IDs (dental, group practices)
