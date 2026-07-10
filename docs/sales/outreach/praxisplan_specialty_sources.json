@@ -1,0 +1,152 @@
+[
+  {
+    "specialty_key": "child_adolescent_psychiatry",
+    "specialty_label_de": "Kinder- u. Jugendpsychiatrie u. Psychotherapeutische Medizin",
+    "specialty_label_en": "Child and adolescent psychiatry / psychotherapeutic medicine",
+    "tier": 1,
+    "praxisplan_spec_id": 71,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=71&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_child_psychiatry",
+    "notes": "Already scraped. 70 entries."
+  },
+  {
+    "specialty_key": "dermatology",
+    "specialty_label_de": "Haut- u. Geschlechtskrankheiten / Dermatologie",
+    "specialty_label_en": "Dermatology",
+    "tier": 1,
+    "praxisplan_spec_id": 6,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=6&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_dermatology",
+    "notes": "Haut- u. Geschlechtskrankheiten. ~298 entries."
+  },
+  {
+    "specialty_key": "gynecology",
+    "specialty_label_de": "Frauenheilkunde u. Geburtshilfe / Gynäkologie",
+    "specialty_label_en": "Gynecology",
+    "tier": 1,
+    "praxisplan_spec_id": 4,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=4&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_gynecology",
+    "notes": "Frauenheilkunde u. Geburtshilfe. ~432 entries."
+  },
+  {
+    "specialty_key": "orthopedics",
+    "specialty_label_de": "Orthopädie und Traumatologie",
+    "specialty_label_en": "Orthopedics",
+    "tier": 1,
+    "praxisplan_spec_id": 68,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=68&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_orthopedics",
+    "notes": "Orthopädie und Traumatologie. ~494 entries."
+  },
+  {
+    "specialty_key": "internal_medicine",
+    "specialty_label_de": "Innere Medizin",
+    "specialty_label_en": "Internal medicine",
+    "tier": 1,
+    "praxisplan_spec_id": 7,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=7&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_internal_medicine",
+    "notes": "Innere Medizin (broad). ~799 entries. Largest specialty group."
+  },
+  {
+    "specialty_key": "ent",
+    "specialty_label_de": "Hals-, Nasen- u. Ohrenheilkunde (HNO)",
+    "specialty_label_en": "ENT (ear, nose, throat)",
+    "tier": 2,
+    "praxisplan_spec_id": 5,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=5&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_ent",
+    "notes": "HNO. ~195 entries."
+  },
+  {
+    "specialty_key": "urology",
+    "specialty_label_de": "Urologie",
+    "specialty_label_en": "Urology",
+    "tier": 2,
+    "praxisplan_spec_id": 15,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=15&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_urology",
+    "notes": "Urologie. ~170 entries."
+  },
+  {
+    "specialty_key": "neurology",
+    "specialty_label_de": "Neurologie",
+    "specialty_label_en": "Neurology",
+    "tier": 2,
+    "praxisplan_spec_id": 49,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=49&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_neurology",
+    "notes": "Neurologie. ~227 entries."
+  },
+  {
+    "specialty_key": "ophthalmology",
+    "specialty_label_de": "Augenheilkunde u. Optometrie",
+    "specialty_label_en": "Ophthalmology",
+    "tier": 2,
+    "praxisplan_spec_id": 2,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=2&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_ophthalmology",
+    "notes": "Augenheilkunde u. Optometrie. ~299 entries."
+  },
+  {
+    "specialty_key": "pediatrics",
+    "specialty_label_de": "Kinder- u. Jugendheilkunde / Pädiatrie",
+    "specialty_label_en": "Pediatrics",
+    "tier": 2,
+    "praxisplan_spec_id": 8,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=8&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_pediatrics",
+    "notes": "Kinder- u. Jugendheilkunde. ~334 entries."
+  },
+  {
+    "specialty_key": "private_dental",
+    "specialty_label_de": "Zahnarzt privat / Zahnärzte",
+    "specialty_label_en": "Private dental clinics",
+    "tier": 3,
+    "praxisplan_spec_id": null,
+    "source_url": "",
+    "output_slug": "praxisplan_private_dental",
+    "notes": "Dentists are not listed on Praxisplan.at (separate Austrian dental chamber system). Paste a URL from a dental listing source (e.g. zahnarztsuche.at) to activate this specialty, or leave blank for template-only."
+  },
+  {
+    "specialty_key": "aesthetic_medicine",
+    "specialty_label_de": "Ästhetische Medizin / Plastische, Rekonstruktive u. Ästhetische Chirurgie",
+    "specialty_label_en": "Aesthetic medicine / plastic surgery",
+    "tier": 3,
+    "praxisplan_spec_id": 30,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=30&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_aesthetic_medicine",
+    "notes": "Plastische, Rekonstruktive u. Ästhetische Chirurgie. ~111 entries. Includes plastic and aesthetic surgery."
+  },
+  {
+    "specialty_key": "plastic_surgery",
+    "specialty_label_de": "Plastische u. Rekonstruktive Chirurgie",
+    "specialty_label_en": "Plastic surgery",
+    "tier": 3,
+    "praxisplan_spec_id": null,
+    "source_url": "",
+    "output_slug": "praxisplan_plastic_surgery",
+    "notes": "Covered by aesthetic_medicine (specialization=30). Kept separate here for tracking. Leave blank to avoid duplicate scraping — use aesthetic_medicine instead."
+  },
+  {
+    "specialty_key": "adult_psychiatry",
+    "specialty_label_de": "Psychiatrie u. Psychotherapeutische Medizin",
+    "specialty_label_en": "Adult psychiatry",
+    "tier": 3,
+    "praxisplan_spec_id": 52,
+    "source_url": "https://www.praxisplan.at/suche?name=&specialization=52&zip=&gender=&diploma=&specialty=&insurance=&vaccine=&locale=",
+    "output_slug": "praxisplan_adult_psychiatry",
+    "notes": "Psychiatrie u. Psychotherapeutische Medizin. ~477 entries."
+  },
+  {
+    "specialty_key": "private_group_practices",
+    "specialty_label_de": "Privatpraxis / Gruppenpraxis",
+    "specialty_label_en": "Private group practices",
+    "tier": 3,
+    "praxisplan_spec_id": null,
+    "source_url": "",
+    "output_slug": "praxisplan_private_group_practices",
+    "notes": "Praxisplan does not filter by practice type (Gruppenpraxis). To activate: paste a Praxisplan search URL for a relevant specialty filtered by Niedergelassene Ärzte only, or search for group practice listings manually and import via Mode B (--input-html)."
+  }
+]

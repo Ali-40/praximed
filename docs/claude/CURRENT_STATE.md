@@ -2,7 +2,19 @@
 
 ## Completed and committed modules
 
-00000000000. Sprint 21 / Outreach — Praxisplan lead database builder (commit: pending)
+000000000000. Sprint 21 / Outreach — Multi-specialty Praxisplan lead database builder (commit: pending)
+   - `scripts/sales/build_praxisplan_multi_specialty_leads.py` — multi-specialty builder: --all, --specialty KEY, --templates-only, --config; rate-limited, cross-specialty dedup, per-specialty XLSX+CSV, master combined workbook
+   - `docs/sales/outreach/praxisplan_specialty_sources.json` — 15-specialty config with Praxisplan IDs, tiers, output slugs, notes on unavailable IDs (dental, group practices)
+   - `docs/sales/outreach/praxisplan_all_high_potential_leads.xlsx` — master workbook: All Leads sheet + 15 per-specialty sheets + Summary
+   - `docs/sales/outreach/praxisplan_all_high_potential_leads.csv` — master leads as flat CSV
+   - `docs/sales/outreach/praxisplan_{specialty}_leads.xlsx/csv` — 15 per-specialty files
+   - `docs/sales/outreach/MULTI_SPECIALTY_OUTREACH_DATABASE_README.md` — specialty map, rebuild instructions, responsible outreach rules
+   - `backend/tests/test_multi_specialty_praxisplan_outreach_database_contract.py` — 92 contract tests
+   - Specialization IDs discovered: Dermatology=6, Gynecology=4, Orthopedics=68, InternalMed=7, ENT=5, Urology=15, Neurology=49, Ophthalmology=2, Pediatrics=8, Aesthetic=30, AdultPsych=52
+   - Public contacts only. No private data. No patient data. No PHI. No auto-email. No auto-call.
+   - 5831 total tests. Production PHI remains NO-GO.
+
+00000000000. Sprint 21 / Outreach — Praxisplan lead database builder (commit: e551fcf)
    - `scripts/sales/build_praxisplan_lead_database.py` — scraper/builder: live fetch (Mode A), local HTML fallback (Mode B), template-only mode; rate-limited (1.5–2.5s), deduplication, priority scoring, XLSX + CSV export with dropdowns
    - `docs/sales/outreach/praxisplan_child_psychiatry_leads.xlsx` — 70 real public listings, Kinder- u. Jugendpsychiatrie, 64 with phone
    - `docs/sales/outreach/praxisplan_child_psychiatry_leads.csv` — same data as CSV
