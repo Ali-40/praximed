@@ -2,7 +2,19 @@
 
 ## Completed and committed modules
 
-00000000000000. Sprint 21 / Outreach — Start-here sales folder (commit: pending)
+000000000000000. Sprint 21 / Outreach — Ali-ready command center (commit: pending)
+   - `docs/sales/outreach/START_HERE_FOR_ALI/` — polished sales ops folder for Ali; does not touch existing files
+   - `OUTREACH_COMMAND_CENTER.xlsx` — 8-sheet command center: START HERE, Monday Calls (12 leads, dropdowns, scripts), Sunday Emails (25 drafts, LATIDO note, warning banner), Follow Ups, Master Leads (1245 rows, readable columns), Call Script, Email Templates, Stats (COUNTIF formulas); navy/teal colour scheme, frozen headers, autofilter, alt row fill
+   - `1_MONDAY_CALLS.xlsx` — standalone Monday call list; same formatting as main workbook sheet
+   - `2_SUNDAY_EMAILS.xlsx` — standalone Sunday email drafts; "do not mass-send" warning banner
+   - `3_MASTER_TRACKER.xlsx` — clean rebuild of full 1,245-lead tracker with 23 readable columns
+   - `0_READ_ME_FIRST.md` — Sat/Sun/Mon schedule; do not use raw CSV; manual-only rules
+   - `4_CALL_SCRIPT_PRINTABLE.md` — print-ready German phone scripts: opening, LATIDO, send email, no interest, price, calendar, medical advice answers; Do not contact rule
+   - `5_EMAIL_TEMPLATES_PRINTABLE.md` — print-ready email body, short contact form version, subject options, LATIDO note; no mass-send rule
+   - `backend/tests/test_ali_ready_outreach_command_center_contract.py` — 76 contract tests
+   - No auto-email. No auto-call. No patient data. No PHI. No secrets. 6025 total tests.
+
+00000000000000. Sprint 21 / Outreach — Start-here sales folder (commit: 89b1fed)
    - `docs/sales/outreach/START_HERE/` — human-friendly daily sales folder; does not replace any existing files
    - `1_START_HERE.md` — open this first; explains 3-file workflow in simple language
    - `2_TODAY_CALL_LIST.xlsx` — prioritized call list from daily plan CSV; bold headers, freeze, filters, dropdowns for Status and Call Result, Call Order, Opening Line
