@@ -2,7 +2,7 @@
 
 ## Completed and committed modules
 
-000000000000. Sprint 21 / Outreach — Multi-specialty Praxisplan lead database builder (commit: pending)
+000000000000. Sprint 21 / Outreach — Multi-specialty Praxisplan lead database builder (commit: 91fdf5e)
    - `scripts/sales/build_praxisplan_multi_specialty_leads.py` — multi-specialty builder: --all, --specialty KEY, --templates-only, --config; rate-limited, cross-specialty dedup, per-specialty XLSX+CSV, master combined workbook
    - `docs/sales/outreach/praxisplan_specialty_sources.json` — 15-specialty config with Praxisplan IDs, tiers, output slugs, notes on unavailable IDs (dental, group practices)
    - `docs/sales/outreach/praxisplan_all_high_potential_leads.xlsx` — master workbook: All Leads sheet + 15 per-specialty sheets + Summary
