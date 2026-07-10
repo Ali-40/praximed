@@ -2,7 +2,19 @@
 
 ## Completed and committed modules
 
-0000000000. Module 163A — Sprint 21 / Fix Clinic Dashboard Language Switch (commit: pending)
+00000000000. Sprint 21 / Outreach — Praxisplan lead database builder (commit: pending)
+   - `scripts/sales/build_praxisplan_lead_database.py` — scraper/builder: live fetch (Mode A), local HTML fallback (Mode B), template-only mode; rate-limited (1.5–2.5s), deduplication, priority scoring, XLSX + CSV export with dropdowns
+   - `docs/sales/outreach/praxisplan_child_psychiatry_leads.xlsx` — 70 real public listings, Kinder- u. Jugendpsychiatrie, 64 with phone
+   - `docs/sales/outreach/praxisplan_child_psychiatry_leads.csv` — same data as CSV
+   - `docs/sales/outreach/praxisplan_child_psychiatry_leads_template.xlsx` — empty template with 5 fake example rows, full dropdowns
+   - `docs/sales/outreach/praxisplan_child_psychiatry_leads_template.csv` — same template as CSV
+   - `docs/sales/outreach/praxisplan_child_psychiatry_leads_README.md` — responsible outreach rules, column guide, rebuild instructions
+   - `backend/tests/test_praxisplan_outreach_database_builder_contract.py` — 67 contract tests
+   - Public contacts only. No private data. No patient data. No PHI. No auto-email. No auto-call. No mass spam.
+   - Source: praxisplan.at specialization=71 (Kinder- u. Jugendpsychiatrie u. Psychotherapeutische Medizin)
+   - 5739 total tests. Production PHI remains NO-GO.
+
+0000000000. Module 163A — Sprint 21 / Fix Clinic Dashboard Language Switch (commit: 0bfee17)
    - `frontend/app/dashboard/page.tsx` — full live switch: `getStatusLabel(status, lang)` replaces `getGermanStatusLabel`; `getReadableRequestNumber(index, lang)`; TRANSLATIONS expanded to ~44 keys; all JSX call sites updated; backward-compat alias `getGermanStatusLabel` preserved
    - `backend/tests/test_clinic_dashboard_language_switch_contract.py` — expanded to 72 contract tests (16 new 163A assertions)
    - `docs/product/CLINIC_DASHBOARD_LANGUAGE_SWITCH.md` — 163A hotfix section added
