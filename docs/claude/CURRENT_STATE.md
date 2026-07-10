@@ -2,7 +2,19 @@
 
 ## Completed and committed modules
 
-000000000000000. Sprint 21 / Outreach — Ali-ready command center (commit: pending)
+0000000000000000. Sprint 21 / Outreach — 50-call command center and professional sender pack (commit: pending)
+   - `scripts/sales/build_50call_command_center.py` — new builder: selects 50 call targets (specialty mix: 15 psychiatry, 10 dermatology, 10 gynecology, 7 orthopedics, 5 internal medicine, 3 ENT/neurology/urology), 50 email candidates, generates 10-sheet workbook + standalone files + markdown
+   - `OUTREACH_COMMAND_CENTER.xlsx` — upgraded to 10 sheets: START HERE, Monday Calls (50 leads, banner, dropdowns), Sunday Emails (50 drafts, Alex/PraxisMed Team branding), Sender Identity (NEW), Weekly Plan (NEW: Sat–Thu schedule), Follow Ups, Master Leads, Call Script, Email Templates, Stats (target=50 COUNTIF formulas)
+   - `1_MONDAY_CALLS.xlsx` — standalone 50-call list with banner "MONDAY TARGET: 50 calls"
+   - `2_SUNDAY_EMAILS.xlsx` — standalone 50-candidate email list with Alex email drafts
+   - `0_READ_ME_FIRST.md` — updated Sat/Sun/Mon guide
+   - `4_CALL_SCRIPT_PRINTABLE.md` — updated with Alex wording section
+   - `5_EMAIL_TEMPLATES_PRINTABLE.md` — both Version A (Alex/PraxisMed Team) and Version B (Ali Abdeltawab transparent)
+   - Sender Identity: "Alex, PraxisMed" is communication alias for Ali Abdeltawab — NOT fake; Ali can explain; Gmail setup included
+   - `backend/tests/test_ali_ready_outreach_command_center_contract.py` — upgraded to 102 tests (added: 50-row counts, Sender Identity, Weekly Plan, Alex branding, Stats target)
+   - No auto-email. No auto-call. No patient data. No PHI. No secrets. 6051 total tests.
+
+000000000000000. Sprint 21 / Outreach — Ali-ready command center (commit: c537ab7)
    - `docs/sales/outreach/START_HERE_FOR_ALI/` — polished sales ops folder for Ali; does not touch existing files
    - `OUTREACH_COMMAND_CENTER.xlsx` — 8-sheet command center: START HERE, Monday Calls (12 leads, dropdowns, scripts), Sunday Emails (25 drafts, LATIDO note, warning banner), Follow Ups, Master Leads (1245 rows, readable columns), Call Script, Email Templates, Stats (COUNTIF formulas); navy/teal colour scheme, frozen headers, autofilter, alt row fill
    - `1_MONDAY_CALLS.xlsx` — standalone Monday call list; same formatting as main workbook sheet
@@ -12,7 +24,7 @@
    - `4_CALL_SCRIPT_PRINTABLE.md` — print-ready German phone scripts: opening, LATIDO, send email, no interest, price, calendar, medical advice answers; Do not contact rule
    - `5_EMAIL_TEMPLATES_PRINTABLE.md` — print-ready email body, short contact form version, subject options, LATIDO note; no mass-send rule
    - `backend/tests/test_ali_ready_outreach_command_center_contract.py` — 76 contract tests
-   - No auto-email. No auto-call. No patient data. No PHI. No secrets. 6025 total tests.
+   - No auto-email. No auto-call. No patient data. No PHI. No secrets.
 
 00000000000000. Sprint 21 / Outreach — Start-here sales folder (commit: 89b1fed)
    - `docs/sales/outreach/START_HERE/` — human-friendly daily sales folder; does not replace any existing files

@@ -68,6 +68,13 @@ Ihr Team bleibt immer in Kontrolle.
 
 ---
 
+## Wenn: Wer ist Alex?
+
+Mein Name ist Ali Abdeltawab — ich verwende für Praxiskontakte auch den Namen Alex.
+Falls Sie eine E-Mail von Alex, PraxisMed erhalten haben, war das ich.
+
+---
+
 ## Nach jedem Anruf sofort eintragen
 
 - Outreach Status

@@ -1,9 +1,11 @@
 """
 Static contract tests for the Ali-ready Outreach Command Center.
 
-Sprint 21 / Outreach — Ali-ready command center.
+Sprint 21 / Outreach — 50-call command center and professional sender pack.
 
-Verifies file existence, workbook structure, column presence, and safety rules.
+Verifies file existence, workbook structure (10 sheets), 50-row counts,
+Sender Identity content, Weekly Plan content, Alex/PraxisMed branding,
+column presence, and safety rules.
 No database. No network. No secrets. No patient data. No PHI.
 """
 
@@ -124,6 +126,22 @@ def test_command_center_has_stats_sheet() -> None:
     assert "Stats" in wb.sheetnames, "Workbook must have 'Stats' sheet"
 
 
+def test_command_center_has_sender_identity_sheet() -> None:
+    wb = _wb(_CMD_CTR)
+    assert "Sender Identity" in wb.sheetnames, "Workbook must have 'Sender Identity' sheet"
+
+
+def test_command_center_has_weekly_plan_sheet() -> None:
+    wb = _wb(_CMD_CTR)
+    assert "Weekly Plan" in wb.sheetnames, "Workbook must have 'Weekly Plan' sheet"
+
+
+def test_command_center_has_ten_sheets() -> None:
+    wb = _wb(_CMD_CTR)
+    assert len(wb.sheetnames) >= 10, \
+        f"Workbook must have at least 10 sheets, got {len(wb.sheetnames)}"
+
+
 # ---------------------------------------------------------------------------
 # 3. Monday Calls columns
 # ---------------------------------------------------------------------------
@@ -131,7 +149,8 @@ def test_command_center_has_stats_sheet() -> None:
 def _call_headers(from_file=_CMD_CTR):
     wb = _wb(from_file)
     sheet_name = "Monday Calls" if "Monday Calls" in wb.sheetnames else wb.sheetnames[0]
-    return _sheet_headers(wb, sheet_name, header_row=1)
+    # row 1 = banner, headers in row 2
+    return _sheet_headers(wb, sheet_name, header_row=2)
 
 
 def test_monday_calls_has_doctor_name() -> None:
@@ -198,6 +217,28 @@ def test_monday_calls_has_data_rows() -> None:
     assert len(data) >= 1, "Monday Calls must have at least one data row"
 
 
+def test_monday_calls_has_50_rows() -> None:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Monday Calls"]
+    # row 1 = banner, row 2 = header, data starts row 3
+    data = [r for r in ws.iter_rows(min_row=3, values_only=True) if any(c for c in r)]
+    assert len(data) >= 50, \
+        f"Monday Calls must have at least 50 data rows, got {len(data)}"
+
+
+def test_monday_calls_call_order_goes_to_50() -> None:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Monday Calls"]
+    orders = []
+    for r in ws.iter_rows(min_row=3, values_only=True):
+        if r[0] is not None:
+            try:
+                orders.append(int(r[0]))
+            except (TypeError, ValueError):
+                pass
+    assert 50 in orders, "Monday Calls must include Call Order 50"
+
+
 def test_monday_calls_frozen_header() -> None:
     wb = _wb(_CMD_CTR)
     ws = wb["Monday Calls"]
@@ -262,6 +303,28 @@ def test_sunday_emails_has_data_rows() -> None:
     ws = wb["Sunday Emails"]
     data = [r for r in ws.iter_rows(min_row=3, values_only=True) if any(c for c in r)]
     assert len(data) >= 1, "Sunday Emails must have at least one data row"
+
+
+def test_sunday_emails_has_50_rows() -> None:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Sunday Emails"]
+    # row 1 = banner, row 2 = header, data starts row 3
+    data = [r for r in ws.iter_rows(min_row=3, values_only=True) if any(c for c in r)]
+    assert len(data) >= 50, \
+        f"Sunday Emails must have at least 50 data rows, got {len(data)}"
+
+
+def test_sunday_emails_email_order_goes_to_50() -> None:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Sunday Emails"]
+    orders = []
+    for r in ws.iter_rows(min_row=3, values_only=True):
+        if r[0] is not None:
+            try:
+                orders.append(int(r[0]))
+            except (TypeError, ValueError):
+                pass
+    assert 50 in orders, "Sunday Emails must include Email Order 50"
 
 
 def test_sunday_emails_warning_banner_present() -> None:
@@ -517,3 +580,162 @@ def test_call_script_has_content() -> None:
 
 def test_email_templates_has_content() -> None:
     assert len(_read(_EMAIL_TPL)) > 400, "5_EMAIL_TEMPLATES_PRINTABLE.md must have substantive content"
+
+
+# ---------------------------------------------------------------------------
+# 11. Sender Identity sheet
+# ---------------------------------------------------------------------------
+
+def _sender_identity_text() -> str:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Sender Identity"]
+    parts = []
+    for row in ws.iter_rows(values_only=True):
+        for cell in row:
+            if cell:
+                parts.append(str(cell))
+    return " ".join(parts)
+
+
+def test_sender_identity_has_alex_name() -> None:
+    text = _sender_identity_text().lower()
+    assert "alex" in text, "Sender Identity must mention 'Alex'"
+
+
+def test_sender_identity_has_praxismed_team() -> None:
+    text = _sender_identity_text()
+    assert "PraxisMed" in text, "Sender Identity must mention 'PraxisMed'"
+
+
+def test_sender_identity_has_ali_abdeltawab() -> None:
+    text = _sender_identity_text()
+    assert "Ali Abdeltawab" in text or "ali abdeltawab" in text.lower(), \
+        "Sender Identity must include Ali Abdeltawab's real name"
+
+
+def test_sender_identity_not_fake_person() -> None:
+    text = _sender_identity_text().lower()
+    assert "fake" not in text or "not a fake" in text or "not fake" in text, \
+        "Sender Identity must not claim a fake person — it must clarify this is an alias"
+
+
+def test_sender_identity_has_transparency_note() -> None:
+    text = _sender_identity_text().lower()
+    assert "explain" in text or "asked" in text or "vollständig" in text or "transparent" in text, \
+        "Sender Identity must include a transparency note about the alias"
+
+
+def test_sender_identity_has_gmail_setup() -> None:
+    text = _sender_identity_text().lower()
+    assert "gmail" in text or "settings" in text or "einstellungen" in text, \
+        "Sender Identity must include Gmail setup instructions"
+
+
+# ---------------------------------------------------------------------------
+# 12. Weekly Plan sheet
+# ---------------------------------------------------------------------------
+
+def _weekly_plan_text() -> str:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Weekly Plan"]
+    parts = []
+    for row in ws.iter_rows(values_only=True):
+        for cell in row:
+            if cell:
+                parts.append(str(cell))
+    return " ".join(parts)
+
+
+def test_weekly_plan_has_saturday() -> None:
+    text = _weekly_plan_text().lower()
+    assert "samstag" in text or "saturday" in text, \
+        "Weekly Plan must include Saturday"
+
+
+def test_weekly_plan_has_sunday() -> None:
+    text = _weekly_plan_text().lower()
+    assert "sonntag" in text or "sunday" in text, \
+        "Weekly Plan must include Sunday"
+
+
+def test_weekly_plan_has_monday() -> None:
+    text = _weekly_plan_text().lower()
+    assert "montag" in text or "monday" in text, \
+        "Weekly Plan must include Monday"
+
+
+def test_weekly_plan_has_50_call_target() -> None:
+    text = _weekly_plan_text()
+    assert "50" in text, "Weekly Plan must reference 50 (call target)"
+
+
+def test_weekly_plan_no_auto_send() -> None:
+    text = _weekly_plan_text().lower()
+    assert "auto-send" not in text or "kein auto-send" in text or "no auto" in text, \
+        "Weekly Plan must not promote auto-send"
+
+
+# ---------------------------------------------------------------------------
+# 13. Alex / PraxisMed Team branding in templates
+# ---------------------------------------------------------------------------
+
+def test_email_templates_has_alex_version() -> None:
+    content = _read(_EMAIL_TPL)
+    assert "Alex" in content, "Email templates must include Alex sender version"
+
+
+def test_email_templates_has_ali_abdeltawab_version() -> None:
+    content = _read(_EMAIL_TPL)
+    assert "Ali Abdeltawab" in content, \
+        "Email templates must include transparent Ali Abdeltawab version"
+
+
+def test_email_templates_two_versions_labeled() -> None:
+    content = _read(_EMAIL_TPL)
+    assert ("Version A" in content or "VERSION A" in content) and \
+           ("Version B" in content or "VERSION B" in content), \
+        "Email templates must have Version A and Version B clearly labeled"
+
+
+def test_email_templates_alex_not_fake() -> None:
+    content = _read(_EMAIL_TPL).lower()
+    assert "alias" in content or "communication" in content or "vollständig" in content or "explain" in content, \
+        "Email templates must clarify Alex is an alias, not a fake identity"
+
+
+def test_call_script_has_alex_wording() -> None:
+    content = _read(_CALL_SCPT)
+    assert "Alex" in content, "Call script must include Alex wording/explanation"
+
+
+# ---------------------------------------------------------------------------
+# 14. Stats target = 50
+# ---------------------------------------------------------------------------
+
+def test_stats_sheet_references_50() -> None:
+    wb = _wb(_CMD_CTR)
+    ws = wb["Stats"]
+    vals = []
+    for row in ws.iter_rows(values_only=True):
+        for cell in row:
+            if cell is not None:
+                vals.append(str(cell))
+    text = " ".join(vals)
+    assert "50" in text, "Stats sheet must reference target of 50"
+
+
+def test_standalone_monday_has_50_rows() -> None:
+    wb = _wb(_MON_CALLS)
+    ws = wb.active
+    # row 1 = banner, row 2 = header, data from row 3
+    data = [r for r in ws.iter_rows(min_row=3, values_only=True) if any(c for c in r)]
+    assert len(data) >= 50, \
+        f"1_MONDAY_CALLS.xlsx must have at least 50 data rows, got {len(data)}"
+
+
+def test_standalone_sunday_has_50_rows() -> None:
+    wb = _wb(_SUN_EMAIL)
+    ws = wb.active
+    data = [r for r in ws.iter_rows(min_row=3, values_only=True) if any(c for c in r)]
+    assert len(data) >= 50, \
+        f"2_SUNDAY_EMAILS.xlsx must have at least 50 data rows, got {len(data)}"

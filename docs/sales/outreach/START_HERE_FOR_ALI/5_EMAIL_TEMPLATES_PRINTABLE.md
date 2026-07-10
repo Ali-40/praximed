@@ -16,17 +16,17 @@ No automated sending. No bulk sending.
 
 ---
 
-## Main email body
+## Version A — Alex / PraxisMed Team (Empfohlen für Erstkontakt)
 
 ```
 Guten Tag,
 
-mein Name ist Ali Abdeltawab. Ich baue PraxisMed, eine einfache
-KI-Rezeption für Wiener Privatpraxen.
+mein Name ist Alex von PraxisMed.
 
-PraxisMed ersetzt kein bestehendes Praxissystem wie LATIDO oder Ihren
-Kalender. Es hilft davor: Anrufe und Rückruf-Anfragen werden sauber
-aufgenommen und für Ihr Praxisteam übersichtlich sortiert.
+PraxisMed ist eine einfache KI-Rezeption für Wiener Privatpraxen.
+Es ersetzt kein bestehendes Praxissystem wie LATIDO oder Ihren Kalender.
+Es hilft davor: Anrufe und Rückruf-Anfragen werden sauber aufgenommen
+und für Ihr Praxisteam übersichtlich sortiert.
 
 Die KI bestätigt keine Termine, stellt keine Diagnosen und gibt keine
 medizinische Beratung. Ihr Team bleibt immer in Kontrolle.
@@ -34,7 +34,34 @@ medizinische Beratung. Ihr Team bleibt immer in Kontrolle.
 Darf ich Ihnen eine kurze 5-Minuten-Demo zeigen?
 
 Mit freundlichen Grüßen
-Ali Abdeltawab
+Alex
+PraxisMed
+```
+
+---
+
+## Version B — Transparente Identität (Ali "Alex" Abdeltawab)
+
+Use this version when full transparency is preferred, or when asked for your full name.
+
+```
+Guten Tag,
+
+mein Name ist Ali Abdeltawab — ich verwende für Praxiskontakte auch
+den Namen Alex, falls das einfacher ist.
+
+Ich baue PraxisMed, eine einfache KI-Rezeption für Wiener Privatpraxen.
+PraxisMed ersetzt kein bestehendes Praxissystem wie LATIDO oder Ihren Kalender.
+Es hilft davor: Anrufe und Rückruf-Anfragen werden sauber aufgenommen
+und für Ihr Praxisteam übersichtlich sortiert.
+
+Die KI bestätigt keine Termine, stellt keine Diagnosen und gibt keine
+medizinische Beratung. Ihr Team bleibt immer in Kontrolle.
+
+Darf ich Ihnen eine kurze 5-Minuten-Demo zeigen?
+
+Mit freundlichen Grüßen
+Ali Abdeltawab (Alex)
 PraxisMed
 ```
 
@@ -43,11 +70,11 @@ PraxisMed
 ## Short version (for contact forms)
 
 ```
-Guten Tag, ich bin Ali Abdeltawab und baue PraxisMed, eine einfache
-KI-Rezeption für Wiener Privatpraxen. PraxisMed ersetzt LATIDO oder
-bestehende Systeme nicht, sondern organisiert Anrufe und Rückruf-Anfragen
-für Ihr Praxisteam. Die KI bestätigt keine Termine und gibt keine
-medizinische Beratung. Darf ich Ihnen eine kurze 5-Minuten-Demo zeigen?
+Guten Tag, ich bin Alex von PraxisMed, einer einfachen KI-Rezeption
+für Wiener Privatpraxen. PraxisMed ersetzt LATIDO oder bestehende Systeme nicht,
+sondern organisiert Anrufe und Rückruf-Anfragen für Ihr Praxisteam.
+Die KI bestätigt keine Termine und gibt keine medizinische Beratung.
+Darf ich Ihnen eine kurze 5-Minuten-Demo zeigen?
 ```
 
 ---
@@ -60,6 +87,15 @@ PraxisMed ersetzt das nicht. Es hilft davor: Rückrufwünsche und
 Telefonanfragen werden sauber aufgenommen, Ihr Team trägt bestätigte
 Termine wie gewohnt ins System ein.
 ```
+
+---
+
+## Who is Alex? (if asked)
+
+Alex is the outreach name Ali Abdeltawab uses for easier communication.
+If a clinic asks, Ali explains:
+"Mein vollständiger Name ist Ali Abdeltawab — ich verwende für Praxiskontakte auch Alex."
+This is not a fake identity. Legal name is never hidden.
 
 ---
 
