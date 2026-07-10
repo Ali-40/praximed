@@ -2,7 +2,7 @@
 
 ## Completed and committed modules
 
-0000000000000000. Sprint 21 / Outreach — 50-call command center and professional sender pack (commit: pending)
+0000000000000000. Sprint 21 / Outreach — 50-call command center and professional sender pack (commit: 1b65761)
    - `scripts/sales/build_50call_command_center.py` — new builder: selects 50 call targets (specialty mix: 15 psychiatry, 10 dermatology, 10 gynecology, 7 orthopedics, 5 internal medicine, 3 ENT/neurology/urology), 50 email candidates, generates 10-sheet workbook + standalone files + markdown
    - `OUTREACH_COMMAND_CENTER.xlsx` — upgraded to 10 sheets: START HERE, Monday Calls (50 leads, banner, dropdowns), Sunday Emails (50 drafts, Alex/PraxisMed Team branding), Sender Identity (NEW), Weekly Plan (NEW: Sat–Thu schedule), Follow Ups, Master Leads, Call Script, Email Templates, Stats (target=50 COUNTIF formulas)
    - `1_MONDAY_CALLS.xlsx` — standalone 50-call list with banner "MONDAY TARGET: 50 calls"
