@@ -1,0 +1,181 @@
+{
+  "name": "Ali Abdeltawab",
+  "email": "aliabdeltawab90@gmail.com",
+  "phone": "+43 681 20454784",
+  "location": "Vienna, Austria",
+  "github": "https://github.com/Ali-40",
+  "linkedin": "https://www.linkedin.com/in/ali-abdeltawab-bsc-905b7b217/",
+  "education": [
+    {
+      "degree": "BSc Artificial Intelligence",
+      "school": "Johannes Kepler University Linz",
+      "years": "2023–2026",
+      "status": "completed"
+    },
+    {
+      "degree": "MSc Software Engineering",
+      "school": "TU Wien",
+      "years": "Starting October 2026",
+      "status": "accepted — starting Oct 2026 alongside full-time work"
+    },
+    {
+      "degree": "BSc Computers and Artificial Intelligence",
+      "school": "Helwan University, Cairo",
+      "years": "2021–2023",
+      "status": "completed"
+    }
+  ],
+  "experience": [
+    {
+      "title": "Store Associate",
+      "company": "Hofer KG",
+      "location": "Vienna",
+      "dates": "07/2025–Present",
+      "duration_months": 12
+    },
+    {
+      "title": "Warehouse Associate",
+      "company": "JD Sports",
+      "location": "Vienna",
+      "dates": "06/2024–12/2024"
+    }
+  ],
+  "skills": [
+    "Python",
+    "SQL",
+    "pandas",
+    "NumPy",
+    "scikit-learn",
+    "PyTorch",
+    "FastAPI",
+    "Docker",
+    "Git",
+    "Streamlit",
+    "Power BI",
+    "Excel",
+    "Machine Learning",
+    "Data Science",
+    "MLOps",
+    "Time Series Forecasting",
+    "Anomaly Detection",
+    "Recommender Systems",
+    "NLP",
+    "Computer Vision",
+    "R",
+    "MATLAB",
+    "Next.js",
+    "PostgreSQL",
+    "Plotly",
+    "Matplotlib",
+    "Statistical Analysis",
+    "Feature Engineering"
+  ],
+  "projects": [
+    {
+      "name": "PraxisMed",
+      "stack": [
+        "FastAPI",
+        "Next.js",
+        "PostgreSQL",
+        "Vapi",
+        "Docker",
+        "Railway",
+        "Vercel",
+        "Python"
+      ],
+      "summary": "Multi-tenant AI receptionist and clinic workflow platform. Human-in-the-loop, 5,000+ automated tests.",
+      "roles": [
+        "AI Engineer",
+        "Software Engineer",
+        "MLOps",
+        "Full-stack AI",
+        "Startup"
+      ]
+    },
+    {
+      "name": "Cloud Demand Forecasting & Anomaly Detection",
+      "stack": [
+        "Python",
+        "pandas",
+        "scikit-learn",
+        "FastAPI",
+        "Streamlit",
+        "Docker"
+      ],
+      "summary": "End-to-end MLOps pipeline: M5 forecasting, FastAPI /forecast and /anomalies API, Streamlit dashboard, Docker Compose.",
+      "roles": [
+        "ML Engineer",
+        "Data Scientist",
+        "MLOps",
+        "Forecasting",
+        "Time Series"
+      ]
+    },
+    {
+      "name": "Human Development Analysis & Visualization",
+      "stack": [
+        "Python",
+        "pandas",
+        "Plotly",
+        "Power BI"
+      ],
+      "summary": "UNDP HDI dataset analysis for 190+ countries. Dashboards with Python and Power BI.",
+      "roles": [
+        "Data Analyst",
+        "BI Analyst",
+        "Analytics"
+      ]
+    },
+    {
+      "name": "Recommender Systems",
+      "stack": [
+        "Python",
+        "scikit-learn"
+      ],
+      "summary": "Collaborative filtering and hybrid recommender systems. Precision/Recall/F1 evaluation.",
+      "roles": [
+        "ML Engineer",
+        "Personalization",
+        "E-commerce"
+      ]
+    }
+  ],
+  "languages": {
+    "English": "Native/Fluent",
+    "Arabic": "Native",
+    "German": "B1/B1+"
+  },
+  "target_roles": [
+    "Junior Data Scientist",
+    "Data Analyst",
+    "Junior Machine Learning Engineer",
+    "Machine Learning Intern",
+    "AI Engineer Intern",
+    "MLOps Intern",
+    "Junior MLOps Engineer",
+    "Python Data Engineer Intern",
+    "BI Analyst",
+    "Analytics Engineer Junior",
+    "Risk Modelling Intern",
+    "Junior Quantitative Analyst",
+    "Software Engineering Intern"
+  ],
+  "target_locations": [
+    "Vienna",
+    "Wien",
+    "Austria",
+    "Österreich",
+    "Remote"
+  ],
+  "priority_work_type": "Full-time",
+  "open_to": [
+    "Full-time",
+    "Internship",
+    "Working Student"
+  ],
+  "cv_versions": {
+    "en": "career/cv/Ali_Abdeltawab_CV_EN_ATS.md",
+    "de": "career/cv/Ali_Abdeltawab_CV_DE_ATS.md"
+  },
+  "notes": "Full-time is highest priority for Rot-Weiß-Rot (RWR) permit pathway. TU Wien MSc Software Engineering accepted Oct 2026 — present as alongside work. No JKU MSc Statistics and Data Science — removed. Hofer KG: 1+ year, shows discipline alongside studies."
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "job_id": "JOB-0001",
+    "company": "Example Company",
+    "job_title": "Junior Data Scientist",
+    "job_url": "https://karriere.at/example-job",
+    "date_found": "2026-07-12",
+    "source": "manual_saved_link",
+    "location": "",
+    "description": "",
+    "required_skills": "",
+    "tech_stack": "",
+    "notes": "Manual search result",
+    "application_status": "Draft ready",
+    "fit_score": 19,
+    "fit_reason": "role_match(+4) | junior_friendly(+15)",
+    "language_detected": "English"
+  }
+]

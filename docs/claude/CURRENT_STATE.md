@@ -2,6 +2,28 @@
 
 ## Completed and committed modules
 
+00000000000000000. Sprint 21 / Career — Job application copilot and profile refresh (commit: pending)
+   - `career/` — complete job application command center folder; does not touch existing PraxisMed product files
+   - `career/cv/Ali_Abdeltawab_CV_EN_ATS.md` — ATS-friendly English CV: new headline, PraxisMed project, Cloud Forecasting, JKU BSc AI, TU Wien MSc SE accepted Oct 2026, Hofer 1+ year; old JKU MSc Statistics/Data Science removed; B1/B1+ German
+   - `career/cv/Ali_Abdeltawab_CV_DE_ATS.md` — ATS-friendly German CV: same changes, German throughout, includes Hobbys
+   - `career/linkedin/LINKEDIN_PROFILE_REWRITE.md` — full LinkedIn rewrite: 3 headline options (Option A recommended), About section, experience entries, projects (PraxisMed, Forecasting, HDI, Recommenders), skills top 30, Open to Work settings
+   - `career/linkedin/LINKEDIN_UPDATE_STEP_BY_STEP.md` — 11-step LinkedIn update guide: update headline, remove old MSc, add TU Wien, add projects, add skills, add GitHub, enable Open to Work
+   - `career/github/GITHUB_PROFILE_README.md` — GitHub profile README for repo Ali-40
+   - `career/github/PROJECT_DESCRIPTIONS_FOR_RECRUITERS.md` — tailored project descriptions for each role type (AI Eng, ML Eng, Data Analyst, MLOps, startup); PraxisMed, Forecasting, HDI, Recommenders
+   - `career/github/REPO_SELECTION_RECOMMENDATIONS.md` — which repos to pin, in what order, what descriptions to set, README improvements per repo
+   - `career/job_search/job_tracker.xlsx` — 9-sheet job tracker: Dashboard (COUNTIF stats), Jobs (29 columns, dropdowns), Applications, Interviews, Follow-ups, Saved Job Links, Companies, Keywords, Application Templates
+   - `career/templates/motivation_letter_en.md` — English motivation letter template with {{PLACEHOLDERS}}, checklist, style notes, no-false-claims rule
+   - `career/templates/motivation_letter_de.md` — German motivation letter template with {{PLATZHALTER}}, style notes, B2-level guidance
+   - `career/START_HERE_FOR_ALI/0_READ_ME_FIRST.md` — daily workflow: morning/during/evening; 30–50 application target, Vienna priority, no auto-apply
+   - `career/START_HERE_FOR_ALI/1_DAILY_JOB_PLAN.xlsx` — daily job plan with 50-row target split (Vienna FT, Austria-wide, Internship, Extra)
+   - `career/START_HERE_FOR_ALI/2_APPLICATION_TRACKER.xlsx` — application tracker with status dropdowns
+   - `career/START_HERE_FOR_ALI/4_CV_AND_LINKEDIN_ACTIONS.md` — one-time CV/LinkedIn/GitHub setup checklist; work authorization note
+   - `career/START_HERE_FOR_ALI/5_MANUAL_SUBMISSION_GUIDE.md` — step-by-step manual submission: read JD → tailor → select CV → submit manually → update tracker → follow up
+   - `scripts/career/job_application_copilot.py` — local job copilot: 6 modes (init, import-links, score, drafts, daily-plan, report); fit scoring 0–100; application packet generator (5 files per job); German + English motivation letter drafts; no auto-apply, no auto-email, no LinkedIn automation
+   - `scripts/career/build_career_excels.py` — Excel builder for job tracker, daily plan, application tracker
+   - `backend/tests/test_career_job_application_copilot_contract.py` — 95 contract tests
+   - No auto-apply. No auto-email. No LinkedIn automation. No fake claims. Human review required. 6,146 total tests.
+
 0000000000000000. Sprint 21 / Outreach — 50-call command center and professional sender pack (commit: 1b65761)
    - `scripts/sales/build_50call_command_center.py` — new builder: selects 50 call targets (specialty mix: 15 psychiatry, 10 dermatology, 10 gynecology, 7 orthopedics, 5 internal medicine, 3 ENT/neurology/urology), 50 email candidates, generates 10-sheet workbook + standalone files + markdown
    - `OUTREACH_COMMAND_CENTER.xlsx` — upgraded to 10 sheets: START HERE, Monday Calls (50 leads, banner, dropdowns), Sunday Emails (50 drafts, Alex/PraxisMed Team branding), Sender Identity (NEW), Weekly Plan (NEW: Sat–Thu schedule), Follow Ups, Master Leads, Call Script, Email Templates, Stats (target=50 COUNTIF formulas)
