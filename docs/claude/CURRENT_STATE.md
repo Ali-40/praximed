@@ -2,7 +2,7 @@
 
 ## Completed and committed modules
 
-00000000000000000. Sprint 21 / Career — Job application copilot and profile refresh (commit: pending)
+00000000000000000. Sprint 21 / Career — Job application copilot and profile refresh (commit: 9764950)
    - `career/` — complete job application command center folder; does not touch existing PraxisMed product files
    - `career/cv/Ali_Abdeltawab_CV_EN_ATS.md` — ATS-friendly English CV: new headline, PraxisMed project, Cloud Forecasting, JKU BSc AI, TU Wien MSc SE accepted Oct 2026, Hofer 1+ year; old JKU MSc Statistics/Data Science removed; B1/B1+ German
    - `career/cv/Ali_Abdeltawab_CV_DE_ATS.md` — ATS-friendly German CV: same changes, German throughout, includes Hobbys
